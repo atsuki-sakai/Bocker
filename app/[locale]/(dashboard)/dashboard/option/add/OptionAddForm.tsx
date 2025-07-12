@@ -436,8 +436,7 @@ function OptionAddForm() {
               <TagInput
                 tags={currentTags}
                 setTagsAction={setCurrentTags}
-                register={register}
-                errors={errors}
+                errors={errors.tags}
                 title={t('form.tags')}
               />
             </div>

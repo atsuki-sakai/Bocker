@@ -709,8 +709,7 @@ export default function MenuEditForm() {
                 setCurrentTags(tags)
                 setValue('tags', tags, { shouldValidate: true, shouldDirty: true })
               }}
-              register={register}
-              errors={errors}
+              errors={errors.tags}
             />
             <div className="flex flex-col w-full gap-2">
               <Label className="flex items-center gap-2 text-sm mb-3 mt-4">

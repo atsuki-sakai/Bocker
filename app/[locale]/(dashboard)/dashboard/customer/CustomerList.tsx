@@ -425,7 +425,11 @@ export default function CustomerList() {
                     {customerData.customer.tags && customerData.customer.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1 w-full min-w-[140px] text-nowrap">
                         {customerData.customer.tags.map((tag: string, index: number) => (
-                          <Badge key={index} className="text-xs py-1 px-1 font-light">
+                          <Badge
+                            variant="outline"
+                            key={index}
+                            className="text-xs py-1 px-1 font-light bg-accent-2 text-accent-foreground"
+                          >
                             {tag}
                           </Badge>
                         ))}

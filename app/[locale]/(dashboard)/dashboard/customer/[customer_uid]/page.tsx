@@ -333,7 +333,11 @@ function CustomerDetailPage() {
                 </h3>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {completeCustomer.customer.tags.map((tag: string, index: number) => (
-                    <Badge key={`${tag}-${index}`} variant="secondary" className="text-sm">
+                    <Badge
+                      key={`${tag}-${index}`}
+                      variant="outline"
+                      className="text-sm bg-accent-2 text-accent-foreground"
+                    >
                       {tag}
                     </Badge>
                   ))}

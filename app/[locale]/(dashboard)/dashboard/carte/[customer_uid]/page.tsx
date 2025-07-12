@@ -11,6 +11,16 @@ import type { RowType } from '@/services/supabase/SupabaseService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  HairWaveLevel,
+  HairVolume,
+  ScalpCondition,
+  HairThickness,
+  HairDamageTendency,
+  HairDryness,
+} from '@/services/supabase/repositories/carte/types'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Separator } from '@/components/ui/separator'
 import type { ReservationMenu, ReservationOption } from '@/convex/types'
 import {
   CalendarDays,
@@ -22,9 +32,12 @@ import {
   ChevronDown,
   RefreshCw,
   CheckCircle,
+  FileText,
   XCircle,
   AlertCircle,
   Zap,
+  UserCheck,
+  Scissors,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja, enUS } from 'date-fns/locale'
@@ -49,35 +62,37 @@ export type CustomerCarteData = {
   allergy_history: string | null
   medical_history: string | null
   ltv_price: number | null
+  // 🟢 顧客記入項目
+  prefer_silence: boolean | null
+  avoid_chemicals: string | null
+  has_sensitive_skin: boolean | null
+  sensitive_skin_detail: string | null
+  fragrance_sensitivity: boolean | null
+  use_contact_lenses: boolean | null
+  avoid_sales_talk: boolean | null
+  avoid_private_topics: boolean | null
+  daily_styling_time: number | null
+  allow_photo_sns: boolean | null
+  // 🔵 店舗記入項目
+  hair_thickness: HairThickness | null
+  hair_volume: HairVolume | null
+  hair_wave_level: HairWaveLevel | null
+  hair_damage_tendency: HairDamageTendency | null
+  poor_dye_perm_retention: boolean | null
+  quick_color_fade: boolean | null
+  hair_dryness: HairDryness | null
+  scalp_condition: ScalpCondition | null
+  scalp_trouble_detail: string | null
+  // 🟡 共通記入項目
+  prefer_hair_styling: boolean | null
+  use_styling_product: boolean | null
 }
-
-// 選択肢マップを作成する関数
-const getSkinTypeMap = (t: ReturnType<typeof useTranslations>): Record<string, string> => ({
-  normal: t('edit.skinTypes.normal'),
-  dry: t('edit.skinTypes.dry'),
-  oily: t('edit.skinTypes.oily'),
-  combination: t('edit.skinTypes.combination'),
-  sensitive: t('edit.skinTypes.sensitive'),
-})
-
-const getHairTypeMap = (t: ReturnType<typeof useTranslations>): Record<string, string> => ({
-  straight: t('edit.hairTypes.straight'),
-  wavy: t('edit.hairTypes.wavy'),
-  curly: t('edit.hairTypes.curly'),
-  coily: t('edit.hairTypes.coily'),
-  fine: t('edit.hairTypes.fine'),
-  thick: t('edit.hairTypes.thick'),
-})
 
 export default function CartePage({ params: paramsPromise }: CartePageProps) {
   const tCommon = useTranslations('common')
   const tCarte = useTranslations('dashboard.carte')
   const locale = useLocale() as SupportedLocale
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
-
-  // 翻訳を使ったマップを作成
-  const SKIN_TYPE_MAP = useMemo(() => getSkinTypeMap(tCarte), [tCarte])
-  const HAIR_TYPE_MAP = useMemo(() => getHairTypeMap(tCarte), [tCarte])
 
   const [customerUid, setCustomerUid] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<CustomerWithDetails | null>(null)
@@ -108,6 +123,40 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
 
         // カルテ情報の取得
         const carte = await carteRepo.findByCustomer(tenantId, orgId, customerUid)
+        
+        // カルテが存在しない場合でもデフォルト値を設定して表示
+        const defaultCarteData: CustomerCarteData = {
+          skin_type: null,
+          hair_type: null,
+          allergy_history: null,
+          medical_history: null,
+          ltv_price: null,
+          // 🟢 顧客記入項目 - デフォルトは false (「いいえ」として表示)
+          prefer_silence: false,
+          avoid_chemicals: null,
+          has_sensitive_skin: false,
+          sensitive_skin_detail: null,
+          fragrance_sensitivity: false,
+          use_contact_lenses: false,
+          avoid_sales_talk: false,
+          avoid_private_topics: false,
+          daily_styling_time: null,
+          allow_photo_sns: false,
+          // 🔵 店舗記入項目 - デフォルトは null
+          hair_thickness: null,
+          hair_volume: null,
+          hair_wave_level: null,
+          hair_damage_tendency: null,
+          poor_dye_perm_retention: false,
+          quick_color_fade: false,
+          hair_dryness: null,
+          scalp_condition: null,
+          scalp_trouble_detail: null,
+          // 🟡 共通記入項目 - デフォルトは false
+          prefer_hair_styling: false,
+          use_styling_product: false,
+        }
+
         if (carte) {
           setCustomerCarteData({
             skin_type: carte.skin_type,
@@ -115,7 +164,34 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
             allergy_history: carte.allergy_history,
             medical_history: carte.medical_history,
             ltv_price: carte.ltv_price,
+            // 🟢 顧客記入項目
+            prefer_silence: carte.prefer_silence ?? false,
+            avoid_chemicals: carte.avoid_chemicals,
+            has_sensitive_skin: carte.has_sensitive_skin ?? false,
+            sensitive_skin_detail: carte.sensitive_skin_detail,
+            fragrance_sensitivity: carte.fragrance_sensitivity ?? false,
+            use_contact_lenses: carte.use_contact_lenses ?? false,
+            avoid_sales_talk: carte.avoid_sales_talk ?? false,
+            avoid_private_topics: carte.avoid_private_topics ?? false,
+            daily_styling_time: carte.daily_styling_time,
+            allow_photo_sns: carte.allow_photo_sns ?? false,
+            // 🔵 店舗記入項目
+            hair_thickness: carte.hair_thickness,
+            hair_volume: carte.hair_volume,
+            hair_wave_level: carte.hair_wave_level as HairWaveLevel,
+            hair_damage_tendency: carte.hair_damage_tendency as HairDamageTendency,
+            poor_dye_perm_retention: carte.poor_dye_perm_retention ?? false,
+            quick_color_fade: carte.quick_color_fade ?? false,
+            hair_dryness: carte.hair_dryness as HairDryness,
+            scalp_condition: carte.scalp_condition,
+            scalp_trouble_detail: carte.scalp_trouble_detail,
+            // 🟡 共通記入項目
+            prefer_hair_styling: carte.prefer_hair_styling ?? false,
+            use_styling_product: carte.use_styling_product ?? false,
           })
+        } else {
+          // カルテが存在しない場合はデフォルト値を設定
+          setCustomerCarteData(defaultCarteData)
         }
       } else {
         toast.error(tCarte('detail.customerNotFound'))
@@ -246,23 +322,41 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
               <User className="w-5 h-5" />
               {tCarte('detail.customerInfo')}
             </CardTitle>
-            <Button variant="default" size="sm" asChild>
-              <Link href={`/dashboard/carte/${customerUid}/edit`}>
-                {tCarte('detail.edit')}
-                <Pencil className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <Button variant="default" size="sm" asChild>
+                <Link href={`/dashboard/customer/${customerUid}/edit`}>
+                  {tCarte('detail.customerEdit')}
+                  <UserCheck className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+              <Button variant="default" size="sm" asChild>
+                <Link href={`/dashboard/carte/${customerUid}/edit`}>
+                  {tCarte('detail.edit')}
+                  <Pencil className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <span className="text-sm text-muted-foreground">{tCarte('detail.name')}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{tCarte('detail.name')}</span>
+                    <span>
+                      {customerData.customer?.last_name && customerData.customer?.first_name
+                        ? `${customerData.customer?.last_name} ${customerData.customer?.first_name}`
+                        : tCarte('detail.notSet')}
+                    </span>
+                  </div>
                   <p className="font-medium">
-                    {customerData.customer?.last_name} {customerData.customer?.first_name}
-                    {customerData.customer?.line_user_name && (
-                      <span className="text-sm text-muted-foreground ml-2">
-                        (LINE: {customerData.customer?.line_user_name})
+                    {customerData.customer?.line_user_name ? (
+                      <span className="text-sm text-muted-foreground">
+                        LINE: {customerData.customer?.line_user_name}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        LINE: {tCarte('detail.notSet')}
                       </span>
                     )}
                   </p>
@@ -275,12 +369,10 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   </div>
                 )}
 
-                {customerData.customer?.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span>{customerData.customer?.phone}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-muted-foreground" />
+                  <span>{customerData.customer?.phone || tCarte('detail.notSet')}</span>
+                </div>
               </div>
               <div className="space-y-3">
                 {customerData.customerDetail?.birthday && (
@@ -311,14 +403,30 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                     </p>
                   </div>
                 )}
-                {customerCarteData?.ltv_price && (
+                {customerCarteData?.ltv_price ? (
                   <div>
                     <span className="text-sm text-muted-foreground">{tCarte('detail.ltv')}</span>
                     <p className="font-medium text-lg">
                       {formatPrice(customerCarteData.ltv_price)}
                     </p>
                   </div>
-                )}
+                ) : null}
+
+                <div>
+                  <span className="text-sm text-muted-foreground">
+                    {tCarte('detail.totalReservationCount')}
+                  </span>
+                  <p className="font-medium text-lg">
+                    {customerData?.customer?.total_reservation_count ?? 0} 回
+                  </p>
+                </div>
+
+                <div>
+                  <span className="text-sm text-muted-foreground">{tCarte('detail.ltv')}</span>
+                  <p className="font-medium text-lg">
+                    ¥ {customerCarteData?.ltv_price?.toLocaleString() ?? 0}
+                  </p>
+                </div>
 
                 {customerData.customer?.tags && customerData.customer.tags.length > 0 && (
                   <div>
@@ -333,41 +441,339 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap gap-4 mt-4 w-full">
-                <div className="w-fit">
-                  <span className="text-sm text-muted-foreground">{tCarte('detail.skinType')}</span>
-                  <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground">
-                    {customerCarteData?.skin_type
-                      ? SKIN_TYPE_MAP[customerCarteData.skin_type] || customerCarteData.skin_type
-                      : tCarte('unregistered')}
-                  </p>
-                </div>
-                <div className="w-fit">
-                  <span className="text-sm text-muted-foreground">{tCarte('detail.hairType')}</span>
-                  <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground">
-                    {customerCarteData?.hair_type
-                      ? HAIR_TYPE_MAP[customerCarteData.hair_type] || customerCarteData.hair_type
-                      : tCarte('unregistered')}
-                  </p>
-                </div>
-                <div className="w-full max-w-[320px] md:max-w-full h-auto">
-                  <span className="text-sm text-muted-foreground">{tCarte('detail.allergy')}</span>
-                  <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground break-words whitespace-pre-wrap">
-                    {customerCarteData?.allergy_history || tCarte('detail.none')}
-                  </p>
-                </div>
-                <div className="w-full max-w-[320px] md:max-w-full h-auto">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {tCarte('detail.medicalHistory')}
-                  </p>
-                  <p className="font-medium bg-muted p-2 rounded-md text-sm text-muted-foreground break-words whitespace-pre-wrap">
-                    {customerCarteData?.medical_history || tCarte('detail.none')}
-                  </p>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* カルテ情報 */}
+        <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                {tCarte('detail.carteInfo')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {customerCarteData ? (
+              <Tabs defaultValue="customer" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="customer" className="text-xs">
+                    <UserCheck className="w-3 h-3 mr-1" />
+                    {tCarte('edit.tabs.customer')}
+                  </TabsTrigger>
+                  <TabsTrigger value="store" className="text-xs">
+                    <Scissors className="w-3 h-3 mr-1" />
+                    {tCarte('edit.tabs.store')}
+                  </TabsTrigger>
+                  <TabsTrigger value="medical" className="text-xs">
+                    <FileText className="w-3 h-3 mr-1" />
+                    {tCarte('edit.tabs.medical')}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* 🟢 顧客記入項目タブ */}
+                <TabsContent value="customer">
+                  <Card className="shadow-md border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <UserCheck className="w-5 h-5" />
+                        {tCarte('edit.customerPrefs.title')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* 基本的な顧客設定を2列レイアウトでコンパクトに */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.customerPrefs.preferSilence')}
+                          </span>
+                          <p className="text-sm mt-1">
+                            {customerCarteData.prefer_silence === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.customerPrefs.avoidSalesTalk')}
+                          </span>
+                          <p className="text-sm mt-1">
+                            {customerCarteData.avoid_sales_talk === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.customerPrefs.avoidPrivateTopics')}
+                          </span>
+                          <p className="text-sm mt-1">
+                            {customerCarteData.avoid_private_topics === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.customerPrefs.allowPhotoSns')}
+                          </span>
+                          <p className="text-sm mt-1">
+                            {customerCarteData.allow_photo_sns === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.sharedPrefs.preferHairStyling')}
+                          </span>
+                          <p className="text-sm mt-1">
+                            {customerCarteData.prefer_hair_styling === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.sharedPrefs.useStylingProduct')}
+                          </span>
+                          <p className="text-sm mt-1">
+                            {customerCarteData.use_styling_product === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {customerCarteData.daily_styling_time && (
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.customerPrefs.dailyStylingTime')}
+                          </span>
+                          <p className="text-sm mt-1">{customerCarteData.daily_styling_time}分</p>
+                        </div>
+                      )}
+
+                      {customerCarteData.avoid_chemicals && (
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.customerPrefs.avoidChemicals')}
+                          </span>
+                          <p className="text-sm mt-1 whitespace-pre-wrap">
+                            {customerCarteData.avoid_chemicals}
+                          </p>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      {/* 敏感肌・アレルギー関連 */}
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">
+                          {tCarte('edit.sharedPrefs.sensitivitySection')}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                          <div>
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {tCarte('edit.sharedPrefs.hasSensitiveSkin')}
+                            </span>
+                            <p className="text-sm mt-1">
+                              {customerCarteData.has_sensitive_skin === true ? 'はい' : 'いいえ'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {tCarte('edit.sharedPrefs.fragranceSensitivity')}
+                            </span>
+                            <p className="text-sm mt-1">
+                              {customerCarteData.fragrance_sensitivity === true ? 'はい' : 'いいえ'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {tCarte('edit.sharedPrefs.useContactLenses')}
+                            </span>
+                            <p className="text-sm mt-1">
+                              {customerCarteData.use_contact_lenses === true ? 'はい' : 'いいえ'}
+                            </p>
+                          </div>
+                        </div>
+                        {customerCarteData.sensitive_skin_detail && (
+                          <div className="mt-3">
+                            <span className="text-sm font-semibold text-muted-foreground">
+                              {tCarte('edit.sharedPrefs.sensitiveSkinDetail')}
+                            </span>
+                            <p className="text-sm mt-1 whitespace-pre-wrap">
+                              {customerCarteData.sensitive_skin_detail}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* 🔵 店舗記入項目タブ */}
+                <TabsContent value="store">
+                  <Card className="shadow-md border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Scissors className="w-5 h-5" />
+                        {tCarte('edit.storeAssessment.title')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.hairThickness')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.hair_thickness === 'fine'
+                              ? tCarte('edit.hairThickness.fine')
+                              : customerCarteData.hair_thickness === 'medium'
+                                ? tCarte('edit.hairThickness.medium')
+                                : customerCarteData.hair_thickness === 'coarse'
+                                  ? tCarte('edit.hairThickness.coarse')
+                                  : tCarte('detail.notSet')}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.hairVolume')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.hair_volume === 'low'
+                              ? tCarte('edit.hairVolume.low')
+                              : customerCarteData.hair_volume === 'medium'
+                                ? tCarte('edit.hairVolume.medium')
+                                : customerCarteData.hair_volume === 'high'
+                                  ? tCarte('edit.hairVolume.high')
+                                  : tCarte('detail.notSet')}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.hairWaveLevel')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.hair_wave_level === 'straight'
+                              ? tCarte('edit.hairWaveLevel.straight')
+                              : customerCarteData.hair_wave_level === 'slight'
+                                ? tCarte('edit.hairWaveLevel.slight')
+                                : customerCarteData.hair_wave_level === 'moderate'
+                                  ? tCarte('edit.hairWaveLevel.moderate')
+                                  : customerCarteData.hair_wave_level === 'strong'
+                                    ? tCarte('edit.hairWaveLevel.strong')
+                                    : tCarte('detail.notSet')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.hairDamageTendency')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.hair_damage_tendency === 'strong'
+                              ? '強い'
+                              : customerCarteData.hair_damage_tendency === 'medium'
+                                ? '中程度'
+                                : customerCarteData.hair_damage_tendency === 'weak'
+                                  ? '弱い'
+                                  : tCarte('detail.notSet')}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.poorDyePerm')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.poor_dye_perm_retention === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.quickColorFade')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.quick_color_fade === true ? 'はい' : 'いいえ'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.hairDryness')}
+                          </span>
+                          <p className="mt-1">
+                            {customerCarteData.hair_dryness === 'high'
+                              ? '高い'
+                              : customerCarteData.hair_dryness === 'medium'
+                                ? '中程度'
+                                : customerCarteData.hair_dryness === 'low'
+                                  ? '低い'
+                                  : tCarte('detail.notSet')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div>
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          {tCarte('edit.storeAssessment.scalpCondition')}
+                        </span>
+                        <p className="mt-1">
+                          {customerCarteData.scalp_condition === 'normal'
+                            ? tCarte('edit.scalpCondition.normal')
+                            : customerCarteData.scalp_condition === 'dry'
+                              ? tCarte('edit.scalpCondition.dry')
+                              : customerCarteData.scalp_condition === 'oily'
+                                ? tCarte('edit.scalpCondition.oily')
+                                : customerCarteData.scalp_condition === 'sensitive'
+                                  ? tCarte('edit.scalpCondition.sensitive')
+                                  : tCarte('detail.notSet')}
+                        </p>
+                      </div>
+                      {customerCarteData.scalp_trouble_detail && (
+                        <div>
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            {tCarte('edit.storeAssessment.scalpTroubleDetail')}
+                          </span>
+                          <p className="mt-1">{customerCarteData.scalp_trouble_detail}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* 医療情報タブ */}
+                <TabsContent value="medical">
+                  <Card className="shadow-md border-border">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        {tCarte('edit.medicalInfo.title')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          {tCarte('edit.medicalInfo.allergyHistory')}
+                        </span>
+                        <p className="mt-1 whitespace-pre-wrap">
+                          {customerCarteData.allergy_history || tCarte('detail.notSet')}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          {tCarte('edit.medicalInfo.medicalHistory')}
+                        </span>
+                        <p className="mt-1 whitespace-pre-wrap">
+                          {customerCarteData.medical_history || tCarte('detail.notSet')}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  {tCarte('detail.loadingCarteInfo')}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
         {/* 施術履歴 */}
         <Card>

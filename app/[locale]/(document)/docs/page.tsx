@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Support } from '@/app/[locale]/(document)/_components'
+import { useTranslations } from 'next-intl'
 
 interface DocSection {
   title: string
@@ -104,20 +105,36 @@ const docSections: DocSection[] = [
   },
 ]
 
-const planFeatures = [
-  {
-    plan: 'LITE',
-    price: '8,000円',
-    features: ['予約管理'],
-  },
-  {
-    plan: 'PRO',
-    price: '12,000円',
-    features: ['全機能', '20メニュー', '20クーポン', '10オプション', '写真機能'],
-  },
-]
-
 export default function DocsHomePage() {
+  const t = useTranslations('landing.pricing.subscription')
+
+  const planFeatures = [
+    {
+      plan: 'LITE',
+      price: t('lite.price.monthly'),
+      features: [
+        t('lite.features.1'),
+        t('lite.features.2'),
+        t('lite.features.3'),
+        t('lite.features.4'),
+        t('lite.features.5'),
+        t('lite.features.6'),
+        t('lite.features.7'),
+        t('lite.features.8'),
+        t('lite.features.9'),
+      ],
+    },
+    {
+      plan: 'PRO',
+      price: t('pro.price.monthly'),
+      features: [
+        t('pro.features.1'),
+        t('pro.features.2'),
+        t('pro.features.3'),
+        t('pro.features.4'),
+      ],
+    },
+  ]
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Hero Section */}
@@ -278,8 +295,12 @@ export default function DocsHomePage() {
                 <ul className="space-y-2">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center space-x-2 text-sm md:text-base">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                      <span>{feature}</span>
+                      <div className="min-w-1.5 min-h-1.5 bg-primary rounded-full" />
+                      <span
+                        className={`text-xs md:text-sm ${plan.plan === 'PRO' ? 'text-muted' : 'text-muted-foreground'}`}
+                      >
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>

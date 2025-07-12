@@ -50,6 +50,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
+  const [isEmailLogin, setIsEmailLogin] = useState(false)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
 
   const {
@@ -82,13 +83,16 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
 
   // Handle LINE callback（最適化版）
   useEffect(() => {
+    // メールログイン処理中はLINE認証をスキップ
+    if (isEmailLogin) return
+
     const urlParams = new URLSearchParams(window.location.search)
     const hasLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
 
     if (hasLineCallback && orgId && tenantId && !isProcessingLineCallback) {
       handleLineAuth(tenantId, orgId, true)
     }
-  }, [orgId, tenantId, handleLineAuth, isProcessingLineCallback])
+  }, [orgId, tenantId, handleLineAuth, isProcessingLineCallback, isEmailLogin])
 
   const organization = useQuery(
     api.organization.config.query.findByTenantAndOrg,
@@ -110,8 +114,38 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   // 現在のメール入力値を監視
   const watchedEmail = watch('email')
 
+  // セッション取得のリトライ関数
+  const retryGetSession = async (maxRetries = 3, delay = 100): Promise<{ session: { customerUid: string } } | null> => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const sessionResponse = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include',
+        })
+        
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json()
+          if (sessionData.session && sessionData.session.customerUid) {
+            return sessionData
+          }
+        }
+        
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      } catch (error) {
+        console.error(`[retryGetSession] Attempt ${i + 1} failed:`, error)
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+    }
+    return null
+  }
+
   const onSubmit = async (data: z.infer<typeof emailLoginSchema>) => {
     setIsFirstLogin(true)
+    setIsEmailLogin(true)
     console.log('DATA', data)
 
     try {
@@ -146,18 +180,58 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
 
         if (!response.ok) {
           toast.error(result.error || 'ログインに失敗しました')
+          setIsEmailLogin(false)
           return
         }
 
         toast.success('ログインに成功しました')
-        // ログイン済みユーザーを顧客プロフィールページにリダイレクト
-        router.push(`/${locale}/customer/${orgId}/${existingCustomer.uid}/profile`)
+        
+        // セッション取得のリトライ処理
+        const sessionData = await retryGetSession()
+        
+        if (sessionData && sessionData.session && sessionData.session.customerUid) {
+          // セッション取得成功時
+          const redirectUrl = `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
+          console.log('[onSubmit] Redirecting to:', redirectUrl)
+          
+          // ローディング状態をリセット
+          setIsEmailLogin(false)
+          
+          // router.pushを試行
+          router.push(redirectUrl)
+          
+          // フォールバック: 500ms後にwindow.locationでリダイレクト
+          setTimeout(() => {
+            if (window.location.pathname.includes('/auth/login')) {
+              console.log('[onSubmit] Fallback redirect with window.location')
+              window.location.href = redirectUrl
+            }
+          }, 500)
+        } else {
+          // セッション取得失敗時はexistingCustomer.uidを使用
+          console.log('[onSubmit] Session retry failed, using existingCustomer.uid')
+          const fallbackUrl = `/${locale}/customer/${orgId}/${existingCustomer.uid}/profile`
+          
+          // ローディング状態をリセット
+          setIsEmailLogin(false)
+          
+          router.push(fallbackUrl)
+          
+          setTimeout(() => {
+            if (window.location.pathname.includes('/auth/login')) {
+              window.location.href = fallbackUrl
+            }
+          }, 500)
+        }
       } else {
         // 新規ユーザーの場合はエラーを表示
         toast.error('アカウントが見つかりません。予約ページから新規登録してください。')
+        setIsEmailLogin(false)
       }
     } catch (error) {
+      console.error('[onSubmit] Error:', error)
       showErrorToast(error)
+      setIsEmailLogin(false)
     }
   }
 
@@ -165,11 +239,14 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   useEffect(() => {
     if (!orgId) return
 
+    // メールログイン処理中はセッション確認をスキップ
+    if (isEmailLogin) return
+
     // Check if this is a LINE callback
     const urlParams = new URLSearchParams(window.location.search)
     const isLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
 
-    // Skip session check if processing LINE callback
+    // Skip session check if processing LINE callback or email login
     if (!isLineCallback && !isProcessingLineCallback) {
       // サーバーAPI経由でセッション有無を判定
       fetch('/api/auth/session', { method: 'GET', credentials: 'include' })
@@ -201,7 +278,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
         setTenantId(res.tenant_id)
       }
     })
-  }, [router, orgId, locale, isProcessingLineCallback])
+  }, [router, orgId, locale, isProcessingLineCallback, isEmailLogin])
 
   // Show loading state for initial data or LINE callback processing
   if (!organization || !tenantId || !orgId || isProcessingLineCallback) {
@@ -313,12 +390,12 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
               <Button
                 type="submit"
                 className="w-full text-base font-bold mt-6"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isEmailLogin}
               >
-                {isSubmitting ? (
+                {(isSubmitting || isEmailLogin) ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>ログイン中...</span>
+                    <span>{isEmailLogin ? 'リダイレクト中...' : 'ログイン中...'}</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center space-x-4">

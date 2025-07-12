@@ -33,7 +33,7 @@ export default function BillingPeriodToggle({
       cn(
         'px-4 py-2 rounded-full text-sm font-bold',
         billingPeriod === 'month'
-          ? 'bg-accent shadow-sm text-accent-foreground'
+          ? 'bg-accent-2 shadow-sm text-accent-2-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
     [billingPeriod]
@@ -44,7 +44,7 @@ export default function BillingPeriodToggle({
       cn(
         'px-4 py-2 rounded-full text-sm font-bold',
         billingPeriod === 'year'
-          ? 'bg-accent shadow-sm text-accent-foreground'
+          ? 'bg-accent-2 shadow-sm text-accent-2-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
     [billingPeriod]
@@ -57,7 +57,12 @@ export default function BillingPeriodToggle({
       </button>
       <button onClick={yearlyClickHandler} className={yearlyButtonClasses}>
         {t('yearlyPayment')}{' '}
-        <span className="text-xs text-active font-bold">
+        <span
+          className={cn(
+            'text-xs font-bold',
+            billingPeriod === 'year' ? 'text-muted' : 'text-accent-2'
+          )}
+        >
           {t('yearlyDiscount', { percent: SUBSCRIPTION_PLANS.PRO.yearly.savingPercent })}
         </span>
       </button>

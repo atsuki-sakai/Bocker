@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { validateCustomerAccess, getCustomerWithDetails } from '@/lib/auth/customer'
 import Link from 'next/link'
-import { User, Receipt, Wallet, LogOut } from 'lucide-react'
+import { User, Receipt, Wallet, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Card } from '@/components/ui/card'
@@ -75,6 +75,14 @@ export async function CustomerLayout({ children, customerUid, orgId }: CustomerL
                 >
                   <User className="h-5 w-5" />
                   <span>プロフィール</span>
+                </Link>
+
+                <Link
+                  href={`/customer/${orgId}/${customerUid}/preferences`}
+                  className="flex items-center space-x-3 text-muted-foreground hover:text-primary hover:bg-background rounded-md px-3 py-2 transition-colors"
+                >
+                  <Settings className="h-5 w-5" />
+                  <span>施術設定</span>
                 </Link>
 
                 <Link

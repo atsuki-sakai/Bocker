@@ -49,16 +49,16 @@ export default function CurrentPlanBanner({
   if (!isActive) return null
 
   return (
-    <div className="w-full max-w-xl mb-8 border border-active p-4 rounded-lg">
+    <div className="w-full max-w-xl mb-8 border border-accent-2 p-4 rounded-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-background border border-active rounded-full p-1 shadow-md">
-            <Check className="w-5 h-5 text-active dark:text-active" />
+          <div className="bg-background border border-accent-2 rounded-full p-1 shadow-md">
+            <Check className="w-5 h-5 text-accent-2 dark:text-accent-2" />
           </div>
           <div>
             <p className="font-semibold text-primary">
               {t('currentPlan')}{' '}
-              <span className="font-bold text-active text-2xl ml-1">{planName}</span>
+              <span className="font-bold text-accent-2 text-2xl ml-1">{planName}</span>
             </p>
           </div>
         </div>

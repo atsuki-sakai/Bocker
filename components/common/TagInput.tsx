@@ -7,19 +7,16 @@ import { Tag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { AlertCircle } from 'lucide-react'
-import { UseFormRegister, FieldErrors } from 'react-hook-form'
-import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 
-type TagInputProps<TSchema extends z.ZodTypeAny> = {
+type TagInputProps = {
   tags: string[]
   setTagsAction: (tags: string[]) => void
-  register: UseFormRegister<z.infer<TSchema>>
-  errors: FieldErrors<z.infer<TSchema>>
+  errors?: { message?: string }
   title?: string
 }
 
-const TagInput = ({ tags, setTagsAction, register, errors, title }: TagInputProps<z.ZodType>) => {
+const TagInput = ({ tags, setTagsAction, errors, title }: TagInputProps) => {
   const [input, setInput] = useState('')
   const t = useTranslations('common.tagInput')
 
@@ -74,7 +71,6 @@ const TagInput = ({ tags, setTagsAction, register, errors, title }: TagInputProp
       <div className="flex flex-wrap gap-2 w-full">
         <Input
           id="tags"
-          {...register('tags')}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -92,10 +88,10 @@ const TagInput = ({ tags, setTagsAction, register, errors, title }: TagInputProp
           {t('addButton')}
         </Button>
       </div>
-      {errors.tags && (
+      {errors && (
         <p className="mt-1 text-sm text-destructive flex items-center gap-1">
           <AlertCircle size={14} />
-          {errors.tags.message as string}
+          {errors.message}
         </p>
       )}
     </div>
