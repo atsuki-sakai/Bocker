@@ -88,7 +88,7 @@ export function LineChart({
   // データが空の場合の表示
   if (!data || data.length === 0) {
     return (
-      <Card className={className + ' border-none focus:outline-none focus-visible:ring-0'}>
+      <Card className={className}>
         {(title || description) && (
           <CardHeader>
             {title && <CardTitle className="text-lg">{title}</CardTitle>}
@@ -112,7 +112,7 @@ export function LineChart({
   }
 
   return (
-    <Card className={className + ' focus:outline-none focus-visible:ring-0'}>
+    <Card className={className}>
       {(title || description) && (
         <CardHeader>
           {title && <CardTitle className="text-lg">{title}</CardTitle>}
