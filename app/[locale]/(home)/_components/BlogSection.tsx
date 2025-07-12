@@ -58,7 +58,8 @@ const posts = [
     },
     // More posts...
   ]
-  
+  import Image from 'next/image'
+
   export function BlogSection() {
     return (
       <div className="bg-white py-24 sm:py-32">
@@ -67,14 +68,18 @@ const posts = [
             <h2 className="text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl">
               Blog
             </h2>
-            <p className="mt-2 text-lg/8 text-gray-600">美容サロン業界のデジタル化を革新する最先端のSaaSプラットフォームです。</p>
+            <p className="mt-2 text-lg/8 text-gray-600">
+              美容サロン業界のデジタル化を革新する最先端のSaaSプラットフォームです。
+            </p>
           </div>
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-x-8 gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-3">
             {posts.map((post) => (
               <article key={post.id} className="flex flex-col items-start justify-between">
                 <div className="relative w-full">
-                  <img
-                    alt=""
+                  <Image
+                    alt="blog image"
+                    width={1000}
+                    height={1000}
                     src={post.imageUrl}
                     className="aspect-video w-full rounded-2xl bg-gray-100 object-cover sm:aspect-2/1 lg:aspect-3/2"
                   />
@@ -102,7 +107,13 @@ const posts = [
                     <p className="mt-5 line-clamp-3 text-sm/6 text-gray-600">{post.description}</p>
                   </div>
                   <div className="relative mt-8 flex items-center gap-x-4">
-                    <img alt="" src={post.author.imageUrl} className="size-10 rounded-full bg-gray-100" />
+                    <Image
+                      width={1000}
+                      height={1000}
+                      alt="author image"
+                      src={post.author.imageUrl}
+                      className="size-10 rounded-full bg-gray-100"
+                    />
                     <div className="text-sm/6">
                       <p className="font-semibold text-gray-900">
                         <a href={post.author.href}>

@@ -77,24 +77,11 @@ export const upsert = mutation({
   returns: v.id('point_config'),
   handler: async (ctx, args) => {
     checkAuth(ctx);
+    const existing = await ctx.db.query('point_config').withIndex('by_tenant_org_active_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+    ).first();
     
-    if (args.org_id) {
-      const existing = await ctx.db.query('point_config').withIndex('by_tenant_org_active_archive', (q) =>
-        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
-      ).first();
-      if (!existing) {
-        throw new ConvexError({
-          statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-          severity: ERROR_SEVERITY.ERROR,
-          callFunc: 'point.mutation.upsert',
-          message: 'ポイント設定が見つかりませんでした。',
-          code: 'NOT_FOUND',
-          status: 404,
-          details: {
-            ...args,
-          },
-        });
-      }
+    if (existing) {
       return await updateRecord(ctx, existing._id, {
         is_active: args.is_active,
         is_fixed_point: args.is_fixed_point,

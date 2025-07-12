@@ -293,6 +293,9 @@
     "dashboard": "ダッシュボード",
     "reservationCreate": "予約作成",
     "reservationList": "予約一覧",
+    "dailyAnalytics": "日別 - 売り上げ",
+    "staffAnalytics": "スタッフ別 - 売り上げ",
+    "menuAnalytics": "メニュー別 - 売り上げ",
     "staffSchedule": "スタッフ予定表",
     "staff": "スタッフ管理",
     "menu": "メニュー管理",
@@ -311,6 +314,7 @@
   "navigationGroups": {
     "overview": "ダッシュボード",
     "reservations": "予約管理",
+    "analytics": "売り上げ分析",
     "customerManagement": "顧客管理",
     "serviceManagement": "サービス管理",
     "staffOrganization": "スタッフ・組織",
