@@ -245,6 +245,19 @@ export default function CompletePage() {
     return <Loading />
   }
 
+  const menuTotal = reservationItems?.menus.reduce(
+    (acc, menu) => acc + (menu.sale_price ?? menu.unit_price ?? 0),
+    0
+  )
+  const optionTotal = reservationItems?.options.reduce(
+    (acc, option) => acc + (option.sale_price ?? option.unit_price ?? 0),
+    0
+  )
+  const staffTotal = reservationWithDetail?.reservation?.is_free_nomination
+    ? 0
+    : (staff?.extra_charge ?? 0)
+  const subTotal = menuTotal + optionTotal + staffTotal
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       {/* 紙吹雪アニメーション */}
@@ -259,7 +272,7 @@ export default function CompletePage() {
         {/* 成功メッセージカード */}
         <motion.div variants={itemVariants}>
           <Card className="mb-6 bg-background shadow-lg border-border overflow-hidden">
-            <CardHeader className="bg-muted pb-4">
+            <CardHeader className="bg-neon-foreground pb-4">
               <div className="flex justify-center mb-2">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -270,7 +283,7 @@ export default function CompletePage() {
                     damping: 20,
                     delay: 0.2,
                   }}
-                  className="bg-accent-2-foreground p-3 rounded-full"
+                  className="bg-neon-foreground p-3 rounded-full"
                 >
                   <CheckCircle2 className="h-10 w-10 text-accent-2" />
                 </motion.div>
@@ -289,7 +302,7 @@ export default function CompletePage() {
             <CardContent className="p-6 space-y-6">
               {/* 日時情報 */}
               <Card className="border border-border shadow-sm">
-                <CardHeader className="bg-muted py-3 px-4 rounded-t-xl">
+                <CardHeader className="bg-neon-foreground py-3 px-4 rounded-t-xl">
                   <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     予約日時
@@ -321,7 +334,7 @@ export default function CompletePage() {
 
               {/* メニュー・担当者情報 */}
               <Card className="border border-border shadow-sm">
-                <CardHeader className="bg-muted py-3 px-4 rounded-t-xl">
+                <CardHeader className="bg-neon-foreground py-3 px-4 rounded-t-xl">
                   <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
                     <Scissors className="h-4 w-4" />
                     予約内容
@@ -402,15 +415,17 @@ export default function CompletePage() {
                     </div>
                     <div className="flex justify-between items-center w-full space-y-2">
                       <span className="text-clip text-sm w-3/5">
-                        {reservationWithDetail?.reservation?.is_free_nomination 
-                          ? '指名フリー' 
-                          : reservationWithDetail?.reservation?.staff_name ?? '未指定'}
+                        {reservationWithDetail?.reservation?.is_free_nomination
+                          ? '指名フリー'
+                          : (reservationWithDetail?.reservation?.staff_name ?? '未指定')}
                       </span>
                       <span className="text-sm font-medium text-muted-foreground text-right w-2/5 text-clip">
                         <span className="text-xs">指名料</span> /
-                        {reservationWithDetail?.reservation?.is_free_nomination 
-                          ? '0円' 
-                          : staff?.extra_charge ? `¥${staff.extra_charge.toLocaleString()}` : '0円'}
+                        {reservationWithDetail?.reservation?.is_free_nomination
+                          ? '0円'
+                          : staff?.extra_charge
+                            ? `¥${staff.extra_charge.toLocaleString()}`
+                            : '0円'}
                       </span>
                     </div>
                   </div>
@@ -428,27 +443,7 @@ export default function CompletePage() {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">メニュー料金</span>
-                    <span className="font-medium text-primary">
-                      ¥
-                      {(reservationWithDetail?.reservationDetail?.total_price &&
-                      reservationItems?.menus &&
-                      reservationItems?.options &&
-                      staff?.extra_charge
-                        ? reservationWithDetail?.reservationDetail?.total_price -
-                          reservationItems?.options.reduce(
-                            (acc, opt) =>
-                              acc +
-                              (opt.sale_price
-                                ? opt.sale_price
-                                : opt.unit_price
-                                  ? opt.unit_price
-                                  : 0),
-                            0
-                          ) -
-                          staff?.extra_charge
-                        : (reservationWithDetail?.reservationDetail?.total_price ?? 0)
-                      ).toLocaleString()}
-                    </span>
+                    <span className="font-medium text-primary">¥{menuTotal.toLocaleString()}</span>
                   </div>
                   {reservationItems?.options && reservationItems.options.length > 0 && (
                     <>
@@ -457,26 +452,16 @@ export default function CompletePage() {
                         <div key={index} className="flex justify-between items-center mt-2">
                           <span className="text-sm text-muted-foreground">オプション</span>
                           <span className="font-medium text-primary">
-                            ¥
-                            {reservationItems.options
-                              .reduce(
-                                (acc, opt) =>
-                                  acc +
-                                  (opt.sale_price
-                                    ? opt.sale_price
-                                    : opt.unit_price
-                                      ? opt.unit_price
-                                      : 0),
-                                0
-                              )
-                              .toLocaleString()}
+                            ¥{optionTotal.toLocaleString()}
                           </span>
                         </div>
                       ))}
                     </>
                   )}
 
-                  {!reservationWithDetail?.reservation?.is_free_nomination && staff?.extra_charge && staff.extra_charge > 0 ? (
+                  {!reservationWithDetail?.reservation?.is_free_nomination &&
+                  staff?.extra_charge &&
+                  staff.extra_charge > 0 ? (
                     <div>
                       <Separator className="my-2" />
                       <div className="flex justify-between items-center mt-2">
@@ -487,6 +472,13 @@ export default function CompletePage() {
                       </div>
                     </div>
                   ) : null}
+                  <div>
+                    <Separator className="my-2" />
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-muted-foreground">小計</span>
+                      <span className="text-muted-foreground">¥{subTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
                   {typeof reservationWithDetail?.reservationDetail?.use_points === 'number' &&
                   reservationWithDetail?.reservationDetail?.use_points > 0 ? (
                     <>
@@ -513,15 +505,6 @@ export default function CompletePage() {
                     </>
                   ) : null}
 
-                  <div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-muted-foreground">小計</span>
-                      <span className="text-muted-foreground">
-                        ¥{reservationWithDetail?.reservationDetail?.total_price?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
                   <div>
                     <Separator />
                     <div className="flex justify-between items-center">
