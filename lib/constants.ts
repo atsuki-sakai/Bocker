@@ -218,6 +218,7 @@ import {
   Ticket as TicketIcon,
   Settings as SettingsIcon,
   CreditCard as CreditCardIcon,
+  ChartBar as ChartBarIcon,
   type LucideIcon
 } from 'lucide-react';
 import type { Role, SubscriptionPlanName } from '@/convex/types';
@@ -331,6 +332,13 @@ export const NAV_ITEMS: NavItem[] = [
     minRole: 'staff',
     minPlan: 'LITE',
   },
+  {
+    name: 'analytics',
+    href: `/dashboard/analytics`,
+    icon: ChartBarIcon,
+    minRole: 'staff',
+    minPlan: 'LITE',
+  },
 ]
 
 // ダッシュボード項目（アコーディオン外で常に表示）
@@ -358,6 +366,33 @@ export const NAV_GROUPS: NavGroup[] = [
         name: 'reservationList',
         href: `/dashboard/reservation`,
         icon: CalendarIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+    ],
+  },
+  {
+    id: 'analytics',
+    name: 'analytics',
+    items: [
+      {
+        name: 'dailyAnalytics',
+        href: `/dashboard/analytics/daily`,
+        icon: ChartBarIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'staffAnalytics',
+        href: `/dashboard/analytics/staff`,
+        icon: UsersIcon,
+        minRole: 'staff',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'menuAnalytics',
+        href: `/dashboard/analytics/menu`,
+        icon: FileIcon,
         minRole: 'staff',
         minPlan: 'LITE',
       },
