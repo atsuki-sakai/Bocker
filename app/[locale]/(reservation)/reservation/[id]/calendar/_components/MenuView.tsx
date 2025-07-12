@@ -967,6 +967,14 @@ export const MenuView = ({
                   </div>
                 )}
 
+                {selectedMenu.warning_message && (
+                  <div className="bg-warning p-2 rounded-md mt-2 w-full">
+                    <span className="text-xs text-warning-foreground font-bold">注意事項</span>
+                    <p className="text-xs text-warning-foreground">
+                      {selectedMenu.warning_message}
+                    </p>
+                  </div>
+                )}
                 <div className="mt-2">
                   <Label className="text-xs font-medium">支払い方法</Label>
                   <p className="text-xs tracking-wide w-fit mt-1 bg-warning border border-warning-foreground rounded-full py-1 px-2 text-warning-foreground">
@@ -1166,6 +1174,13 @@ export const MenuView = ({
                                         </span>
                                       )}
                                     </div>
+                                    {menu.warning_message && (
+                                      <div className="bg-warning p-2 rounded-md w-fit mt-1">
+                                        <p className="text-xs text-warning-foreground">
+                                          {menu.warning_message}
+                                        </p>
+                                      </div>
+                                    )}
                                     <div className="flex justify-end">
                                       <Button
                                         variant="ghost"
