@@ -39,6 +39,9 @@ export class StaffSalesRepository extends AnalyticsRepository {
       // 基本フィルタ
       query = this.addTenantOrgFilter(query, filters.tenantId, filters.orgId);
 
+      // 注意: staff_sales_summaryは累積集計テーブルのため期間フィルタは適用しない
+      // 期間別データが必要な場合はreservationテーブルから直接集計する
+
       // スタッフIDフィルタ
       if (filters.staffIds && filters.staffIds.length > 0) {
         query = query.in('staff_id', filters.staffIds);
@@ -307,10 +310,111 @@ export class StaffSalesRepository extends AnalyticsRepository {
   }
 
   /**
+   * 期間指定でreservationテーブルから直接集計（正しい期間比較用）
+   */
+  async getStaffSalesByPeriod(filters: FilterOptions): Promise<SalesSummary & {
+    topStaff: StaffSalesData | null;
+    activeStaffCount: number;
+  }> {
+    try {
+      const { supabase } = await import('@/services/supabase/SupabaseService');
+      const dateRange = this.formatDateRange(filters.dateRange);
+      
+      // reservationテーブルから期間指定で集計
+      let query = supabase
+        .from('reservation')
+        .select(`
+          staff_id,
+          staff_name,
+          start_time_unix,
+          reservation_detail!inner(total_price)
+        `)
+        .eq('status', 'completed')
+        .gte('start_time_unix', new Date(dateRange.from).getTime() * 1000)
+        .lte('start_time_unix', new Date(dateRange.to).getTime() * 1000);
+
+      // 基本フィルタ
+      query = this.addTenantOrgFilter(query, filters.tenantId, filters.orgId);
+
+      // スタッフIDフィルタ
+      if (filters.staffIds && filters.staffIds.length > 0) {
+        query = query.in('staff_id', filters.staffIds);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        this.handleError(error, 'get staff sales by period');
+      }
+
+      // データを集計
+      const staffSales = new Map<string, { 
+        staff_id: string; 
+        staff_name: string; 
+        total_amount: number; 
+        booking_count: number; 
+      }>();
+
+      let totalAmount = 0;
+      let totalBookings = 0;
+
+      (data || []).forEach(reservation => {
+        const staffId = reservation.staff_id;
+        const amount = reservation.reservation_detail?.total_price || 0;
+        
+        totalAmount += amount;
+        totalBookings += 1;
+
+        if (!staffSales.has(staffId)) {
+          staffSales.set(staffId, {
+            staff_id: staffId,
+            staff_name: reservation.staff_name || `スタッフ${staffId}`,
+            total_amount: 0,
+            booking_count: 0
+          });
+        }
+
+        const staff = staffSales.get(staffId)!;
+        staff.total_amount += amount;
+        staff.booking_count += 1;
+      });
+
+      const staffData = Array.from(staffSales.values())
+        .sort((a, b) => b.total_amount - a.total_amount);
+
+      const averageAmount = this.calculateAverage(totalAmount, totalBookings);
+      const periodDays = Math.ceil(
+        (filters.dateRange.to.getTime() - filters.dateRange.from.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
+      const dailyAverage = Math.round(totalAmount / periodDays);
+      const activeStaffCount = staffData.filter(item => item.total_amount > 0).length;
+      const topStaff = staffData.length > 0 ? {
+        ...staffData[0],
+        average_amount: this.calculateAverage(staffData[0].total_amount, staffData[0].booking_count),
+        last_booking_date: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } : null;
+
+      return {
+        totalAmount,
+        totalBookings,
+        averageAmount,
+        periodDays,
+        dailyAverage,
+        topStaff,
+        activeStaffCount
+      };
+    } catch (error) {
+      this.handleError(error, 'get staff sales by period');
+    }
+  }
+
+  /**
    * 前期間データを取得（基底クラスの抽象メソッド実装）
    */
   protected async getPeriodData(filters: FilterOptions): Promise<{ total_amount: number; booking_count: number }> {
-    const summary = await this.getStaffSummary(filters);
+    const summary = await this.getStaffSalesByPeriod(filters);
     return {
       total_amount: summary.totalAmount,
       booking_count: summary.totalBookings
