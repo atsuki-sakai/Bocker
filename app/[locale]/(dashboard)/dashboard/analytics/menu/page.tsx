@@ -5,7 +5,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loader2, RefreshCwIcon, DollarSign, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { subDays } from 'date-fns'
+import { startOfMonth, endOfMonth } from 'date-fns'
 import { Award, BarChart3, HelpCircle, PieChart as PieChartIcon } from 'lucide-react'
 import type {
   SalesSummary,
@@ -72,15 +72,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MenuSalesRepository } from '@/services/supabase/repositories/analytics'
 
-// 初期フィルター設定（過去30日間、未来の日付は除外）
-const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => ({
-  dateRange: {
-    from: subDays(new Date(), 29),
-    to: subDays(new Date(), 1), // 昨日までに変更
-  },
-  tenantId,
-  orgId,
-})
+// 初期フィルター設定（日本時間での現在月のデータのみ取得、月次パーティション対応）
+const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => {
+  // 日本時間（JST: UTC+9）で現在の日時を取得
+  const now = new Date()
+  const jstOffset = 9 * 60 * 60 * 1000 // 9時間をミリ秒に変換
+  const nowJST = new Date(now.getTime() + jstOffset)
+
+  // 日本時間での現在月の1日を取得
+  const currentMonthStart = startOfMonth(nowJST)
+
+  // 日本時間での該当月の最終日を取得
+  const currentMonthEnd = endOfMonth(nowJST)
+
+  console.log('[Menu Analytics] Initial date range setup:', {
+    nowJST: nowJST.toISOString(),
+    currentMonthStart: currentMonthStart.toISOString(),
+    currentMonthEnd: currentMonthEnd.toISOString(),
+    timezone: 'JST (UTC+9)',
+  })
+
+  return {
+    dateRange: {
+      from: currentMonthStart,
+      to: currentMonthEnd,
+    },
+    tenantId,
+    orgId,
+  }
+}
 
 /**
  * メニュー別売上分析ページ - エンタープライズレベル
@@ -535,9 +555,9 @@ export default function MenuAnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="p-4 bg-palette-3/10 border border-palette-3/20 rounded-lg">
+                      <div className="p-4 bg-link border border-link-foreground rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-palette-3 rounded-full"></div>
+                          <Award className="w-6 h-6 text-link-foreground" />{' '}
                           <span className="text-sm font-medium">売上No.1価格帯</span>
                         </div>
                         <div className="text-lg font-bold mb-1">
@@ -548,9 +568,9 @@ export default function MenuAnalyticsPage() {
                         </p>
                       </div>
 
-                      <div className="p-4 bg-palette-2/10 border border-palette-2/20 rounded-lg">
+                      <div className="p-4 bg-neon-foreground border border-neon rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-2 h-2 bg-palette-2 rounded-full"></div>
+                          <div className="w-2 h-2 bg-neon rounded-full"></div>
                           <span className="text-sm font-medium">人気No.1価格帯</span>
                         </div>
                         <div className="text-lg font-bold mb-1">
@@ -596,10 +616,14 @@ export default function MenuAnalyticsPage() {
                       </thead>
                       <tbody>
                         {priceTierAnalysis.priceTiers.map((tier, index) => (
-                          <tr key={index} className="border-b">
+                          <tr key={index} className={`border-b`}>
                             <td className="p-2">
                               <div>
-                                <div className="font-medium">{tier.tier}</div>
+                                <div
+                                  className={`font-medium  ${index === 0 ? 'text-link-foreground' : index === 1 ? 'text-neon' : 'text-warning-foreground'}`}
+                                >
+                                  {tier.tier}
+                                </div>
                                 <div className="text-xs text-muted-foreground">
                                   {tier.priceRange}
                                 </div>
