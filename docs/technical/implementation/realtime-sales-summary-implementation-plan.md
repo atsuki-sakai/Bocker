@@ -1166,7 +1166,7 @@ ROLLBACK;
 
 ### Phase 1: Convex即座移行実装
 - [x] `convex/reservation/action.ts`に予約データ移行関数追加
-- [x] `convex/reservation/action.ts`に売上集計更新関数追加  
+- [x] `convex/reservation/action.ts`に売上集計更新関数追加
 - [x] エラーハンドリング（Supabase障害時も予約完了成功）実装
 - [x] ローカル環境でテスト実行
 
@@ -1280,7 +1280,7 @@ ROLLBACK;
 
 ### 重要な変更点
 1. **PostgreSQLトリガー → Convex Action**: 予約データがConvex内のため
-2. **24時間バッチ → 即座移行**: 真のリアルタイム集計のため  
+2. **24時間バッチ → 即座移行**: 真のリアルタイム集計のため
 3. **HMAC署名 → Service Role Key**: 実装簡素化のため
 4. **バッチ処理簡素化**: 完了済み予約は除外
 
