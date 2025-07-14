@@ -1,28 +1,77 @@
 "use client";
 
-import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import React, { useState } from 'react'
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Users,
+  Target,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
+  Zap,
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 export interface SummaryCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
+  title: string
+  value: string | number
+  subtitle?: string
   change?: {
-    value: number;
-    label?: string;
-    period?: string;
-  };
-  icon?: React.ReactNode;
-  loading?: boolean;
-  className?: string;
-  valueFormatter?: (value: number | string) => string;
-  trend?: 'up' | 'down' | 'neutral';
-  variant?: 'default' | 'compact';
-  showComparison?: boolean;
+    value: number
+    label?: string
+    period?: string
+  }
+  icon?: React.ReactNode
+  loading?: boolean
+  className?: string
+  valueFormatter?: (value: number | string) => string
+  trend?: 'up' | 'down' | 'neutral'
+  variant?: 'default' | 'compact' | 'single-staff' | 'multi-staff'
+  showComparison?: boolean
+  details?: Array<{
+    label: string
+    value: string
+    trend?: 'up' | 'down' | 'neutral'
+  }>
+  chart?: {
+    type?: 'progress' | 'distribution' | 'comparison'
+    value?: number
+    current?: number
+    previous?: number
+    trend?: 'up' | 'down'
+    percentage?: number
+    average?: number
+    median?: number
+    benchmark?: number
+    goal?: number
+  }
+  // 新機能
+  expandable?: boolean
+  staffInfo?: {
+    name: string
+    rank?: number
+    totalStaff?: number
+    isTopPerformer?: boolean
+  }
+  insights?: Array<{
+    type: 'positive' | 'negative' | 'neutral'
+    message: string
+    icon?: React.ReactNode
+  }>
+  actionable?: {
+    suggestion: string
+    priority: 'high' | 'medium' | 'low'
+  }
 }
 
 /**
@@ -30,14 +79,14 @@ export interface SummaryCardProps {
  */
 function getTrendIcon(trend: 'up' | 'down' | 'neutral', changeValue?: number) {
   if (trend === 'neutral' || changeValue === 0) {
-    return <Minus className="w-3 h-3" />;
+    return <Minus className="w-3 h-3" />
   }
-  
+
   if (trend === 'up' || (changeValue && changeValue > 0)) {
-    return <TrendingUp className="w-3 h-3" />;
+    return <TrendingUp className="w-3 h-3" />
   }
-  
-  return <TrendingDown className="w-3 h-3" />;
+
+  return <TrendingDown className="w-3 h-3" />
 }
 
 /**
@@ -45,23 +94,23 @@ function getTrendIcon(trend: 'up' | 'down' | 'neutral', changeValue?: number) {
  */
 function getTrendColor(trend: 'up' | 'down' | 'neutral', changeValue?: number) {
   if (trend === 'neutral' || changeValue === 0) {
-    return 'text-muted-foreground';
+    return 'text-muted-foreground'
   }
-  
+
   if (trend === 'up' || (changeValue && changeValue > 0)) {
-    return 'text-success';
+    return 'text-success'
   }
-  
-  return 'text-destructive';
+
+  return 'text-destructive'
 }
 
 /**
  * 変化率を表示用にフォーマット
  */
 function formatChangeValue(value: number): string {
-  const absValue = Math.abs(value);
-  const sign = value >= 0 ? '+' : '-';
-  return `${sign}${absValue.toFixed(1)}%`;
+  const absValue = Math.abs(value)
+  const sign = value >= 0 ? '+' : '-'
+  return `${sign}${absValue.toFixed(1)}%`
 }
 
 /**
@@ -80,7 +129,14 @@ export function SummaryCard({
   trend,
   variant = 'default',
   showComparison = true,
+  details,
+  chart,
+  expandable = false,
+  staffInfo,
+  insights,
+  actionable,
 }: SummaryCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   // トレンドを自動判定（changeがある場合）
   const determinedTrend =
     trend ||
@@ -95,74 +151,413 @@ export function SummaryCard({
 
   if (loading) {
     return (
-      <Card className={cn('h-fit', className)}>
+      <Card className={cn('h-full transition-all duration-200', className)}>
         <CardHeader
           className={cn(
-            'flex flex-row items-center justify-between space-y-0',
+            'flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6',
             variant === 'compact' ? 'pb-2' : 'pb-3'
           )}
         >
-          <Skeleton className="h-4 w-24" />
-          {icon && <Skeleton className="h-4 w-4" />}
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20 sm:w-24" />
+            <Skeleton className="h-2 w-16 sm:w-20" />
+          </div>
+          {icon && <Skeleton className="h-5 w-5 rounded-full" />}
         </CardHeader>
-        <CardContent className={variant === 'compact' ? 'pt-0' : ''}>
-          <Skeleton className="h-8 w-32 mb-2" />
-          {showComparison && <Skeleton className="h-4 w-20" />}
+        <CardContent className={cn('px-4 sm:px-6', variant === 'compact' ? 'pt-0' : '')}>
+          <div className="space-y-3">
+            <Skeleton className="h-8 sm:h-10 w-32 sm:w-40" />
+            {showComparison && (
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     )
   }
 
+  // バリアント固有のスタイリング
+  const isSingleStaff = variant === 'single-staff'
+  const isMultiStaff = variant === 'multi-staff'
+  const isCompact = variant === 'compact'
+
   return (
-    <Card className={cn('h-fit transition-all hover:shadow-md', className)}>
+    <Card
+      className={cn(
+        'group w-full relative overflow-hidden border-0 bg-gradient-to-br from-background via-background to-muted',
+        'backdrop-blur-sm',
+        isSingleStaff &&
+          'border-l-primary bg-gradient-to-br from-primary via-background to-primary',
+        isMultiStaff &&
+          'border-l-emerald-500 bg-gradient-to-br from-emerald-50 via-background to-emerald-50 ',
+        expandable && '',
+        className
+      )}
+    >
+      {/* Subtle animated background effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
       <CardHeader
         className={cn(
-          'flex flex-row items-center justify-between space-y-0',
-          variant === 'compact' ? 'pb-2' : 'pb-3'
+          'relative flex flex-row items-center justify-between space-y-0 px-4 sm:px-6 py-4 sm:py-5',
+          isCompact ? 'pb-2 py-3' : 'pb-3'
         )}
+        onClick={expandable ? () => setIsExpanded(!isExpanded) : undefined}
       >
-        <CardTitle
-          className={cn(
-            'font-medium text-muted-foreground',
-            variant === 'compact' ? 'text-sm' : 'text-sm'
-          )}
-        >
-          {title}
-        </CardTitle>
-        {icon && <div className="text-muted-foreground opacity-70">{icon}</div>}
-      </CardHeader>
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div
+            className={cn(
+              'flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200',
+              isSingleStaff && 'bg-primary/10 text-primary group-hover:bg-primary/20',
+              isMultiStaff &&
+                'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-950/70',
+              !isSingleStaff &&
+                !isMultiStaff &&
+                'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+            )}
+          >
+            {icon ||
+              (isSingleStaff ? (
+                <User className="w-5 h-5" />
+              ) : isMultiStaff ? (
+                <Users className="w-5 h-5" />
+              ) : (
+                <BarChart3 className="w-5 h-5" />
+              ))}
+          </div>
 
-      <CardContent className={variant === 'compact' ? 'pt-0' : ''}>
-        <div
-          className={cn(
-            'font-bold tracking-tight text-foreground',
-            variant === 'compact' ? 'text-2xl' : 'text-3xl'
-          )}
-        >
-          {formattedValue}
+          <div className="min-w-0 flex-1">
+            <CardTitle
+              className={cn(
+                'font-semibold tracking-tight transition-colors duration-200 truncate',
+                isCompact ? 'text-sm' : 'text-base sm:text-lg',
+                isSingleStaff
+                  ? 'text-primary'
+                  : isMultiStaff
+                    ? 'text-emerald-700 dark:text-emerald-300'
+                    : 'text-foreground group-hover:text-primary'
+              )}
+            >
+              {title}
+            </CardTitle>
+            {subtitle && (
+              <p
+                className={cn(
+                  'text-xs mt-1 text-muted-foreground/80 truncate',
+                  isSingleStaff && 'text-primary/60',
+                  isMultiStaff && 'text-emerald-600/60 dark:text-emerald-400/60'
+                )}
+              >
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
 
-        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {expandable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-8 w-8 p-0 rounded-full transition-all duration-200 hover:bg-primary/10',
+                isSingleStaff && 'hover:bg-primary/20 text-primary',
+                isMultiStaff &&
+                  'hover:bg-emerald-100 text-emerald-600 dark:hover:bg-emerald-950/50 dark:text-emerald-400'
+              )}
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent
+        className={cn('relative px-4 sm:px-6 pb-4 sm:pb-6', isCompact ? 'pt-0' : 'pt-2')}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2 mb-2">
+              <div
+                className={cn(
+                  'font-bold tracking-tight transition-colors duration-200',
+                  isCompact ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl lg:text-5xl',
+                  isSingleStaff && 'text-primary',
+                  isMultiStaff && 'text-emerald-700 dark:text-emerald-300',
+                  !isSingleStaff && !isMultiStaff && 'text-foreground'
+                )}
+              >
+                {formattedValue}
+              </div>
+
+              {/* 成長トレンドアイコン */}
+              {change && (
+                <div
+                  className={cn(
+                    'flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200',
+                    change.value > 0
+                      ? 'bg-green-100 text-green-600 dark:bg-green-950/50 dark:text-green-400'
+                      : change.value < 0
+                        ? 'bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-950/50 dark:text-gray-400'
+                  )}
+                >
+                  {change.value > 0 ? (
+                    <ArrowUpRight className="w-3 h-3" />
+                  ) : change.value < 0 ? (
+                    <ArrowDownRight className="w-3 h-3" />
+                  ) : (
+                    <Minus className="w-3 h-3" />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {staffInfo?.name && (
+              <p
+                className={cn(
+                  'text-sm font-semibold mb-1 truncate',
+                  isSingleStaff
+                    ? 'text-primary'
+                    : isMultiStaff
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-foreground'
+                )}
+              >
+                {staffInfo.name}
+              </p>
+            )}
+          </div>
+
+          {staffInfo && (
+            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+              {staffInfo.rank && staffInfo.totalStaff && (
+                <Badge
+                  variant={staffInfo.isTopPerformer ? 'default' : 'secondary'}
+                  className={cn(
+                    'text-xs font-semibold px-2 py-1 transition-all duration-200',
+                    staffInfo.isTopPerformer &&
+                      'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+                  )}
+                >
+                  <div className="flex items-center gap-1">
+                    {staffInfo.isTopPerformer && <Zap className="w-3 h-3" />}
+                    {staffInfo.rank}/{staffInfo.totalStaff}位
+                  </div>
+                </Badge>
+              )}
+              {staffInfo.isTopPerformer && (
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  🏆 トップパフォーマー
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {showComparison && change && (
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-muted/50">
             <Badge
               variant="outline"
               className={cn(
-                'text-xs border-0 px-2 py-0.5 font-medium',
-                getTrendColor(determinedTrend, change.value)
+                'text-xs font-semibold px-3 py-1.5 border-0 shadow-sm transition-all duration-200',
+                change.value > 0
+                  ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300'
+                  : change.value < 0
+                    ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300'
+                    : 'bg-gray-50 text-gray-700 dark:bg-gray-950/30 dark:text-gray-300'
               )}
             >
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 {getTrendIcon(determinedTrend, change.value)}
-                {formatChangeValue(change.value)}
+                <span className="font-bold">{formatChangeValue(change.value)}</span>
               </span>
             </Badge>
 
-            {change.label && <span className="text-xs text-muted-foreground">{change.label}</span>}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {change.label && <span className="font-medium">{change.label}</span>}
+              {change.period && (
+                <span className="text-muted-foreground/70">vs {change.period}</span>
+              )}
+            </div>
+          </div>
+        )}
 
-            {change.period && (
-              <span className="text-xs text-muted-foreground">vs {change.period}</span>
+        {/* 詳細情報の表示 */}
+        {details && details.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-muted/50">
+            <div className="grid gap-3">
+              {details.map((detail, index) => (
+                <div key={index} className="flex justify-between items-center group/detail">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-xs font-medium text-muted-foreground group-hover/detail:text-foreground transition-colors truncate">
+                      {detail.label}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-sm font-semibold text-foreground">{detail.value}</span>
+                    {detail.trend && (
+                      <div
+                        className={cn(
+                          'flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200',
+                          detail.trend === 'up'
+                            ? `bg-green-100 text-green-600 dark:bg-green-950/50 dark:text-green-400 ${getTrendColor(detail.trend)}`
+                            : detail.trend === 'down'
+                              ? `bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400 ${getTrendColor(detail.trend)}`
+                              : `bg-gray-100 text-gray-600 dark:bg-gray-950/50 dark:text-gray-400 ${getTrendColor(detail.trend)}`
+                        )}
+                      >
+                        {getTrendIcon(detail.trend)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* インサイト表示 */}
+        {insights && insights.length > 0 && (isExpanded || !expandable) && (
+          <div className="mt-3 space-y-2 pt-3 border-t">
+            <h4 className="text-xs font-medium text-muted-foreground mb-2">📊 分析結果</h4>
+            {insights.map((insight, index) => (
+              <div
+                key={index}
+                className={cn(
+                  'flex items-start gap-2 p-2 rounded-md text-xs',
+                  insight.type === 'positive' &&
+                    'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300',
+                  insight.type === 'negative' &&
+                    'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300',
+                  insight.type === 'neutral' &&
+                    'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                )}
+              >
+                {insight.icon || (
+                  <Target
+                    className={cn(
+                      'w-3 h-3 mt-0.5 flex-shrink-0',
+                      insight.type === 'positive' && 'text-green-500',
+                      insight.type === 'negative' && 'text-red-500',
+                      insight.type === 'neutral' && 'text-blue-500'
+                    )}
+                  />
+                )}
+                <span>{insight.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* アクション提案 */}
+        {actionable && (isExpanded || !expandable) && (
+          <div className="mt-3 pt-3 border-t">
+            <div
+              className={cn(
+                'p-3 rounded-lg border-l-4',
+                actionable.priority === 'high' && 'bg-red-50 border-l-red-500 dark:bg-red-900/20',
+                actionable.priority === 'medium' &&
+                  'bg-yellow-50 border-l-yellow-500 dark:bg-yellow-900/20',
+                actionable.priority === 'low' && 'bg-blue-50 border-l-blue-500 dark:bg-blue-900/20'
+              )}
+            >
+              <div className="flex items-start gap-2">
+                <Target
+                  className={cn(
+                    'w-4 h-4 mt-0.5 flex-shrink-0',
+                    actionable.priority === 'high' && 'text-red-500',
+                    actionable.priority === 'medium' && 'text-yellow-500',
+                    actionable.priority === 'low' && 'text-blue-500'
+                  )}
+                />
+                <div>
+                  <p className="text-xs font-medium text-foreground mb-1">改善提案</p>
+                  <p className="text-xs text-muted-foreground">{actionable.suggestion}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* チャートの表示 */}
+        {chart && (
+          <div className="mt-3 pt-3 border-t">
+            {chart.type === 'progress' && (
+              <div className="space-y-2">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-neon transition-all"
+                    style={{ width: `${Math.min(100, Math.max(0, chart.value || 0))}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-right">
+                  {Math.round(chart.value || 0)}%
+                </p>
+              </div>
+            )}
+            {chart.type === 'comparison' && chart.current && chart.benchmark && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">現在値</span>
+                    <span className="font-medium">{chart.current.toLocaleString()}</span>
+                  </div>
+                  <Progress value={(chart.current / chart.benchmark) * 100} className="h-2" />
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">目標値</span>
+                  <span className="font-medium">{chart.benchmark.toLocaleString()}</span>
+                </div>
+                {chart.goal && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">ゴール</span>
+                    <span className="font-medium text-primary">{chart.goal.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {chart.type === 'distribution' && chart.current && chart.average && (
+              <div className="space-y-2">
+                <div className="h-2 bg-muted rounded-full overflow-hidden relative">
+                  <div
+                    className="absolute h-full w-0.5 bg-success"
+                    style={{ left: `${Math.min(100, (chart.current / chart.average) * 50)}%` }}
+                  />
+                  {chart.median && (
+                    <div
+                      className="absolute h-full w-0.5 bg-primary"
+                      style={{ left: `${Math.min(100, (chart.median / chart.average) * 50)}%` }}
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0</span>
+                  <span>平均値</span>
+                  <span>{Math.round(chart.average).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+            {!chart.type && chart.current && chart.previous && (
+              <div className="flex items-center justify-between mt-2 text-xs">
+                <span className="text-muted-foreground">
+                  前期間: ¥{chart.previous.toLocaleString()}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'text-xs border-0 px-2 py-0.5 font-medium',
+                    chart.trend === 'up' ? 'text-success' : 'text-destructive'
+                  )}
+                >
+                  {chart.trend === 'up' ? '+' : '-'}
+                  {chart.percentage?.toFixed(1)}%
+                </Badge>
+              </div>
             )}
           </div>
         )}
@@ -179,7 +574,8 @@ interface SummaryCardGridProps {
   cards: (Omit<SummaryCardProps, 'className'> & { id: string })[]
   loading?: boolean
   className?: string
-  columns?: 2 | 3 | 4
+  columns?: 1 | 2 | 3 | 4
+  staffSelectionMode?: 'single' | 'multiple' | 'auto'
 }
 
 export function SummaryCardGrid({
@@ -187,18 +583,38 @@ export function SummaryCardGrid({
   loading = false,
   className = '',
   columns = 4,
+  staffSelectionMode = 'auto',
 }: SummaryCardGridProps) {
   const gridCols = {
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+    1: 'w-full flex pb-5 overflow-x-auto gap-3 md:grid md:grid-cols-4 snap-x snap-mandatory px-4 scrollbar-hide',
+    2: 'grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4',
+    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4',
+    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4',
   }
 
   return (
-    <div className={cn('grid gap-4', gridCols[columns], className)}>
-      {cards.map((card) => (
-        <SummaryCard key={card.id} {...card} loading={loading} variant="compact" />
-      ))}
+    <div className={cn('grid', gridCols[columns], className)}>
+      {cards.map((card) => {
+        // スタッフ選択モードに基づいてvariantを決定
+        let variant = card.variant || 'compact'
+        if (staffSelectionMode === 'single') {
+          variant = 'single-staff'
+        } else if (staffSelectionMode === 'multiple') {
+          variant = 'multi-staff'
+        }
+
+        return (
+          <div key={card.id} className={cn(columns === 1 && 'flex-shrink-0 snap-start')}>
+            <SummaryCard
+              {...card}
+              loading={loading}
+              variant={variant}
+              expandable={staffSelectionMode === 'single' ? true : card.expandable}
+              className="h-full"
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }
