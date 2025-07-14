@@ -51,8 +51,8 @@ const CustomTooltip = ({
   const data = payload[0]?.payload
 
   return (
-    <div className="bg-card border border-border rounded-lg shadow-lg p-3">
-      <p className="text-sm font-medium text-foreground mb-2">
+    <div className="bg-card border border-border rounded-lg shadow-lg p-3 max-w-xs">
+      <p className="text-sm font-medium text-foreground mb-2 break-words">
         {labelFormatter ? labelFormatter(label as string) : label}
       </p>
       <div className="space-y-1">
@@ -175,23 +175,37 @@ export function BarChart({
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tick={{ fontSize: 12, fill: '#374151' }}
+                    tick={{ fontSize: 11, fill: '#374151' }}
                     axisLine={{ stroke: '#d1d5db' }}
                     tickLine={{ stroke: '#d1d5db' }}
-                    width={70}
+                    width={120}
+                    tickFormatter={(value: string) => {
+                      // 長いメニュー名を省略
+                      if (value.length > 12) {
+                        return value.substring(0, 12) + '...'
+                      }
+                      return value
+                    }}
                   />
                 </>
               ) : (
                 <>
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 12, fill: '#374151' }}
+                    tick={{ fontSize: 11, fill: '#374151' }}
                     axisLine={{ stroke: '#d1d5db' }}
                     tickLine={{ stroke: '#d1d5db' }}
                     angle={limitedData.length > 5 ? -45 : 0}
                     textAnchor={limitedData.length > 5 ? 'end' : 'middle'}
-                    height={limitedData.length > 5 ? 80 : 60}
+                    height={limitedData.length > 5 ? 100 : 60}
                     interval={0}
+                    tickFormatter={(value: string) => {
+                      // 長いメニュー名を省略（縦向きの場合はより短く）
+                      if (value.length > 8) {
+                        return value.substring(0, 8) + '...'
+                      }
+                      return value
+                    }}
                   />
                   <YAxis
                     tick={{ fontSize: 12, fill: '#374151' }}
