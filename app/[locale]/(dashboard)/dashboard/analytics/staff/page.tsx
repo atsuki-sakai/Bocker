@@ -5,7 +5,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loader2, RefreshCwIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { subDays } from 'date-fns'
+import { startOfMonth, endOfMonth } from 'date-fns'
 import { Users, Award, BarChart3 } from 'lucide-react'
 import type {
   SalesSummary,
@@ -55,15 +55,35 @@ import { Badge } from '@/components/ui/badge'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { StaffSalesRepository } from '@/services/supabase/repositories/analytics'
 
-// 初期フィルター設定（過去30日間、未来の日付は除外）
-const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => ({
-  dateRange: {
-    from: subDays(new Date(), 29),
-    to: subDays(new Date(), 1), // 昨日までに変更
-  },
-  tenantId,
-  orgId,
-})
+// 初期フィルター設定（日本時間での現在月のデータのみ取得、月次パーティション対応）
+const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => {
+  // 日本時間（JST: UTC+9）で現在の日時を取得
+  const now = new Date()
+  const jstOffset = 9 * 60 * 60 * 1000 // 9時間をミリ秒に変換
+  const nowJST = new Date(now.getTime() + jstOffset)
+
+  // 日本時間での現在月の1日を取得
+  const currentMonthStart = startOfMonth(nowJST)
+
+  // 日本時間での該当月の最終日を取得
+  const currentMonthEnd = endOfMonth(nowJST)
+
+  console.log('[Staff Analytics] Initial date range setup:', {
+    nowJST: nowJST.toISOString(),
+    currentMonthStart: currentMonthStart.toISOString(),
+    currentMonthEnd: currentMonthEnd.toISOString(),
+    timezone: 'JST (UTC+9)',
+  })
+
+  return {
+    dateRange: {
+      from: currentMonthStart,
+      to: currentMonthEnd,
+    },
+    tenantId,
+    orgId,
+  }
+}
 
 /**
  * スタッフ別売上分析ページ
@@ -137,6 +157,10 @@ export default function StaffAnalyticsPage() {
           repository.getPeriodComparison(filters).catch((err) => {
             console.error('[Enterprise] Period comparison fetch failed:', err)
             throw new Error(`期間比較エラー: ${err.message}`)
+          }),
+          repository.getStaffSales(filters).catch((err) => {
+            console.error('[Enterprise] Staff sales fetch failed:', err)
+            throw new Error(`スタッフ売上取得エラー: ${err.message}`)
           }),
         ]
       )
@@ -277,16 +301,10 @@ export default function StaffAnalyticsPage() {
     )
   }
 
+  console.log('periodComparison', periodComparison)
+
   // 基本的な2つの重要指標のみ表示
   const summaryCards = [
-    {
-      id: 'top-staff',
-      title: 'トップスタッフ売上',
-      value: performanceComparison?.topPerformers?.[0]?.total_amount || 0,
-      icon: <Award className="w-4 h-4" />,
-      valueFormatter: (value: string | number) => `¥${Number(value).toLocaleString()}`,
-      subtitle: `🏆 ${performanceComparison?.topPerformers?.[0]?.staff_name + 'さん' || '集計中...'}`,
-    },
     {
       id: 'team-average-amount',
       title: 'スタッフ平均売上',
@@ -294,6 +312,12 @@ export default function StaffAnalyticsPage() {
       icon: <BarChart3 className="w-4 h-4" />,
       valueFormatter: (value: string | number) => `¥${Number(value).toLocaleString()}`,
       subtitle: `この値を上回れば平均以上`,
+      change: periodComparison
+        ? {
+            value: periodComparison.growth.amount_percentage,
+            label: '前期間比',
+          }
+        : undefined,
     },
     {
       id: 'team-average-amount',
@@ -302,14 +326,19 @@ export default function StaffAnalyticsPage() {
       icon: <Users className="w-4 h-4" />,
       valueFormatter: (value: string | number) => `${Number(value).toLocaleString()}件`,
       subtitle: `この値を上回れば平均以上`,
+      change: periodComparison
+        ? {
+            value: periodComparison.growth.booking_percentage,
+            label: '前期間比',
+          }
+        : undefined,
     },
     {
       id: 'team-average-amount',
-      title: 'スタッフ平均予約数',
-      value: performanceComparison?.averagePerformance?.averageBookings || 0,
-      icon: <Users className="w-4 h-4" />,
+      title: '総予約数',
+      value: staffSummary?.totalBookings ?? 0,
       valueFormatter: (value: string | number) => `${Number(value).toLocaleString()}件`,
-      subtitle: `この値を上回れば平均以上`,
+      icon: <Users className="w-4 h-4" />,
     },
   ]
 
@@ -409,7 +438,7 @@ export default function StaffAnalyticsPage() {
             id: `summary-card-${index}`,
           }))}
           loading={loading}
-          columns={1}
+          columns={3}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -435,59 +464,65 @@ export default function StaffAnalyticsPage() {
                 詳細ランキング
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex items-center justify-center">
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {staffRanking.map((staff, index) => (
-                  <div
-                    key={`staff-ranking-${staff.id}-${index}`}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant={index < 3 ? 'default' : 'secondary'}
-                        className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                          index === 0
-                            ? 'bg-blue-600 text-blue-100'
-                            : index === 1
-                              ? 'bg-emerald-600 text-emerald-100'
-                              : index === 2
-                                ? 'bg-yellow-600 text-yellow-200'
-                                : ''
-                        }`}
-                      >
-                        {index + 1}
-                      </Badge>
-                      <div>
-                        <p className="font-bold">{staff.name}</p>
-                        <p className="text-xs font-semibold  text-accent-2">
-                          {(() => {
-                            // performanceComparisonから該当スタッフの予約数を取得
-                            const staffDetail = performanceComparison?.topPerformers?.find(
-                              (performer) => performer.staff_name === staff.name
-                            )
-                            const bookings = staffDetail?.booking_count || 0
-                            const amount = staffDetail?.total_amount || staff.value
+                {staffRanking.length > 0 ? (
+                  staffRanking.map((staff, index) => (
+                    <div
+                      key={`staff-ranking-${staff.id}-${index}`}
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant={index < 3 ? 'default' : 'secondary'}
+                          className={`w-8 h-8 flex items-center justify-center rounded-full ${
+                            index === 0
+                              ? 'bg-blue-600 text-blue-100'
+                              : index === 1
+                                ? 'bg-emerald-600 text-emerald-100'
+                                : index === 2
+                                  ? 'bg-yellow-600 text-yellow-200'
+                                  : ''
+                          }`}
+                        >
+                          {index + 1}
+                        </Badge>
+                        <div>
+                          <p className="font-bold">{staff.name}</p>
+                          <p className="text-xs font-semibold  text-accent-2">
+                            {(() => {
+                              // performanceComparisonから該当スタッフの予約数を取得
+                              const staffDetail = performanceComparison?.topPerformers?.find(
+                                (performer) => performer.staff_name === staff.name
+                              )
+                              const bookings = staffDetail?.booking_count || 0
+                              const amount = staffDetail?.total_amount || staff.value
 
-                            // 予約数が0の場合の処理
-                            if (bookings === 0) {
-                              return `予約データなし`
-                            }
+                              // 予約数が0の場合の処理
+                              if (bookings === 0) {
+                                return `予約データなし`
+                              }
 
-                            // 平均客単価を計算
-                            const avgAmount = Math.round(amount / bookings)
-                            return `${bookings}件の施術 | 平均単価 - ¥${avgAmount.toLocaleString()}`
-                          })()}
+                              // 平均客単価を計算
+                              const avgAmount = Math.round(amount / bookings)
+                              return `${bookings}件の施術 | 平均単価 - ¥${avgAmount.toLocaleString()}`
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">¥{staff.value.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          売り上げ全体の<strong>{staff.percentage.toFixed(1)}%</strong>
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">¥{staff.value.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">
-                        売り上げ全体の<strong>{staff.percentage.toFixed(1)}%</strong>
-                      </p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="min-h-96 flex items-center justify-center pt-12">
+                    <p className="text-center text-muted-foreground text-sm">データがありません</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>
@@ -509,7 +544,7 @@ export default function StaffAnalyticsPage() {
           )}
 
           {/* チーム戦略インサイト */}
-          {performanceComparison && (
+          {performanceComparison && staffRanking.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -523,11 +558,11 @@ export default function StaffAnalyticsPage() {
                   {/* トップパフォーマー分析 */}
                   <div className="p-4 bg-link border border-link-foreground rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-link-foreground rounded-full"></div>
+                      <Award className="w-6 h-6 text-link-foreground" />{' '}
                       <span className="text-sm font-medium">売上No.1スタッフ</span>
                     </div>
-                    <div className="text-lg font-bold mb-1">
-                      👑 {performanceComparison.topPerformers?.[0]?.staff_name}さん
+                    <div className="text-lg font-bold mb-1 ">
+                      {performanceComparison.topPerformers?.[0]?.staff_name}さん
                     </div>
                     <p className="text-sm text-accent mb-2 font-bold">
                       ¥{performanceComparison.topPerformers?.[0]?.total_amount?.toLocaleString()}（
