@@ -23,7 +23,7 @@ export default function StaffList() {
       ? {
           tenant_id: tenantId,
           org_id: orgId,
-          includeInactive: true, // 招待中のスタッフも含める
+          includeInactive: false,
         }
       : 'skip'
   )
