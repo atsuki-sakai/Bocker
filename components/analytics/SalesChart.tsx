@@ -82,11 +82,11 @@ const defaultDateFormatter = (date: string): string => {
  * カスタムツールチップコンポーネント
  */
 interface CustomTooltipProps {
-  active?: boolean;
-  payload?: any[];
-  label?: string;
-  valueFormatter?: (value: number) => string;
-  dateFormatter?: (date: string) => string;
+  active?: boolean
+  payload?: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+  label?: string
+  valueFormatter?: (value: number) => string
+  dateFormatter?: (date: string) => string
 }
 
 function CustomTooltip({ 
@@ -330,20 +330,27 @@ export function SalesChart({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{title}</CardTitle>
           {trendData && (
-            <Badge 
-              variant={trendData.direction === 'up' ? 'default' : trendData.direction === 'down' ? 'destructive' : 'secondary'}
+            <Badge
+              variant={
+                trendData.direction === 'up'
+                  ? 'default'
+                  : trendData.direction === 'down'
+                    ? 'destructive'
+                    : 'secondary'
+              }
               className="text-xs"
             >
-              {trendData.change > 0 ? '+' : ''}{trendData.change.toFixed(1)}%
+              {trendData.change > 0 ? '+' : ''}
+              {trendData.change.toFixed(1)}%
             </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          {renderChart()}
+          {renderChart() as React.ReactElement}
         </ResponsiveContainer>
-        
+
         {/* データサマリー */}
         {processedData.length > 0 && (
           <div className="mt-4 pt-4 border-t">
@@ -357,19 +364,24 @@ export function SalesChart({
               <div>
                 <span className="text-muted-foreground">平均:</span>
                 <span className="ml-2 font-medium">
-                  {valueFormatter(Math.round(processedData.reduce((sum, item) => sum + item.value, 0) / processedData.length))}
+                  {valueFormatter(
+                    Math.round(
+                      processedData.reduce((sum, item) => sum + item.value, 0) /
+                        processedData.length
+                    )
+                  )}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">最大:</span>
                 <span className="ml-2 font-medium">
-                  {valueFormatter(Math.max(...processedData.map(item => item.value)))}
+                  {valueFormatter(Math.max(...processedData.map((item) => item.value)))}
                 </span>
               </div>
               <div>
                 <span className="text-muted-foreground">最小:</span>
                 <span className="ml-2 font-medium">
-                  {valueFormatter(Math.min(...processedData.map(item => item.value)))}
+                  {valueFormatter(Math.min(...processedData.map((item) => item.value)))}
                 </span>
               </div>
             </div>
@@ -377,7 +389,7 @@ export function SalesChart({
         )}
       </CardContent>
     </Card>
-  );
+  )
 }
 
 /**

@@ -567,152 +567,151 @@ export default function DailyAnalyticsPage() {
             )}
 
             {/* 売上トレンド戦略インサイト */}
-            {periodComparison && salesSummary && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    売上トレンド戦略インサイト
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    期間売上パフォーマンスの最適化提案
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* 成長率分析 */}
-                    <div className="p-4 bg-palette-1/10 border border-palette-1/20 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-palette-1 rounded-full"></div>
-                        <span className="text-sm font-medium">売上成長率評価</span>
+            {periodComparison &&
+              salesSummary &&
+              periodComparison.growth.amount_percentage !== 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      売上トレンド戦略インサイト
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      期間売上パフォーマンスの最適化提案
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* 成長率分析 */}
+                      <div className="p-4 bg-palette-1/10 border border-palette-1/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-palette-1 rounded-full"></div>
+                          <span className="text-sm font-medium">売上成長率評価</span>
+                        </div>
+                        <div className="text-lg font-bold mb-1">
+                          {periodComparison.growth.amount_percentage >= 0 ? '+' : ''}
+                          {periodComparison.growth.amount_percentage.toFixed(1)}%
+                          <span className="text-sm text-muted-foreground ml-2">前期間比</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {(() => {
+                            const growth = periodComparison.growth.amount_percentage
+                            if (growth >= 15) {
+                              return '非常に優秀な成長率です。現在の施策を継続し、更なる拡大を目指しましょう。'
+                            } else if (growth >= 5) {
+                              return '良好な成長率です。安定的な成長を維持しつつ、新たな成長機会を模索してください。'
+                            } else if (growth >= 0) {
+                              return '横ばいの傾向です。マーケティング施策やサービス改善で成長促進を図りましょう。'
+                            } else if (growth >= -10) {
+                              return '軽微な減少傾向です。顧客満足度向上やリピート率改善に注力してください。'
+                            } else {
+                              return '大幅な減少傾向です。緊急対策として価格戦略やサービス品質の見直しが必要です。'
+                            }
+                          })()}
+                        </p>
                       </div>
-                      <div className="text-lg font-bold mb-1">
-                        {periodComparison.growth.amount_percentage >= 0 ? '+' : ''}
-                        {periodComparison.growth.amount_percentage.toFixed(1)}%
-                        <span className="text-sm text-muted-foreground ml-2">前期間比</span>
+                      {/* 売上安定性指標 */};
+                      <div className="p-4 bg-palette-2/10 border border-palette-2/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-palette-2 rounded-full"></div>
+                          <span className="text-sm font-medium">売上安定性指標</span>
+                        </div>
+                        <div className="text-lg font-bold mb-1">
+                          {(() => {
+                            const dailyAvg = salesSummary.dailyAverage || 0
+                            const totalAmount = salesSummary.totalAmount || 0
+                            const days = salesSummary.periodDays || 1
+                            const expectedTotal = dailyAvg * days
+                            const stabilityScore =
+                              expectedTotal > 0
+                                ? Math.min(100, Math.round((totalAmount / expectedTotal) * 100))
+                                : 0
+                            return `${stabilityScore}点`
+                          })()}
+                          <span className="text-sm text-muted-foreground ml-1">/100点</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {(() => {
+                            const dailyAvg = salesSummary.dailyAverage || 0
+                            const totalAmount = salesSummary.totalAmount || 0
+                            const days = salesSummary.periodDays || 1
+                            const expectedTotal = dailyAvg * days
+                            const stabilityScore =
+                              expectedTotal > 0
+                                ? Math.min(100, Math.round((totalAmount / expectedTotal) * 100))
+                                : 0
+
+                            if (stabilityScore >= 95) {
+                              return '非常に安定した売上パターンです。予測可能性が高く、計画的な事業運営が可能です。'
+                            } else if (stabilityScore >= 85) {
+                              return '安定した売上傾向です。季節要因や曜日要因を考慮した運営最適化を検討してください。'
+                            } else if (stabilityScore >= 70) {
+                              return '中程度の変動があります。売上の波を平準化する施策が効果的です。'
+                            } else {
+                              return '売上変動が大きいです。予約管理やスタッフ配置の最適化で安定化を図りましょう。'
+                            }
+                          })()}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {(() => {
-                          const growth = periodComparison.growth.amount_percentage
-                          if (growth >= 15) {
-                            return '非常に優秀な成長率です。現在の施策を継続し、更なる拡大を目指しましょう。'
-                          } else if (growth >= 5) {
-                            return '良好な成長率です。安定的な成長を維持しつつ、新たな成長機会を模索してください。'
-                          } else if (growth >= 0) {
-                            return '横ばいの傾向です。マーケティング施策やサービス改善で成長促進を図りましょう。'
-                          } else if (growth >= -10) {
-                            return '軽微な減少傾向です。顧客満足度向上やリピート率改善に注力してください。'
-                          } else {
-                            return '大幅な減少傾向です。緊急対策として価格戦略やサービス品質の見直しが必要です。'
-                          }
-                        })()}
-                      </p>
+                      {/* 収益性評価 */};
+                      <div className="p-4 bg-palette-3/10 border border-palette-3/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-palette-3 rounded-full"></div>
+                          <span className="text-sm font-medium">収益性評価</span>
+                        </div>
+                        <div className="text-lg font-bold mb-1">
+                          ¥{salesSummary.averageAmount?.toLocaleString() || '0'}
+                          <span className="text-sm text-muted-foreground ml-1">（客単価）</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {(() => {
+                            const avgAmount = salesSummary.averageAmount || 0
+                            const bookingGrowth = periodComparison.growth.booking_percentage
+                            const amountGrowth = periodComparison.growth.amount_percentage
+
+                            if (avgAmount >= 10000) {
+                              return 'プレミアム価格帯の維持に成功しています。高付加価値サービスの継続的な提供を心がけてください。'
+                            } else if (avgAmount >= 7000) {
+                              return '適正な客単価レベルです。サービス品質の向上でさらなる単価向上を目指しましょう。'
+                            } else if (avgAmount >= 5000 && amountGrowth > bookingGrowth) {
+                              return '客単価向上の傾向が見られます。アップセル戦略が効果的に機能しています。'
+                            } else if (avgAmount >= 5000) {
+                              return '標準的な客単価です。オプションメニューやパッケージ化で単価向上を図りましょう。'
+                            } else {
+                              return '客単価に改善余地があります。価格戦略の見直しとサービス価値の向上が必要です。'
+                            }
+                          })()}
+                        </p>
+                      </div>
+                      {/* 総合戦略提案 */};
+                      <div className="p-4 bg-muted/30 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>💼 総合戦略提案:</strong>
+                          {(() => {
+                            const amountGrowth = periodComparison.growth.amount_percentage
+                            const bookingGrowth = periodComparison.growth.booking_percentage
+                            const dailyAvg = salesSummary.dailyAverage || 0
+
+                            if (amountGrowth >= 10 && bookingGrowth >= 5) {
+                              return ' 売上・予約数ともに好調な成長を示しています。現在の成功要因を分析し、スケールアップ戦略を検討してください。'
+                            } else if (amountGrowth > bookingGrowth && amountGrowth > 0) {
+                              return ' 客単価向上が売上成長を牽引しています。既存顧客へのアップセル・クロスセル施策を強化し、新規顧客獲得にも注力しましょう。'
+                            } else if (bookingGrowth > amountGrowth && bookingGrowth > 0) {
+                              return ' 予約数増加が成長の要因です。顧客満足度向上と単価向上施策で、質的成長への転換を目指しましょう。'
+                            } else if (amountGrowth < 0 && bookingGrowth < 0) {
+                              return ' 全体的な減少傾向が見られます。顧客分析を実施し、サービス改善・価格見直し・マーケティング強化を包括的に進めてください。'
+                            } else if (dailyAvg >= 50000) {
+                              return ' 高い日別売上を維持しています。この水準を安定化させ、効率的な運営体制の構築に注力してください。'
+                            } else {
+                              return ' 成長機会の特定と実行が重要です。市場分析・競合調査を実施し、差別化戦略を明確にしてください。'
+                            }
+                          })()}
+                        </p>
+                      </div>
                     </div>
-
-                    {/* 売上安定性指標 */}
-                    <div className="p-4 bg-palette-2/10 border border-palette-2/20 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-palette-2 rounded-full"></div>
-                        <span className="text-sm font-medium">売上安定性指標</span>
-                      </div>
-                      <div className="text-lg font-bold mb-1">
-                        {(() => {
-                          const dailyAvg = salesSummary.dailyAverage || 0
-                          const totalAmount = salesSummary.totalAmount || 0
-                          const days = salesSummary.periodDays || 1
-                          const expectedTotal = dailyAvg * days
-                          const stabilityScore =
-                            expectedTotal > 0
-                              ? Math.min(100, Math.round((totalAmount / expectedTotal) * 100))
-                              : 0
-                          return `${stabilityScore}点`
-                        })()}
-                        <span className="text-sm text-muted-foreground ml-1">/100点</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {(() => {
-                          const dailyAvg = salesSummary.dailyAverage || 0
-                          const totalAmount = salesSummary.totalAmount || 0
-                          const days = salesSummary.periodDays || 1
-                          const expectedTotal = dailyAvg * days
-                          const stabilityScore =
-                            expectedTotal > 0
-                              ? Math.min(100, Math.round((totalAmount / expectedTotal) * 100))
-                              : 0
-
-                          if (stabilityScore >= 95) {
-                            return '非常に安定した売上パターンです。予測可能性が高く、計画的な事業運営が可能です。'
-                          } else if (stabilityScore >= 85) {
-                            return '安定した売上傾向です。季節要因や曜日要因を考慮した運営最適化を検討してください。'
-                          } else if (stabilityScore >= 70) {
-                            return '中程度の変動があります。売上の波を平準化する施策が効果的です。'
-                          } else {
-                            return '売上変動が大きいです。予約管理やスタッフ配置の最適化で安定化を図りましょう。'
-                          }
-                        })()}
-                      </p>
-                    </div>
-
-                    {/* 収益性評価 */}
-                    <div className="p-4 bg-palette-3/10 border border-palette-3/20 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-palette-3 rounded-full"></div>
-                        <span className="text-sm font-medium">収益性評価</span>
-                      </div>
-                      <div className="text-lg font-bold mb-1">
-                        ¥{salesSummary.averageAmount?.toLocaleString() || '0'}
-                        <span className="text-sm text-muted-foreground ml-1">（客単価）</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {(() => {
-                          const avgAmount = salesSummary.averageAmount || 0
-                          const bookingGrowth = periodComparison.growth.booking_percentage
-                          const amountGrowth = periodComparison.growth.amount_percentage
-
-                          if (avgAmount >= 10000) {
-                            return 'プレミアム価格帯の維持に成功しています。高付加価値サービスの継続的な提供を心がけてください。'
-                          } else if (avgAmount >= 7000) {
-                            return '適正な客単価レベルです。サービス品質の向上でさらなる単価向上を目指しましょう。'
-                          } else if (avgAmount >= 5000 && amountGrowth > bookingGrowth) {
-                            return '客単価向上の傾向が見られます。アップセル戦略が効果的に機能しています。'
-                          } else if (avgAmount >= 5000) {
-                            return '標準的な客単価です。オプションメニューやパッケージ化で単価向上を図りましょう。'
-                          } else {
-                            return '客単価に改善余地があります。価格戦略の見直しとサービス価値の向上が必要です。'
-                          }
-                        })()}
-                      </p>
-                    </div>
-
-                    {/* 総合戦略提案 */}
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>💼 総合戦略提案:</strong>
-                        {(() => {
-                          const amountGrowth = periodComparison.growth.amount_percentage
-                          const bookingGrowth = periodComparison.growth.booking_percentage
-                          const dailyAvg = salesSummary.dailyAverage || 0
-
-                          if (amountGrowth >= 10 && bookingGrowth >= 5) {
-                            return ' 売上・予約数ともに好調な成長を示しています。現在の成功要因を分析し、スケールアップ戦略を検討してください。'
-                          } else if (amountGrowth > bookingGrowth && amountGrowth > 0) {
-                            return ' 客単価向上が売上成長を牽引しています。既存顧客へのアップセル・クロスセル施策を強化し、新規顧客獲得にも注力しましょう。'
-                          } else if (bookingGrowth > amountGrowth && bookingGrowth > 0) {
-                            return ' 予約数増加が成長の要因です。顧客満足度向上と単価向上施策で、質的成長への転換を目指しましょう。'
-                          } else if (amountGrowth < 0 && bookingGrowth < 0) {
-                            return ' 全体的な減少傾向が見られます。顧客分析を実施し、サービス改善・価格見直し・マーケティング強化を包括的に進めてください。'
-                          } else if (dailyAvg >= 50000) {
-                            return ' 高い日別売上を維持しています。この水準を安定化させ、効率的な運営体制の構築に注力してください。'
-                          } else {
-                            return ' 成長機会の特定と実行が重要です。市場分析・競合調査を実施し、差別化戦略を明確にしてください。'
-                          }
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
           </TabsContent>
 
           {/* 曜日別分析タブ */}
@@ -1142,7 +1141,7 @@ export default function DailyAnalyticsPage() {
             </Card>
 
             {/* 月別成長戦略インサイト */}
-            {monthlyAnalysis.bestItem && monthlyAnalysis.worstItem && (
+            {monthlyAnalysis.bestItem && monthlyAnalysis.worstItem && monthlyData.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">

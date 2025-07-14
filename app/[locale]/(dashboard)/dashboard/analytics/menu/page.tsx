@@ -470,57 +470,65 @@ export default function MenuAnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {menuRanking.map((menu, index) => (
-                      <div
-                        key={`menu-ranking-${menu.id}-${index}`}
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Badge
-                            variant={index < 3 ? 'default' : 'secondary'}
-                            className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                              index === 0
-                                ? 'bg-blue-600 text-blue-100'
-                                : index === 1
-                                  ? 'bg-emerald-600 text-emerald-100'
-                                  : index === 2
-                                    ? 'bg-yellow-600 text-yellow-200'
-                                    : ''
-                            }`}
-                          >
-                            {index + 1}
-                          </Badge>
-                          <div>
-                            <p className="font-bold">{menu.name}</p>
-                            <p className="text-xs font-semibold text-accent-2">
-                              {(() => {
-                                // performanceAnalysisから該当メニューの予約数を取得
-                                const menuDetail = performanceAnalysis?.topPerformers?.find(
-                                  (performer) => performer.menu_name === menu.name
-                                )
-                                const bookings = menuDetail?.booking_count || 0
-                                const amount = menuDetail?.total_amount || menu.value
+                    {menuRanking.length > 0 ? (
+                      menuRanking.map((menu, index) => (
+                        <div
+                          key={`menu-ranking-${menu.id}-${index}`}
+                          className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge
+                              variant={index < 3 ? 'default' : 'secondary'}
+                              className={`w-8 h-8 flex items-center justify-center rounded-full ${
+                                index === 0
+                                  ? 'bg-blue-600 text-blue-100'
+                                  : index === 1
+                                    ? 'bg-emerald-600 text-emerald-100'
+                                    : index === 2
+                                      ? 'bg-yellow-600 text-yellow-200'
+                                      : ''
+                              }`}
+                            >
+                              {index + 1}
+                            </Badge>
+                            <div>
+                              <p className="font-bold">{menu.name}</p>
+                              <p className="text-xs font-semibold text-accent-2">
+                                {(() => {
+                                  // performanceAnalysisから該当メニューの予約数を取得
+                                  const menuDetail = performanceAnalysis?.topPerformers?.find(
+                                    (performer) => performer.menu_name === menu.name
+                                  )
+                                  const bookings = menuDetail?.booking_count || 0
+                                  const amount = menuDetail?.total_amount || menu.value
 
-                                // 予約数が0の場合の処理
-                                if (bookings === 0) {
-                                  return `予約データなし`
-                                }
+                                  // 予約数が0の場合の処理
+                                  if (bookings === 0) {
+                                    return `予約データなし`
+                                  }
 
-                                // 平均単価を計算
-                                const avgAmount = Math.round(amount / bookings)
-                                return `${bookings}件の注文 | 平均単価 - ¥${avgAmount.toLocaleString()}`
-                              })()}
+                                  // 平均単価を計算
+                                  const avgAmount = Math.round(amount / bookings)
+                                  return `${bookings}件の注文 | 平均単価 - ¥${avgAmount.toLocaleString()}`
+                                })()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">¥{menu.value.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              売り上げ全体の<strong>{menu.percentage.toFixed(1)}%</strong>
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">¥{menu.value.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">
-                            売り上げ全体の<strong>{menu.percentage.toFixed(1)}%</strong>
-                          </p>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="min-h-96 flex items-center justify-center pt-4">
+                        <p className="text-center text-muted-foreground text-sm">
+                          データがありません
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -544,7 +552,7 @@ export default function MenuAnalyticsPage() {
               )}
 
               {/* 価格戦略インサイト */}
-              {priceTierAnalysis && (
+              {priceTierAnalysis && priceTierAnalysis.insights.mostProfitableTier && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -597,7 +605,7 @@ export default function MenuAnalyticsPage() {
             </div>
 
             {/* 価格帯詳細テーブル */}
-            {priceTierAnalysis && (
+            {priceTierAnalysis && priceTierAnalysis.priceTiers.length > 0 ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">価格帯別詳細データ</CardTitle>
@@ -642,6 +650,10 @@ export default function MenuAnalyticsPage() {
                   </div>
                 </CardContent>
               </Card>
+            ) : (
+              <div className="min-h-56 flex items-center justify-center pt-4 bg-background border border-border  rounded-lg">
+                <p className="text-center text-muted-foreground text-sm">データがありません</p>
+              </div>
             )}
           </TabsContent>
 
@@ -649,7 +661,7 @@ export default function MenuAnalyticsPage() {
           <TabsContent value="performance" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* メニューパフォーマンス統計 */}
-              {performanceAnalysis && (
+              {performanceAnalysis && performanceAnalysis.performanceDistribution.high > 0 ? (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">メニューパフォーマンス統計</CardTitle>
@@ -745,6 +757,10 @@ export default function MenuAnalyticsPage() {
                     </TooltipProvider>
                   </CardContent>
                 </Card>
+              ) : (
+                <div className="min-h-96 flex items-center justify-center pt-4 bg-background border border-border  rounded-lg">
+                  <p className="text-center text-muted-foreground text-sm">データがありません</p>
+                </div>
               )}
 
               {/* パフォーマンス分布 */}
