@@ -24,9 +24,95 @@
 - **プロジェクトID**: kafcgxiddgxbuimeitrm
 - **リージョン**: ap-northeast-1
 - **PostgreSQLバージョン**: 17.4.1.043
-- **Convexとの連携**: 一部のテーブルでConvex IDを保持
 
 *重要* Supabaseの本番環境と開発環境は完全に同じ設定する必要があります。もし変更がある場合は必ず本番と開発それぞれのMCPツールを利用して設定を確認して同期する必要があります。RPC関数などDBのスキーマ以外にも完全に全て同じにします。
+
+
+## RPC関数
+
+1. 確実に必要なRPC関数
+
+これらの関数は、アプリケーションの主要機能で積極的に使用されているか、データベースの整合性や定期的なメン
+テナンスに不可欠なものです。
+
+アプリケーションコードから直接呼び出されている関数
+
+
+* `get_aggregated_daily_sales`: 日別売上取得
+* `get_aggregated_menu_sales`: メニュー別売上取得
+* `get_distinct_menu_options`: メニューフィルター用オプション取得
+* `get_aggregated_staff_sales`: スタッフ別売上取得
+* `get_distinct_staff_options`: スタッフフィルター用オプション取得
+* `create_customer_with_details_and_points`: 顧客の新規作成
+* `delete_customer_and_related_data`: 顧客の削除
+* `update_customer_with_details_and_points`: 顧客情報の一括更新
+* `find_customer_by_text_uuid`: 顧客のUUID検索
+* `update_customer_json`: 顧客情報のJSONによる更新
+* `update_customer_points_atomic`: ポイントの更新（アトミック処理）
+* `search_customers_optimized`: 最適化された顧客検索
+* `recalculate_customer_points_balance`: ポイントの再計算
+* `increment_sales_with_guard_v2`: 売上データのインクリメンタルな更新
+
+トリガーや内部処理で必要な関数
+
+
+* `ensure_daily_sales_partition`: パーティション自動作成トリガー
+* `ensure_staff_sales_partition`: パーティション自動作成トリガー
+* `ensure_menu_sales_partition`: パーティション自動作成トリガー
+* `update_modified_column` / `update_updated_at_column`: updated_at タイムスタンプ自動更新トリガー
+
+
+cronジョブでの定期実行が想定される関数
+
+
+* `expire_points`: ポイントの有効期限切れを処理します。
+* `cleanup_old_partitions`: 古いデータパーティションを定期的に削除し、データベースの肥大化を防ぎます。
+* `refresh_partition_stats`: パーティションの統計情報を更新し、クエリプランナーの性能を維持します。
+
+---
+
+2. 不要、または廃止された可能性が高いRPC関数
+
+
+これらの関数は、現在のアプリケーションコードからは呼び出されず、cronジョブでの使用も想定されていません。
+過去の機能のリファクタリングやマイグレーション過程で作成されたものである可能性が高いです。
+
+顧客管理 (customer)
+
+
+* `update_customer`: update_customer_json や update_customer_with_details_and_points
+   に置き換えられた旧バージョン。
+* `search_customers_by_similarity`: search_customers_optimized へとリファクタリングされた旧バージョン。
+* `update_customer_searchable_text`: 現在は生成列(Generated Column)に役割が置き換えられているため不要。
+
+
+ポイント管理 (point)
+
+* `bulk_update_point_task_status`: 現在のポイントシステムでは使用されていない。
+
+売上・分析 (analytics)
+
+
+* `increment_daily_sales`, `increment_staff_sales`, `increment_menu_sales`, `increment_sales_with_guard`:
+   全て increment_sales_with_guard_v2 に統合された旧バージョン。
+* `increment_daily_sales_partitioned`, `increment_staff_sales_partitioned`, 
+   `increment_menu_sales_partitioned`: パーティション対応の過程で作成された中間的な関数。
+* `get_period_sales_summary`, `get_menu_performance_analysis`, `get_staff_performance_analysis`, 
+   `get_period_comparison_data`: より汎用的な集計関数に置き換えられたか、UI変更により不要になった分析関数。
+* `get_weekly_staff_sales`, `get_monthly_menu_sales`, `get_period_aggregated_data`, 
+   `get_staff_sales_optimized`, `get_daily_staff_sales`, `get_aggregated_weekly_sales`, 
+   `get_aggregated_weekly_staff_sales`:
+   特定の分析目的で作成されたが、現在のダッシュボード要件では使用されていない。
+
+パーティション管理 (Partition Management)
+
+
+* `get_partition_info`, `get_partition_statistics`, `cleanup_old_partitions_v2`, 
+   `cleanup_old_partitions_with_audit`, `get_partition_cleanup_report`, `manage_staff_sales_partitions`, 
+   `get_staff_sales_cache_key`, `clear_staff_sales_cache`, `log_staff_sales_metrics`, 
+   `trigger_manage_staff_sales_partitions`, `schedule_staff_sales_maintenance`: パーティションシステムの構
+   築・デバッグ・マイグレーションの過程で作成されたヘルパー関数であり、現在の運用では不要。
+
 
 ## ID設計ルール
 

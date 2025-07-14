@@ -610,7 +610,7 @@ export default function DailyAnalyticsPage() {
                           })()}
                         </p>
                       </div>
-                      {/* 売上安定性指標 */};
+                      {/* 売上安定性指標 */}
                       <div className="p-4 bg-palette-2/10 border border-palette-2/20 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 bg-palette-2 rounded-full"></div>
@@ -653,7 +653,7 @@ export default function DailyAnalyticsPage() {
                           })()}
                         </p>
                       </div>
-                      {/* 収益性評価 */};
+                      {/* 収益性評価 */}
                       <div className="p-4 bg-palette-3/10 border border-palette-3/20 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-2 h-2 bg-palette-3 rounded-full"></div>
@@ -683,7 +683,7 @@ export default function DailyAnalyticsPage() {
                           })()}
                         </p>
                       </div>
-                      {/* 総合戦略提案 */};
+                      {/* 総合戦略提案 */}
                       <div className="p-4 bg-muted/30 rounded-lg">
                         <p className="text-xs text-muted-foreground">
                           <strong>💼 総合戦略提案:</strong>
