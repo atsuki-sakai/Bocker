@@ -117,6 +117,11 @@ class SupabaseBaseService {
     this.client = supabaseInstance;
   }
 
+  /** Supabaseクライアントを取得 */
+  getClient(): SupabaseClient {
+    return this.client;
+  }
+
   /** ページネーション対応 SELECT */
   async fetch<K extends TableName>(
     table: K,

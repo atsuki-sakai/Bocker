@@ -101,7 +101,7 @@ const createStaffEditSchema = (t: ReturnType<typeof useTranslations>) =>
           message: t('staff.validation.pinCodeFormat'),
         }
       ),
-    gender: z.enum(GENDER_VALUES),
+    gender: z.enum(GENDER_VALUES).default('unselected'),
 
     age: z.preprocess(
       (val) => {
@@ -284,7 +284,7 @@ export default function StaffEditForm() {
             : showExistingImage && staffAllData?.images
               ? staffAllData.images
               : [], // 画像（新しい画像がない場合かつ既存画像を表示する場合は既存の画像を維持）
-        is_active: true, // 有効/無効
+        is_active: data.is_active, // 有効/無効
       })
 
       if (newUploadedImages.length > 0 && staffAllData?.images && staffAllData?.images.length > 0) {
@@ -444,19 +444,25 @@ export default function StaffEditForm() {
     const initializeForm = async () => {
       try {
         // フォームの初期値をリセット
-        reset({
-          name: staffAllData.name,
-          instagram_link: staffAllData.instagram_link,
-          gender: staffAllData.gender,
-          age: staffAllData.age,
-          description: staffAllData.description,
-          images: staffAllData.images,
-          is_active: staffAllData.is_active,
-          role: staffAllData.role,
-          extra_charge: staffAllData.extra_charge,
-          priority: staffAllData.priority,
-          tags: staffAllData.tags,
-        })
+        reset(
+          {
+            name: staffAllData.name,
+            instagram_link: staffAllData.instagram_link ?? undefined,
+            gender: staffAllData.gender ?? 'unselected',
+            age: staffAllData.age ?? undefined,
+            description: staffAllData.description ?? '',
+            images: staffAllData.images ?? [],
+            is_active: staffAllData.is_active,
+            role: staffAllData.role,
+            extra_charge: staffAllData.extra_charge ?? undefined,
+            priority: staffAllData.priority ?? undefined,
+            tags: staffAllData.tags ?? [],
+          },
+          {
+            keepDirtyValues: false,
+            keepDefaultValues: false,
+          }
+        )
         // 既存タグをローカル state に同期
         setCurrentTags(staffAllData.tags || [])
         // 既存画像URLを設定
@@ -493,8 +499,6 @@ export default function StaffEditForm() {
   if (isLoading) {
     return <Uploader />
   }
-
-  console.log('staffAllData', staffAllData.connect_clerk)
 
   return (
     <div>
@@ -601,8 +605,13 @@ export default function StaffEditForm() {
                             {t('staff.add.gender')}
                           </Label>
                           <Select
-                            defaultValue="unselected"
-                            onValueChange={(value) => setValue('gender', value as Gender)}
+                            defaultValue={staffAllData?.gender ?? 'unselected'}
+                            onValueChange={(value) =>
+                              setValue('gender', value as Gender, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              })
+                            }
                           >
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder={t('staff.add.genderPlaceholder')} />
@@ -646,7 +655,12 @@ export default function StaffEditForm() {
                         <Switch
                           id="is_active"
                           checked={watch('is_active')}
-                          onCheckedChange={(checked) => setValue('is_active', checked)}
+                          onCheckedChange={(checked) =>
+                            setValue('is_active', checked, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
                         />
                         <Label htmlFor="is_active" className="text-xs cursor-pointer">
                           {watch('is_active') ? (
@@ -879,11 +893,14 @@ export default function StaffEditForm() {
 
           <Button
             type="submit"
-            disabled={
+            disabled={Boolean(
               isSubmitting ||
-              isLoading ||
-              (!isDirty && !exclusionChanged && !selectedFile && showExistingImage)
-            }
+                isLoading ||
+                (!isDirty &&
+                  !exclusionChanged &&
+                  !selectedFile &&
+                  (!showExistingImage || (showExistingImage && existingImageUrl)))
+            )}
           >
             {isSubmitting || isLoading ? (
               <>

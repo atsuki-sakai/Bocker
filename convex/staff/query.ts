@@ -494,3 +494,33 @@ export const findByAvailableStaffs = query({
     })
   },
 })
+
+
+export const getActiveStaffCount = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    activeOnly: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    let staff;
+
+    if (args.activeOnly) {
+      staff = await ctx.db
+        .query('staff')
+        .withIndex('by_tenant_org_active_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_active', args.activeOnly ?? true).eq('is_archive', false)
+        )
+        .collect()
+    } else {
+      staff = await ctx.db
+        .query('staff')
+        .withIndex('by_tenant_org_active_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+        )
+        .filter((q) => q.eq(q.field('is_archive'), false))
+        .collect()
+    }
+    return staff.length
+  },
+})
