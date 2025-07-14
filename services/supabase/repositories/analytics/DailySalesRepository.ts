@@ -6,7 +6,11 @@ import {
   FilterOptions, 
   SalesSummary,
   PeriodComparisonData,
-  ChartDataPoint
+  ChartDataPoint,
+  PartitionAwareFilterOptions,
+  PeriodAggregationOptions,
+  RpcDailySalesRow,
+  RpcAggregatedDailySalesParams
 } from './types';
 import { format, eachDayOfInterval, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
@@ -22,53 +26,36 @@ export class DailySalesRepository extends AnalyticsRepository {
   }
 
   /**
-   * 指定期間の日別売上データを取得
+   * 指定期間の日別売上データを取得（RPC関数使用・型安全）
    */
   async getDailySales(filters: FilterOptions): Promise<DailySalesData[]> {
     try {
       const { supabase } = await import('@/services/supabase/SupabaseService');
-      const { from, to } = this.formatDateRange(filters.dateRange);
+      const dateRange = this.formatDateRange(filters.dateRange);
       
       console.log('[DailySalesRepository] getDailySales called with filters:', {
         tenantId: filters.tenantId,
         orgId: filters.orgId,
-        dateRange: { from, to },
+        dateRange,
         originalDateRange: {
           from: filters.dateRange.from.toISOString(),
           to: filters.dateRange.to.toISOString()
         }
       });
 
-      // まずテーブルにどんなデータがあるかを確認
-      const allDataQuery = await supabase
-        .from('daily_sales_summary')
-        .select('*')
-        .limit(10);
-      
-      console.log('[DailySalesRepository] Sample data from daily_sales_summary table:', {
-        data: allDataQuery.data,
-        error: allDataQuery.error,
-        count: allDataQuery.data?.length || 0
-      });
+      // RPC関数を使用して型安全にデータ取得
+      const rpcParams: RpcAggregatedDailySalesParams = {
+        p_tenant_id: filters.tenantId,
+        p_org_id: filters.orgId,
+        p_date_from: dateRange.from,
+        p_date_to: dateRange.to
+      };
 
-      // 実際のクエリを実行
-      const { data, error } = await supabase
-        .from('daily_sales_summary')
-        .select('*')
-        .eq('tenant_id', filters.tenantId)
-        .eq('org_id', filters.orgId)
-        .gte('business_date', from)
-        .lte('business_date', to)
-        .order('business_date', { ascending: true });
+      const { data, error } = await supabase.rpc('get_aggregated_daily_sales', rpcParams);
 
-      console.log('[DailySalesRepository] Query executed:', {
-        query: {
-          table: 'daily_sales_summary',
-          tenant_id: filters.tenantId,
-          org_id: filters.orgId,
-          business_date_gte: from,
-          business_date_lte: to
-        },
+      console.log('[DailySalesRepository] RPC query executed:', {
+        function: 'get_aggregated_daily_sales',
+        params: rpcParams,
         result: {
           data: data,
           error: error,
@@ -77,41 +64,26 @@ export class DailySalesRepository extends AnalyticsRepository {
       });
 
       if (error) {
-        console.error('[DailySalesRepository] Supabase query error:', error);
-        this.handleError(error, 'get daily sales data');
+        console.error('[DailySalesRepository] RPC query error:', error);
+        this.handleError(error, 'get daily sales data via RPC');
       }
 
       if (!data || data.length === 0) {
         console.warn('[DailySalesRepository] No daily sales data found for the specified period');
-        
-        // デバッグ用：テナント・組織IDでのデータ存在確認
-        const debugQuery = await supabase
-          .from('daily_sales_summary')
-          .select('*')
-          .eq('tenant_id', filters.tenantId)
-          .eq('org_id', filters.orgId)
-          .limit(5);
-        
-        console.log('[DailySalesRepository] Debug - Data for tenant/org without date filter:', {
-          tenantId: filters.tenantId,
-          orgId: filters.orgId,
-          foundData: debugQuery.data,
-          foundCount: debugQuery.data?.length || 0
-        });
-
         return [];
       }
 
-      const processedData = data.map(item => ({
+      // RPC関数からの型安全なデータ変換
+      const processedData: DailySalesData[] = (data as RpcDailySalesRow[]).map((item: RpcDailySalesRow) => ({
         sale_date: item.business_date,
         total_amount: Number(item.total_amount) || 0,
-        booking_count: item.booking_count || 0,
-        average_amount: this.calculateAverage(Number(item.total_amount) || 0, item.booking_count || 0),
+        booking_count: Number(item.booking_count) || 0,
+        average_amount: this.calculateAverage(Number(item.total_amount) || 0, Number(item.booking_count) || 0),
         created_at: item.created_at,
         updated_at: item.updated_at
       }));
 
-      console.log('[DailySalesRepository] Successfully processed data:', {
+      console.log('[DailySalesRepository] Successfully processed RPC data:', {
         originalCount: data.length,
         processedCount: processedData.length,
         sampleProcessedData: processedData.slice(0, 3)
@@ -291,5 +263,174 @@ export class DailySalesRepository extends AnalyticsRepository {
       total_amount: summary.totalAmount,
       booking_count: summary.totalBookings
     };
+  }
+
+  /**
+   * パーティション対応前期間データを取得（基底クラスの抽象メソッド実装）
+   */
+  protected async getPartitionAwarePeriodData(filters: PartitionAwareFilterOptions): Promise<{ total_amount: number; booking_count: number }> {
+    const usePartitions = this.shouldUsePartitions(filters);
+    
+    if (usePartitions) {
+      return await this.getDailySalesFromPartitions(filters);
+    } else {
+      // 従来の方法でフォールバック
+      const summary = await this.getSalesSummary(filters);
+      return {
+        total_amount: summary.totalAmount,
+        booking_count: summary.totalBookings
+      };
+    }
+  }
+
+  /**
+   * パーティションテーブルから日別売上データを効率的に取得
+   */
+  private async getDailySalesFromPartitions(filters: PartitionAwareFilterOptions): Promise<{ total_amount: number; booking_count: number }> {
+    try {
+      const { supabase } = await import('@/services/supabase/SupabaseService');
+      const dateRange = this.formatDateRange(filters.dateRange);
+      
+      let query = supabase
+        .from('daily_sales_summary')
+        .select('total_amount, booking_count')
+        .gte('business_date', dateRange.from)
+        .lte('business_date', dateRange.to);
+
+      // 基本フィルタ
+      query = this.addTenantOrgFilter(query, filters.tenantId, filters.orgId);
+
+      const { data, error } = await query;
+
+      if (error) {
+        this.handleError(error, 'get daily sales from partitions');
+      }
+
+      // データを集計
+      const totalAmount = (data || []).reduce((sum, item) => sum + (Number(item.total_amount) || 0), 0);
+      const totalBookings = (data || []).reduce((sum, item) => sum + (item.booking_count || 0), 0);
+
+      return {
+        total_amount: totalAmount,
+        booking_count: totalBookings
+      };
+    } catch (error) {
+      this.handleError(error, 'get daily sales from partitions');
+    }
+  }
+
+  /**
+   * パーティション対応期間比較データを取得
+   */
+  async getPartitionAwarePeriodComparison(filters: PartitionAwareFilterOptions): Promise<PeriodComparisonData> {
+    try {
+      const currentData = await this.getPartitionAwarePeriodData(filters);
+      
+      return await this.generatePartitionAwarePeriodComparison(currentData, filters);
+    } catch (error) {
+      this.handleError(error, 'get partition-aware period comparison');
+    }
+  }
+
+  /**
+   * パーティション対応集計データを取得
+   */
+  async getAggregatedDailySales(filters: PartitionAwareFilterOptions, options: PeriodAggregationOptions): Promise<DailySalesData[]> {
+    try {
+      const usePartitions = this.shouldUsePartitions(filters);
+      
+      if (usePartitions) {
+        // パーティションテーブルから効率的に取得
+        return await this.getDailySalesOptimized(filters, options);
+      } else {
+        // 従来の方法でフォールバック
+        return await this.getDailySales(filters);
+      }
+    } catch (error) {
+      this.handleError(error, 'get aggregated daily sales');
+    }
+  }
+
+  /**
+   * 最適化された日別売上データを取得（パーティション対応）
+   */
+  private async getDailySalesOptimized(filters: PartitionAwareFilterOptions, options: PeriodAggregationOptions): Promise<DailySalesData[]> {
+    try {
+      const { supabase } = await import('@/services/supabase/SupabaseService');
+      const dateRange = this.formatDateRange(filters.dateRange);
+      
+      let query = supabase
+        .from('daily_sales_summary')
+        .select('*')
+        .gte('business_date', dateRange.from)
+        .lte('business_date', dateRange.to);
+
+      // 基本フィルタ
+      query = this.addTenantOrgFilter(query, filters.tenantId, filters.orgId);
+
+      // 集計レベルに応じたソート
+      if (options.period === 'daily') {
+        query = query.order('business_date', { ascending: true });
+      }
+
+      // データ欠損を埋める場合の制限
+      if (options.fillGaps) {
+        const maxDays = Math.ceil(
+          (filters.dateRange.to.getTime() - filters.dateRange.from.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (maxDays > 365) {
+          // 1年以上の期間の場合は制限
+          query = query.limit(365);
+        }
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        this.handleError(error, 'get optimized daily sales');
+      }
+
+      const processedData = (data || []).map(item => ({
+        sale_date: item.business_date,
+        total_amount: Number(item.total_amount) || 0,
+        booking_count: item.booking_count || 0,
+        average_amount: this.calculateAverage(Number(item.total_amount) || 0, item.booking_count || 0),
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+
+      // データ欠損を埋める処理
+      if (options.fillGaps) {
+        return this.fillMissingDates(processedData, filters.dateRange);
+      }
+
+      return processedData;
+    } catch (error) {
+      this.handleError(error, 'get optimized daily sales');
+    }
+  }
+
+  /**
+   * 欠損日付を0データで埋める
+   */
+  private fillMissingDates(salesData: DailySalesData[], dateRange: { from: Date; to: Date }): DailySalesData[] {
+    const allDates = eachDayOfInterval({
+      start: dateRange.from,
+      end: dateRange.to
+    });
+
+    return allDates.map(date => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const existingData = salesData.find(item => item.sale_date === dateStr);
+      
+      return existingData || {
+        sale_date: dateStr,
+        total_amount: 0,
+        booking_count: 0,
+        average_amount: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    });
   }
 }
