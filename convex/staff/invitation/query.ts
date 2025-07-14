@@ -84,8 +84,10 @@ export const getStaffWithInvitationStatus = query({
   },
   handler: async (ctx, args) => {
 
+    let staffQuery;
+    if (args.includeInactive) {
     // アクティブなスタッフを取得
-    let staffQuery = ctx.db
+    staffQuery = ctx.db
       .query('staff')
       .withIndex('by_tenant_org_active_archive', (q) =>
         q.eq('tenant_id', args.tenant_id)
@@ -93,6 +95,14 @@ export const getStaffWithInvitationStatus = query({
          .eq('is_active', args.includeInactive ?? true)
          .eq('is_archive', false)
       )
+    }else{
+      staffQuery = ctx.db
+        .query('staff')
+        .withIndex('by_tenant_org_active_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id)
+           .eq('org_id', args.org_id)
+        ).filter((q) => q.eq(q.field('is_archive'), false))
+    }
 
     const allStaff = await staffQuery.collect();
 
