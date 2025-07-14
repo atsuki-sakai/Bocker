@@ -1034,8 +1034,8 @@ async function migrateReservationToSupabase(reservation: Doc<'reservation'> & {
 }
 
 /**
- * 予約完了時にSupabaseの売上集計テーブルを更新する
- * RPC関数を呼び出してリアルタイム集計を実現
+ * 予約完了時にSupabaseの売上集計テーブルを更新する（パーティション対応版）
+ * 新しいincrement_sales_with_guard_v2 RPC関数を使用してリアルタイム集計を実現
  */
 async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & {
   detail?: Doc<'reservation_detail'> | null;
@@ -1056,65 +1056,52 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
     console.log(`[updateSupabaseSalesAggregation] Starting aggregation update for reservation: ${reservation._id}`);
     
     // 営業日を算出（start_time_unixから日付を取得）
-    const businessDate = new Date(reservation.start_time_unix).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' }).split('T')[0];
+    const businessDate = new Date(reservation.start_time_unix).toISOString().split('T')[0];
     const totalAmount = reservation.detail.total_price || 0;
     
-    // 1. 日別集計更新
-    const { error: dailyError } = await supabase.rpc('increment_daily_sales', {
+    // メニューデータの準備（パーティション対応RPC関数用）
+    const menusForRpc = reservation.detail.menus && Array.isArray(reservation.detail.menus) 
+      ? reservation.detail.menus.filter(menu => menu.id && menu.id.trim() !== '') // 空のIDを除外
+      : null;
+    
+    // パーティション対応の統合RPC関数を呼び出し
+    const { data: result, error } = await supabase.rpc('increment_sales_with_guard_v2', {
+      p_reservation_id: reservation._id,
       p_tenant_id: reservation.tenant_id,
       p_org_id: reservation.org_id,
       p_business_date: businessDate,
-      p_amount: totalAmount
+      p_amount: totalAmount,
+      p_staff_id: reservation.staff_id || null,
+      p_staff_name: reservation.staff_name || null,
+      p_menus: menusForRpc
     });
-    
-    if (dailyError) {
-      throw new Error(`Daily sales aggregation error: ${dailyError.message}`);
+
+    if (error) {
+      throw new Error(`RPC function error: ${error.message} (${error.code || 'Unknown code'})`);
     }
-    
-    console.log(`[updateSupabaseSalesAggregation] Daily sales updated: ${businessDate}, amount: ${totalAmount}`);
-    
-    // 2. スタッフ別集計更新
-    if (reservation.staff_id) {
-      const { error: staffError } = await supabase.rpc('increment_staff_sales', {
-        p_tenant_id: reservation.tenant_id,
-        p_org_id: reservation.org_id,
-        p_staff_id: reservation.staff_id,
-        p_staff_name: reservation.staff_name || null,
-        p_amount: totalAmount,
-        p_date: businessDate
+
+    // 結果の詳細ログ出力
+    if (result?.status === 'success') {
+      console.log(`[updateSupabaseSalesAggregation] Aggregation update completed successfully for reservation: ${reservation._id}`, {
+        reservation_id: reservation._id,
+        operations: result.operations || [],
+        performance: result.performance || {},
+        business_date: businessDate,
+        total_amount: totalAmount
       });
-      
-      if (staffError) {
-        throw new Error(`Staff sales aggregation error: ${staffError.message}`);
-      }
-      
-      console.log(`[updateSupabaseSalesAggregation] Staff sales updated: ${reservation.staff_id}, amount: ${totalAmount}`);
+    } else if (result?.status === 'duplicate') {
+      console.log(`[updateSupabaseSalesAggregation] Duplicate processing detected for reservation: ${reservation._id}`, {
+        reservation_id: reservation._id,
+        message: result.message,
+        processed_at: result.processed_at
+      });
+      // 重複処理は正常として扱う（エラーにしない）
+      return;
+    } else if (result?.status === 'error') {
+      throw new Error(`RPC processing error: ${result.message || 'Unknown RPC error'}`);
+    } else {
+      throw new Error(`Unexpected RPC response format: ${JSON.stringify(result)}`);
     }
-    
-    // 3. メニュー別集計更新
-    if (reservation.detail.menus && Array.isArray(reservation.detail.menus)) {
-      for (const menu of reservation.detail.menus) {
-        const menuAmount = (menu.price || 0) * (menu.quantity || 1);
-        const menuCount = menu.quantity || 1;
-        
-        const { error: menuError } = await supabase.rpc('increment_menu_sales', {
-          p_tenant_id: reservation.tenant_id,
-          p_org_id: reservation.org_id,
-          p_menu_id: menu.id,
-          p_menu_name: menu.name || null,
-          p_amount: menuAmount,
-          p_count: menuCount
-        });
-        
-        if (menuError) {
-          throw new Error(`Menu sales aggregation error for menu ${menu.id}: ${menuError.message}`);
-        }
-        
-        console.log(`[updateSupabaseSalesAggregation] Menu sales updated: ${menu.id}, amount: ${menuAmount}, count: ${menuCount}`);
-      }
-    }
-    
-    console.log(`[updateSupabaseSalesAggregation] Aggregation update completed successfully for reservation: ${reservation._id}`);
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1124,7 +1111,9 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
       tenant_id: reservation.tenant_id,
       org_id: reservation.org_id,
       total_price: reservation.detail?.total_price,
-      business_date: new Date(reservation.start_time_unix).toISOString().split('T')[0]
+      business_date: new Date(reservation.start_time_unix).toISOString().split('T')[0],
+      staff_id: reservation.staff_id,
+      menu_count: reservation.detail.menus?.length || 0
     });
     
     // エラーを再スローして呼び出し元でハンドリングできるようにする
