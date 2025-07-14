@@ -1,60 +1,25 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { toast } from 'sonner'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { Loader2, RefreshCwIcon, DollarSign, Package } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { subDays } from 'date-fns'
-import { DashboardSection } from '@/components/common'
-import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { MenuSalesRepository } from '@/services/supabase/repositories/analytics/MenuSalesRepository'
-import {
-  FilterOptions,
-  MenuSalesData,
+import { Award, BarChart3, HelpCircle, PieChart as PieChartIcon } from 'lucide-react'
+import type {
   SalesSummary,
   RankingData,
-  BarChartDataPoint,
-  SelectOption,
+  MenuSalesData,
 } from '@/services/supabase/repositories/analytics/types'
-import { AnalyticsFilters } from '@/components/analytics'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts'
-import {
-  TrendingUpIcon,
-  DollarSignIcon,
-  ShoppingCartIcon,
-  UserIcon,
-  BarChart3Icon,
-  PieChartIcon,
-  RefreshCwIcon,
-} from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Link } from '@/i18n/navigation'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-interface MenuAnalyticsSummary extends SalesSummary {
+// エンタープライズレベルの型定義
+type EnterpriseMenuSummary = SalesSummary & {
   topMenu: MenuSalesData | null
   activeMenuCount: number
 }
 
-interface MenuPerformanceAnalysis {
+type MenuPerformanceAnalysis = {
   topPerformers: MenuSalesData[]
   averagePerformance: {
     averageAmount: number
@@ -73,7 +38,7 @@ interface MenuPerformanceAnalysis {
   }[]
 }
 
-interface PriceTierAnalysis {
+type PriceTierAnalysis = {
   priceTiers: {
     tier: string
     priceRange: string
@@ -89,369 +54,567 @@ interface PriceTierAnalysis {
   }
 }
 
-const CHART_COLORS = [
-  'oklch(var(--chart-1))',
-  'oklch(var(--chart-2))',
-  'oklch(var(--chart-3))',
-  'oklch(var(--chart-4))',
-  'oklch(var(--chart-5))',
-]
+import { DashboardSection } from '@/components/common'
+import {
+  BarChart,
+  PieChart,
+  AnalyticsFilters,
+  SummaryCard,
+  SummaryCardGrid,
+  type FilterOptions,
+} from '@/components/analytics'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-const PERFORMANCE_COLORS = {
-  high: '#10b981', // 成功カラー（高性能）
-  medium: '#f59e0b', // 警告カラー（中性能）
-  low: '#ef4444', // 危険カラー（低性能）
-}
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { MenuSalesRepository } from '@/services/supabase/repositories/analytics'
 
+// 初期フィルター設定（過去30日間、未来の日付は除外）
+const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => ({
+  dateRange: {
+    from: subDays(new Date(), 29),
+    to: subDays(new Date(), 1), // 昨日までに変更
+  },
+  tenantId,
+  orgId,
+})
+
+/**
+ * メニュー別売上分析ページ - エンタープライズレベル
+ */
 export default function MenuAnalyticsPage() {
-  const { tenantId, orgId } = useTenantAndOrganization()
-  const [filters, setFilters] = useState<FilterOptions>({
-    tenantId: tenantId || '',
-    orgId: orgId || '',
-    dateRange: {
-      from: subDays(new Date(), 30),
-      to: subDays(new Date(), 1), // 昨日までに変更
-    },
-    menuIds: [],
-  })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
 
-  // Data states
-  const [summary, setSummary] = useState<MenuAnalyticsSummary | null>(null)
+  // 状態管理
+  const [filters, setFilters] = useState<FilterOptions | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isInterval, setIsInterval] = useState(false)
+  const { showErrorToast } = useErrorHandler()
+
+  // データ状態（エンタープライズレベル対応）
+  const [menuSummary, setMenuSummary] = useState<EnterpriseMenuSummary | null>(null)
   const [menuRanking, setMenuRanking] = useState<RankingData[]>([])
-  const [chartData, setChartData] = useState<BarChartDataPoint[]>([])
-  const [menuOptions, setMenuOptions] = useState<SelectOption[]>([])
   const [performanceAnalysis, setPerformanceAnalysis] = useState<MenuPerformanceAnalysis | null>(
     null
   )
   const [priceTierAnalysis, setPriceTierAnalysis] = useState<PriceTierAnalysis | null>(null)
 
-  const fetchData = useCallback(async () => {
-    if (!filters.tenantId || !filters.orgId || !filters.dateRange?.from || !filters.dateRange?.to) {
-      return
+  // リポジトリインスタンス
+  const repository = useMemo(() => {
+    if (!tenantId || !orgId) return null
+    return new MenuSalesRepository()
+  }, [tenantId, orgId])
+
+  // 初期フィルター設定
+  useEffect(() => {
+    if (tenantId && orgId && !filters) {
+      setFilters(getInitialFilters(tenantId, orgId))
     }
+  }, [tenantId, orgId, filters])
+
+  // エンタープライズレベルのデータ取得（3,000店舗対応）
+  const fetchData = useCallback(async () => {
+    if (!repository || !filters) return
+
+    setLoading(true)
+    setError(null)
+
+    const startTime = performance.now()
 
     try {
-      setLoading(true)
-      setError(null)
-
-      console.log('[MenuAnalyticsPage] Fetching data with filters:', filters)
-
-      const repository = new MenuSalesRepository()
-
-      // Fetch all data in parallel
-      const [
-        summaryData,
-        rankingData,
-        chartDataResult,
-        menuOptionsData,
-        performanceData,
-        priceTierData,
-      ] = await Promise.all([
-        repository.getMenuSummary(filters),
-        repository.getMenuRanking(filters, 10),
-        repository.getChartData(filters, 10),
-        repository.getMenuOptions(filters.tenantId, filters.orgId),
-        repository.getMenuPerformanceAnalysis(filters),
-        repository.getPriceTierAnalysis(filters),
-      ])
-
-      console.log('[MenuAnalyticsPage] Data fetched successfully:', {
-        summaryData,
-        rankingData: rankingData.length,
-        chartData: chartDataResult.length,
-        menuOptions: menuOptionsData.length,
-        performanceData,
-        priceTierData,
+      console.log('[Enterprise] Starting menu analytics data fetch for tenant:', {
+        tenantId: filters.tenantId,
+        orgId: filters.orgId,
+        dateRange: {
+          from: filters.dateRange.from.toISOString().split('T')[0],
+          to: filters.dateRange.to.toISOString().split('T')[0],
+        },
+        menuCount: filters.menuIds?.length || 0,
       })
 
-      setSummary(summaryData)
-      setMenuRanking(rankingData)
-      setChartData(chartDataResult)
-      setMenuOptions(menuOptionsData)
-      setPerformanceAnalysis(performanceData)
-      setPriceTierAnalysis(priceTierData)
+      // 並列実行でパフォーマンス最適化（大規模SaaS向け）
+      const [summaryResult, rankingResult, performanceResult, priceTierResult] = await Promise.all([
+        repository.getMenuSummary(filters).catch((err) => {
+          console.error('[Enterprise] Menu summary fetch failed:', err)
+          throw new Error(`売上サマリー取得エラー: ${err.message}`)
+        }),
+        repository.getMenuRanking(filters, 15).catch((err) => {
+          console.error('[Enterprise] Menu ranking fetch failed:', err)
+          throw new Error(`ランキング取得エラー: ${err.message}`)
+        }),
+        repository.getMenuPerformanceAnalysis(filters).catch((err) => {
+          console.error('[Enterprise] Performance analysis fetch failed:', err)
+          throw new Error(`パフォーマンス分析エラー: ${err.message}`)
+        }),
+        repository.getPriceTierAnalysis(filters).catch((err) => {
+          console.error('[Enterprise] Price tier analysis fetch failed:', err)
+          throw new Error(`価格帯分析エラー: ${err.message}`)
+        }),
+      ])
+
+      const executionTime = performance.now() - startTime
+      console.log('[Enterprise] Menu analytics data fetch completed:', {
+        executionTime: Math.round(executionTime),
+        summaryData: {
+          totalAmount: summaryResult.totalAmount,
+          totalBookings: summaryResult.totalBookings,
+          activeMenuCount: summaryResult.activeMenuCount,
+        },
+        rankingCount: rankingResult.length,
+        performanceMetrics: performanceResult,
+        priceTierInsights: priceTierResult.insights,
+      })
+
+      // エンタープライズレベルのデータ検証
+      if (summaryResult.totalAmount < 0 || summaryResult.totalBookings < 0) {
+        throw new Error('データ整合性エラー: 負の値が検出されました')
+      }
+
+      setMenuSummary(summaryResult as EnterpriseMenuSummary)
+      setMenuRanking(rankingResult)
+      setPerformanceAnalysis(performanceResult)
+      setPriceTierAnalysis(priceTierResult)
+
+      // パフォーマンス監視（3,000店舗運用向け）
+      if (executionTime > 5000) {
+        console.warn('[Enterprise] Performance warning: Data fetch took longer than 5 seconds:', {
+          executionTime,
+          tenantId: filters.tenantId,
+          dataSize: {
+            menuCount: rankingResult.length,
+            dateRange: Math.ceil(
+              (filters.dateRange.to.getTime() - filters.dateRange.from.getTime()) /
+                (1000 * 60 * 60 * 24)
+            ),
+          },
+        })
+      }
     } catch (err) {
-      console.error('[MenuAnalyticsPage] Error fetching data:', err)
-      setError(err instanceof Error ? err.message : 'データの取得に失敗しました')
+      const errorMessage =
+        err instanceof Error ? err.message : 'メニュー分析データの取得に失敗しました'
+      setError(errorMessage)
+
+      // エンタープライズレベルのエラーログ
+      console.error('[Enterprise] Menu analytics fetch error:', {
+        error: err,
+        tenantId: filters.tenantId,
+        orgId: filters.orgId,
+        executionTime: performance.now() - startTime,
+        timestamp: new Date().toISOString(),
+      })
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }, [repository, filters])
 
+  // フィルター変更時のデータ再取得
   useEffect(() => {
-    if (tenantId && orgId && filters.tenantId !== tenantId) {
-      setFilters((prev) => ({
-        ...prev,
-        tenantId,
-        orgId,
-      }))
+    if (filters && repository) {
+      fetchData()
     }
-  }, [tenantId, orgId, filters.tenantId])
+  }, [filters, repository, fetchData])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
-  const handleFiltersChange = (newFilters: FilterOptions) => {
-    setFilters(newFilters)
+  const REFRESH_INTERVAL = 5000 // 5秒
+  const handleRefresh = async () => {
+    if (isRefreshing || isInterval) return
+    try {
+      setIsRefreshing(true)
+      await fetchData()
+      toast.success('データを更新しました')
+    } catch (err) {
+      showErrorToast(err)
+    } finally {
+      setIsRefreshing(false)
+      setIsInterval(true)
+      setTimeout(() => {
+        setIsInterval(false)
+      }, REFRESH_INTERVAL)
+    }
   }
 
-  const handleRefresh = () => {
-    fetchData()
-  }
+  const buttonText = useMemo(() => {
+    if (isRefreshing) return '更新中...'
+    if (isInterval) return '待機中'
+    return '更新'
+  }, [isRefreshing, isInterval])
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('ja-JP', {
-      style: 'currency',
-      currency: 'JPY',
-    }).format(amount)
-  }
-
-  const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat('ja-JP').format(num)
-  }
-
-  const getPerformanceDistributionData = () => {
-    if (!performanceAnalysis) return []
-
-    const { performanceDistribution } = performanceAnalysis
-    return [
-      { name: '高性能', value: performanceDistribution.high, color: PERFORMANCE_COLORS.high },
-      { name: '中性能', value: performanceDistribution.medium, color: PERFORMANCE_COLORS.medium },
-      { name: '低性能', value: performanceDistribution.low, color: PERFORMANCE_COLORS.low },
-    ].filter((item) => item.value > 0)
-  }
-
-  // 性能レベル別のメニューリストを取得
-  const getMenusByPerformance = () => {
-    if (!performanceAnalysis) return { high: [], medium: [], low: [] }
-
-    const averageAmount = performanceAnalysis.averagePerformance.averageAmount
-    const menus = performanceAnalysis.topPerformers
-
-    const high = menus.filter((menu) => menu.total_amount >= averageAmount)
-    const medium = menus.filter(
-      (menu) => menu.total_amount >= averageAmount * 0.5 && menu.total_amount < averageAmount
-    )
-    const low = menus.filter((menu) => menu.total_amount < averageAmount * 0.5)
-
-    return { high, medium, low }
-  }
-
-  const getPriceTierChartData = () => {
-    if (!priceTierAnalysis) return []
-
-    return priceTierAnalysis.priceTiers.map((tier, index) => ({
-      name: `${tier.tier}\n(${tier.priceRange})`,
-      revenue: tier.totalAmount,
-      bookings: tier.bookingCount,
-      menuCount: tier.menuCount,
-      color: CHART_COLORS[index % CHART_COLORS.length],
-    }))
-  }
-
-  if (error) {
+  // ローディング表示
+  if (!isLoaded || !tenantId || !orgId) {
     return (
       <DashboardSection
-        title="メニュー別売り上げ分析"
+        title="メニュー別売上分析"
         backLink="/dashboard"
         backLinkTitle="ダッシュボード"
       >
-        <Alert>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <SummaryCard key={i} title="" value="" loading={true} />
+            ))}
+          </div>
+        </div>
       </DashboardSection>
     )
   }
 
+  // フィルターがまだ設定されていない場合
+  if (!filters) {
+    return (
+      <DashboardSection
+        title="メニュー別売上分析"
+        backLink="/dashboard"
+        backLinkTitle="ダッシュボード"
+      >
+        <div>フィルターを初期化中...</div>
+      </DashboardSection>
+    )
+  }
+
+  // 重要指標のサマリーカード
+  const summaryCards = [
+    {
+      id: 'top-menu',
+      title: '売上No.1メニュー',
+      value: performanceAnalysis?.topPerformers?.[0]?.total_amount || 0,
+      icon: <Award className="w-4 h-4" />,
+      valueFormatter: (value: string | number) => `¥${Number(value).toLocaleString()}`,
+      subtitle: `🏆 ${performanceAnalysis?.topPerformers?.[0]?.menu_name || '集計中...'}`,
+    },
+    {
+      id: 'average-menu-amount',
+      title: 'メニュー平均売上',
+      value: performanceAnalysis?.averagePerformance?.averageAmount || 0,
+      icon: <BarChart3 className="w-4 h-4" />,
+      valueFormatter: (value: string | number) => `¥${Number(value).toLocaleString()}`,
+      subtitle: `この値を上回れば平均以上`,
+    },
+    {
+      id: 'average-price-tier',
+      title: '平均メニュー価格',
+      value: priceTierAnalysis?.insights?.averageMenuPrice || 0,
+      icon: <DollarSign className="w-4 h-4" />,
+      valueFormatter: (value: string | number) => `¥${Number(value).toLocaleString()}`,
+      subtitle: `価格設定の基準値`,
+    },
+    {
+      id: 'active-menu-count',
+      title: 'アクティブメニュー数',
+      value: menuSummary?.activeMenuCount || 0,
+      icon: <Package className="w-4 h-4" />,
+      valueFormatter: (value: string | number) => `${Number(value)}品目`,
+      subtitle: `売上実績のあるメニュー`,
+    },
+  ]
+
+  // パフォーマンス分布用のパイチャートデータ
+  const performanceDistributionData = performanceAnalysis
+    ? [
+        {
+          name: '平均以上',
+          value: performanceAnalysis.performanceDistribution.high,
+          fill: '#10b981',
+          percentage:
+            (performanceAnalysis.performanceDistribution.high /
+              (performanceAnalysis.performanceDistribution.high +
+                performanceAnalysis.performanceDistribution.medium +
+                performanceAnalysis.performanceDistribution.low)) *
+            100,
+        },
+        {
+          name: '平均の50-100%',
+          value: performanceAnalysis.performanceDistribution.medium,
+          fill: '#f59e0b',
+          percentage:
+            (performanceAnalysis.performanceDistribution.medium /
+              (performanceAnalysis.performanceDistribution.high +
+                performanceAnalysis.performanceDistribution.medium +
+                performanceAnalysis.performanceDistribution.low)) *
+            100,
+        },
+        {
+          name: '平均の50%未満',
+          value: performanceAnalysis.performanceDistribution.low,
+          fill: '#ef4444',
+          percentage:
+            (performanceAnalysis.performanceDistribution.low /
+              (performanceAnalysis.performanceDistribution.high +
+                performanceAnalysis.performanceDistribution.medium +
+                performanceAnalysis.performanceDistribution.low)) *
+            100,
+        },
+      ].filter((item) => item.value > 0)
+    : []
+
+  // 価格帯別パフォーマンスデータ
+  const priceTierChartData =
+    priceTierAnalysis?.priceTiers.map((tier, index) => ({
+      name: tier.tier,
+      revenue: tier.totalAmount,
+      bookings: tier.bookingCount,
+      menuCount: tier.menuCount,
+      fill: ['#3b82f6', '#10b981', '#f59e0b'][index] || '#64748b',
+    })) || []
+
   return (
     <DashboardSection
-      title="メニュー別売り上げ分析"
+      title="メニュー別売上分析"
       backLink="/dashboard"
       backLinkTitle="ダッシュボード"
     >
       <div className="space-y-6">
-        {/* Filters */}
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <AnalyticsFilters
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              menuOptions={menuOptions}
-              loading={loading}
-              showStaffFilter={false}
-              showMenuFilter={true}
-            />
-            <div className="absolute top-2 right-2">
-              <div className="flex items-end">
-                <Button onClick={handleRefresh} variant="outline" size="sm">
+        {/* エラー表示 */}
+        {error && (
+          <Alert className="border-destructive">
+            <AlertDescription className="text-destructive">{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* フィルター */}
+        <div className="relative">
+          <AnalyticsFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            loading={loading}
+            showStaffFilter={false}
+            showMenuFilter={true}
+            type="monthly"
+          />
+          <div className="absolute top-2 right-2">
+            <div className="flex items-end">
+              <Button
+                onClick={handleRefresh}
+                variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
+                size="sm"
+                disabled={isRefreshing || isInterval}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
                   <RefreshCwIcon className="h-4 w-4 mr-2" />
-                  更新
-                </Button>
-              </div>
+                )}
+                {buttonText}
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* メインコンテンツ */}
-        <Tabs defaultValue="summary" className="space-y-4">
-          <TabsList className="flex w-fit overflow-x-auto space-x-2 p-1">
-            <TabsTrigger value="summary">サマリー</TabsTrigger>
-            <TabsTrigger value="performance">パフォーマンス分析</TabsTrigger>
-            <TabsTrigger value="price">価格帯分析</TabsTrigger>
-            <TabsTrigger value="ranking">詳細ランキング</TabsTrigger>
+        {/* サマリーカード */}
+        <SummaryCardGrid
+          cards={summaryCards.map((card, index) => ({
+            ...card,
+            id: `summary-card-${index}`,
+          }))}
+          loading={loading}
+          columns={1}
+        />
+
+        {/* タブ式のダッシュボード */}
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="w-fit flex justify-center gap-4">
+            <TabsTrigger value="overview">概要</TabsTrigger>
+            <TabsTrigger value="pricing">価格帯分析</TabsTrigger>
+            <TabsTrigger value="performance">パフォーマンス</TabsTrigger>
           </TabsList>
 
-          {/* サマリータブ */}
-          <TabsContent value="summary" className="space-y-4">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* 既存のサマリーカード */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">総売上</CardTitle>
-                  <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {formatCurrency(summary?.totalAmount || 0)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">期間中の総メニュー売上</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+          {/* 概要タブ */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* メニュー売上ランキング */}
+              <BarChart
+                data={menuRanking.slice(0, 10).map((item) => ({
+                  name: item.name,
+                  value: item.value,
+                  label: `¥${item.value.toLocaleString()}`,
+                }))}
+                title="メニュー売上ランキング（Top 10）"
+                description="期間内の売上額でソートされたメニューランキング"
+                height={400}
+                horizontal={true}
+                maxBars={10}
+              />
+
+              {/* 詳細ランキング */}
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">総予約数</CardTitle>
-                  <ShoppingCartIcon className="h-4 w-4 text-muted-foreground" />
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    メニュー売上詳細ランキング
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">全メニューの売上実績一覧</p>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {formatNumber(summary?.totalBookings || 0)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">期間中の総メニュー予約数</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {menuRanking.map((menu, index) => (
+                      <div
+                        key={`menu-ranking-${menu.id}-${index}`}
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Badge
+                            variant={index < 3 ? 'default' : 'secondary'}
+                            className={`w-8 h-8 flex items-center justify-center rounded-full ${
+                              index === 0
+                                ? 'bg-blue-600 text-blue-100'
+                                : index === 1
+                                  ? 'bg-emerald-600 text-emerald-100'
+                                  : index === 2
+                                    ? 'bg-yellow-600 text-yellow-200'
+                                    : ''
+                            }`}
+                          >
+                            {index + 1}
+                          </Badge>
+                          <div>
+                            <p className="font-bold">{menu.name}</p>
+                            <p className="text-xs font-semibold text-accent-2">
+                              {(() => {
+                                // performanceAnalysisから該当メニューの予約数を取得
+                                const menuDetail = performanceAnalysis?.topPerformers?.find(
+                                  (performer) => performer.menu_name === menu.name
+                                )
+                                const bookings = menuDetail?.booking_count || 0
+                                const amount = menuDetail?.total_amount || menu.value
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">平均客単価</CardTitle>
-                  <UserIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {formatCurrency(summary?.averageAmount || 0)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">1予約あたりの平均売上</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                                // 予約数が0の場合の処理
+                                if (bookings === 0) {
+                                  return `予約データなし`
+                                }
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">アクティブメニュー数</CardTitle>
-                  <BarChart3Icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold">
-                        {formatNumber(summary?.activeMenuCount || 0)}
+                                // 平均単価を計算
+                                const avgAmount = Math.round(amount / bookings)
+                                return `${bookings}件の注文 | 平均単価 - ¥${avgAmount.toLocaleString()}`
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">¥{menu.value.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">
+                            売り上げ全体の<strong>{menu.percentage.toFixed(1)}%</strong>
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">売上のあるメニュー数</p>
-                    </>
-                  )}
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+          {/* 価格帯分析タブ */}
+          <TabsContent value="pricing" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 価格帯別売上チャート */}
+              {priceTierChartData.length > 0 && (
+                <BarChart
+                  data={priceTierChartData.map((tier) => ({
+                    name: tier.name,
+                    value: tier.revenue,
+                    label: `¥${tier.revenue.toLocaleString()}`,
+                  }))}
+                  title="価格帯別売上実績"
+                  description="価格帯ごとの売上パフォーマンス"
+                  height={300}
+                />
+              )}
 
-            {/* Top Menu */}
-            {summary?.topMenu && performanceAnalysis && (
+              {/* 価格戦略インサイト */}
+              {priceTierAnalysis && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <PieChartIcon className="w-5 h-5" />
+                      価格戦略インサイト
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">価格設定の最適化提案</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-palette-3/10 border border-palette-3/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-palette-3 rounded-full"></div>
+                          <span className="text-sm font-medium">売上No.1価格帯</span>
+                        </div>
+                        <div className="text-lg font-bold mb-1">
+                          {priceTierAnalysis.insights.mostProfitableTier}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          最も高い売上を上げている価格帯です。この価格帯のメニューを増やすことを検討してください。
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-palette-2/10 border border-palette-2/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-palette-2 rounded-full"></div>
+                          <span className="text-sm font-medium">人気No.1価格帯</span>
+                        </div>
+                        <div className="text-lg font-bold mb-1">
+                          {priceTierAnalysis.insights.mostPopularTier}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          最も予約数が多い価格帯です。お客様に受け入れられやすい価格設定の参考にしてください。
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-muted/30 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>💼 戦略提案:</strong>
+                          {priceTierAnalysis.insights.mostProfitableTier !==
+                          priceTierAnalysis.insights.mostPopularTier
+                            ? ' 人気価格帯のメニューを売上の高い価格帯にアップグレードする施策を検討してみてください。'
+                            : ' 売上No.1と人気No.1が一致しており、バランスの良い価格設定です。'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* 価格帯詳細テーブル */}
+            {priceTierAnalysis && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUpIcon className="h-5 w-5" />
-                    パフォーマンス分析サマリー
-                  </CardTitle>
+                  <CardTitle className="text-lg">価格帯別詳細データ</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* トップメニュー */}
-                    <div className="p-4 bg-palette-1 border border-palette-1 rounded-lg">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <TrendingUpIcon className="h-5 w-5 text-palette-1-foreground" />
-                          <h4 className="font-semibold text-palette-1-foreground">
-                            売上No.1メニュー
-                          </h4>
-                        </div>
-                        <Badge variant="default" className="bg-pop text-pop-foreground">
-                          No.1
-                        </Badge>
-                      </div>
-                      <h3 className="text-lg font-bold text-palette-1-foreground mb-2">
-                        {summary.topMenu.menu_name}
-                      </h3>
-                      <div className="space-y-1 text-sm text-palette-1-foreground">
-                        <p>
-                          <strong>売上:</strong> {formatCurrency(summary.topMenu.total_amount)}
-                        </p>
-                        <p>
-                          <strong>予約数:</strong> {formatNumber(summary.topMenu.booking_count)}件
-                        </p>
-                        <p>
-                          <strong>平均単価:</strong>{' '}
-                          {formatCurrency(summary.topMenu.average_amount)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* 平均売上 */}
-                    <div className="p-4 bg-palette-2 border border-palette-2 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <DollarSignIcon className="h-5 w-5 text-palette-2-foreground" />
-                        <h4 className="font-semibold text-palette-2-foreground">平均売上</h4>
-                      </div>
-                      <p className="text-2xl font-bold text-palette-2-foreground mb-1">
-                        {formatCurrency(performanceAnalysis.averagePerformance.averageAmount)}
-                      </p>
-                      <p className="text-sm text-palette-2-foreground">1メニューあたりの平均売上</p>
-                    </div>
-
-                    {/* 平均予約数 */}
-                    <div className="p-4 bg-palette-3 border border-palette-3 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <ShoppingCartIcon className="h-5 w-5 text-palette-3-foreground" />
-                        <h4 className="font-semibold text-palette-3-foreground">平均予約数</h4>
-                      </div>
-                      <p className="text-2xl font-bold text-palette-3-foreground mb-1">
-                        {formatNumber(performanceAnalysis.averagePerformance.averageBookings)}
-                      </p>
-                      <p className="text-sm text-palette-3-foreground">
-                        1メニューあたりの平均予約数
-                      </p>
-                    </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">価格帯</th>
+                          <th className="text-right p-2">メニュー数</th>
+                          <th className="text-right p-2">総売上</th>
+                          <th className="text-right p-2">予約数</th>
+                          <th className="text-right p-2">平均売上</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {priceTierAnalysis.priceTiers.map((tier, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="p-2">
+                              <div>
+                                <div className="font-medium">{tier.tier}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {tier.priceRange}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="text-right p-2">{tier.menuCount}品目</td>
+                            <td className="text-right p-2">¥{tier.totalAmount.toLocaleString()}</td>
+                            <td className="text-right p-2">{tier.bookingCount}件</td>
+                            <td className="text-right p-2">
+                              ¥{tier.averageAmount.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
@@ -459,480 +622,121 @@ export default function MenuAnalyticsPage() {
           </TabsContent>
 
           {/* パフォーマンス分析タブ */}
-          <TabsContent value="performance" className="space-y-4">
+          <TabsContent value="performance" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Menu Revenue Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3Icon className="h-5 w-5" />
-                    メニュー別売上ランキング
-                  </CardTitle>
-                  <CardDescription>トップ10メニューの売上実績</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <Skeleton className="h-[300px]" />
-                  ) : chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={chartData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis
-                          type="number"
-                          tickFormatter={(value) => formatCurrency(value)}
-                          tick={{ fill: '#374151', fontSize: 10 }}
-                        />
-                        <YAxis
-                          dataKey="name"
-                          type="category"
-                          width={80}
-                          tick={{ fill: '#374151', fontSize: 6, fontWeight: 'bold' }}
-                        />
-                        <Tooltip
-                          formatter={(value: number) => [formatCurrency(value), '売上']}
-                          labelStyle={{ color: '#374151' }}
-                          contentStyle={{
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '4px',
-                          }}
-                        />
-                        <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                      データがありません
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Performance Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChartIcon className="h-5 w-5" />
-                    メニューパフォーマンス分布
-                  </CardTitle>
-                  <CardDescription>売上実績による性能分類</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <Skeleton className="h-[300px]" />
-                  ) : performanceAnalysis && getPerformanceDistributionData().length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* メニューリスト */}
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-medium">📊 パフォーマンス別メニュー</h4>
-                        {(() => {
-                          const menusByPerformance = getMenusByPerformance()
-                          return (
-                            <div className="space-y-3 max-h-54 overflow-y-auto">
-                              {/* 高性能メニュー */}
-                              {menusByPerformance.high.length > 0 && (
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-3 h-3 rounded-full bg-success"></div>
-                                    <span className="text-xs font-medium">
-                                      高性能 ({menusByPerformance.high.length}件)
-                                    </span>
-                                  </div>
-                                  <div className="space-y-1">
-                                    {menusByPerformance.high.slice(0, 2).map((menu, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex justify-between items-center p-1.5 bg-palette-3 rounded text-xs"
-                                      >
-                                        <span className="font-medium text-palette-3-foreground truncate text-xs">
-                                          {menu.menu_name || 'メニュー名不明'}
-                                        </span>
-                                        <span className="text-palette-3-foreground ml-1 text-xs">
-                                          {formatCurrency(menu.total_amount)}
-                                        </span>
-                                      </div>
-                                    ))}
-                                    {menusByPerformance.high.length > 2 && (
-                                      <div className="text-xs text-muted-foreground text-center">
-                                        +{menusByPerformance.high.length - 2}件
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* 中性能メニュー */}
-                              {menusByPerformance.medium.length > 0 && (
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-3 h-3 rounded-full bg-warning"></div>
-                                    <span className="text-xs font-medium">
-                                      中性能 ({menusByPerformance.medium.length}件)
-                                    </span>
-                                  </div>
-                                  <div className="space-y-1">
-                                    {menusByPerformance.medium.slice(0, 2).map((menu, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex justify-between items-center p-1.5 bg-palette-1 rounded text-xs"
-                                      >
-                                        <span className="font-medium text-palette-1-foreground truncate text-xs">
-                                          {menu.menu_name || 'メニュー名不明'}
-                                        </span>
-                                        <span className="text-palette-1-foreground ml-1 text-xs">
-                                          {formatCurrency(menu.total_amount)}
-                                        </span>
-                                      </div>
-                                    ))}
-                                    {menusByPerformance.medium.length > 2 && (
-                                      <div className="text-xs text-muted-foreground text-center">
-                                        +{menusByPerformance.medium.length - 2}件
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* 低性能メニュー */}
-                              {menusByPerformance.low.length > 0 && (
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-3 h-3 rounded-full bg-destructive"></div>
-                                    <span className="text-xs font-medium">
-                                      低性能 ({menusByPerformance.low.length}件)
-                                    </span>
-                                  </div>
-                                  <div className="space-y-1">
-                                    {menusByPerformance.low.slice(0, 2).map((menu, index) => (
-                                      <div
-                                        key={index}
-                                        className="flex justify-between items-center p-1.5 bg-destructive-foreground rounded text-xs"
-                                      >
-                                        <span className="font-medium text-destructive truncate text-xs">
-                                          {menu.menu_name || 'メニュー名不明'}
-                                        </span>
-                                        <span className="text-destructive ml-1 text-xs">
-                                          {formatCurrency(menu.total_amount)}
-                                        </span>
-                                      </div>
-                                    ))}
-                                    {menusByPerformance.low.length > 2 && (
-                                      <div className="text-xs text-muted-foreground text-center">
-                                        +{menusByPerformance.low.length - 2}件
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })()}
-                      </div>
-
-                      {/* 円グラフ */}
-                      <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                          <Pie
-                            data={getPerformanceDistributionData()}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, value, percent }) =>
-                              `${name}: ${value}件 (${((percent ?? 0) * 100).toFixed(1)}%)`
-                            }
-                            outerRadius={40}
-                            fill="#8884d8"
-                            fontSize={8}
-                            dataKey="value"
-                          >
-                            {getPerformanceDistributionData().map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number) => [value, 'メニュー数']}
-                            labelStyle={{ color: 'oklch(var(--foreground))' }}
-                            contentStyle={{
-                              backgroundColor: '#ffffff',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              fontSize: '10px',
-                              color: 'oklch(var(--card-foreground))',
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                      データがありません
-                    </div>
-                  )}
-
-                  {/* 分類ルールの説明 */}
-                  {performanceAnalysis &&
-                    getPerformanceDistributionData().length > 0 &&
-                    (() => {
-                      const menusByPerformance = getMenusByPerformance()
-                      return (
-                        <div className="mt-4">
-                          <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="item-1">
-                              <AccordionTrigger>
-                                <h4 className="text-sm font-medium">
-                                  📊 パフォーマンス分類ルールと見方について
-                                </h4>
-                              </AccordionTrigger>
-                              <AccordionContent>
-                                <div className="space-y-3">
-                                  {/* 高性能メニュー */}
-                                  {menusByPerformance.high.length > 0 && (
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div
-                                          className="w-3 h-3 rounded-full"
-                                          style={{ backgroundColor: '#10b981' }}
-                                        ></div>
-                                        <span className="text-sm font-medium">
-                                          高性能メニュー ({menusByPerformance.high.length}件)
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-muted-foreground mb-2">
-                                        平均売上以上のメニュー（売上貢献度が高い人気商品）
-                                      </p>
-                                    </div>
-                                  )}
-
-                                  {/* 中性能メニュー */}
-                                  {menusByPerformance.medium.length > 0 && (
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div
-                                          className="w-3 h-3 rounded-full"
-                                          style={{ backgroundColor: '#f59e0b' }}
-                                        ></div>
-                                        <span className="text-sm font-medium">
-                                          中性能メニュー ({menusByPerformance.medium.length}件)
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-muted-foreground mb-2">
-                                        平均売上の50-100%のメニュー（標準的な売上）
-                                      </p>
-                                    </div>
-                                  )}
-
-                                  {/* 低性能メニュー */}
-                                  {menusByPerformance.low.length > 0 && (
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <div
-                                          className="w-3 h-3 rounded-full"
-                                          style={{ backgroundColor: '#ef4444' }}
-                                        ></div>
-                                        <span className="text-sm font-medium">
-                                          低性能メニュー ({menusByPerformance.low.length}件)
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-muted-foreground mb-2">
-                                        平均売上の50%未満のメニュー（改善検討対象）
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                                  💡 <strong>活用方法</strong>:
-                                  高性能メニューは積極的にプロモーション、低性能メニューは価格見直しや提供方法の改善を検討してください。
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          </Accordion>
+              {/* メニューパフォーマンス統計 */}
+              {performanceAnalysis && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">メニューパフォーマンス統計</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      メニュー全体の売上パフォーマンス分析
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <TooltipProvider>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-muted/30 rounded-lg">
+                          <p className="text-2xl font-bold text-chart-1">
+                            {performanceAnalysis.performanceDistribution.high}
+                          </p>
+                          <div className="flex items-center justify-center gap-1">
+                            <p className="text-sm text-muted-foreground">平均以上のメニュー</p>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">平均売上を上回る成績のメニュー数</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         </div>
-                      )
-                    })()}
-                </CardContent>
-              </Card>
+
+                        <div className="text-center p-4 bg-muted/30 rounded-lg">
+                          <p className="text-2xl font-bold text-chart-3">
+                            ¥{menuSummary?.averageAmount?.toLocaleString() || '0'}
+                          </p>
+                          <div className="flex items-center justify-center gap-1">
+                            <p className="text-sm text-muted-foreground">平均客単価</p>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">全体の平均客単価（売上÷予約数）</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+
+                        <div className="text-center p-4 bg-muted/30 rounded-lg">
+                          <p className="text-2xl font-bold text-chart-4">
+                            {(() => {
+                              const avgAmount =
+                                performanceAnalysis?.averagePerformance?.averageAmount || 1
+                              const topMenu =
+                                performanceAnalysis?.topPerformers?.[0]?.total_amount || 0
+                              const differencePercent = (
+                                ((topMenu - avgAmount) / avgAmount) *
+                                100
+                              ).toFixed(1)
+                              return `+${differencePercent}%`
+                            })()}
+                          </p>
+                          <div className="flex items-center justify-center gap-1">
+                            <p className="text-sm text-muted-foreground">売上格差指標</p>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">トップメニューが平均より高い売上の割合</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+
+                        <div className="text-center p-4 bg-muted/30 rounded-lg">
+                          <p className="text-2xl font-bold text-chart-5">
+                            {performanceAnalysis?.averagePerformance?.averageBookings?.toFixed(1) ||
+                              '0'}
+                            件
+                          </p>
+                          <div className="flex items-center justify-center gap-1">
+                            <p className="text-sm text-muted-foreground">メニュー平均予約数</p>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">
+                                  メニュー一品あたりの平均予約数（人気度の目安）
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    </TooltipProvider>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* パフォーマンス分布 */}
+              {performanceDistributionData.length > 0 && (
+                <PieChart
+                  data={performanceDistributionData}
+                  title="メニューパフォーマンス分布"
+                  description="平均売上を基準とした分布"
+                  height={400}
+                  innerRadius={60}
+                  showLabels={true}
+                  showPercentage={true}
+                  valueFormatter={(value) => `${value}品目`}
+                />
+              )}
             </div>
-          </TabsContent>
-
-          {/* 価格帯分析タブ */}
-          <TabsContent value="price" className="space-y-4">
-            {priceTierAnalysis && priceTierAnalysis.priceTiers.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSignIcon className="h-5 w-5" />
-                    価格帯別分析
-                  </CardTitle>
-                  <CardDescription>メニューの価格帯別パフォーマンス</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-semibold mb-4">価格帯別実績</h4>
-                      {loading ? (
-                        <Skeleton className="h-[200px]" />
-                      ) : (
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={getPriceTierChartData()}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="name" tick={{ fill: '#374151', fontSize: 12 }} />
-                            <YAxis
-                              tickFormatter={(value) => formatCurrency(value)}
-                              tick={{ fill: '#374151', fontSize: 10 }}
-                            />
-                            <Tooltip
-                              formatter={(value: number, name: string) => {
-                                if (name === 'revenue') return [formatCurrency(value), '売上']
-                                if (name === 'bookings') return [value, '予約数']
-                                return [value, name]
-                              }}
-                              labelStyle={{ color: '#374151' }}
-                              contentStyle={{
-                                backgroundColor: '#ffffff',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                              }}
-                            />
-                            <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      )}
-
-                      {/* チャートの見方説明 */}
-                      <div className="mt-4 p-3 bg-muted border border-muted rounded-lg">
-                        <h5 className="text-sm font-medium text-muted-foreground mb-2">
-                          📊 グラフの見方
-                        </h5>
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          <p>
-                            <strong>縦軸（金額）:</strong> 各価格帯での総売上金額
-                          </p>
-                          <p>
-                            <strong>横軸（価格帯）:</strong>{' '}
-                            低価格帯（～￥5,000）、中価格帯（￥5,000-10,000）、高価格帯（￥10,000～）
-                          </p>
-                          <p>
-                            <strong>棒の高さ:</strong> 高いほどその価格帯での売上が多い
-                          </p>
-                          <p>
-                            <strong>活用方法:</strong>{' '}
-                            売上の高い価格帯に注力したメニュー開発や、売上の少ない価格帯の改善策を検討できます
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold mb-4">💡 価格戦略インサイト</h4>
-                      <div className="space-y-4">
-                        <div className="p-4 bg-palette-3 border border-palette-3 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 bg-palette-3-foreground rounded-full"></div>
-                            <span className="text-sm font-medium text-palette-3-foreground">
-                              売上No.1価格帯
-                            </span>
-                          </div>
-                          <div className="text-lg font-bold text-palette-3-foreground mb-1">
-                            {priceTierAnalysis.insights.mostProfitableTier}
-                          </div>
-                          <p className="text-xs text-palette-3-foreground">
-                            最も高い売上を上げている価格帯です。この価格帯のメニューを増やすか、他の価格帯をこのレベルに引き上げることを検討してください。
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-palette-2 border border-palette-2 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 bg-palette-2-foreground rounded-full"></div>
-                            <span className="text-sm font-medium text-palette-2-foreground">
-                              人気No.1価格帯
-                            </span>
-                          </div>
-                          <div className="text-lg font-bold text-palette-2-foreground mb-1">
-                            {priceTierAnalysis.insights.mostPopularTier}
-                          </div>
-                          <p className="text-xs text-palette-2-foreground">
-                            最も予約数が多い価格帯です。お客様に受け入れられやすい価格設定の参考にしてください。
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-palette-1 border border-palette-1 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-2 h-2 bg-palette-1-foreground rounded-full"></div>
-                            <span className="text-sm font-medium text-palette-1-foreground">
-                              全メニュー価格の平均
-                            </span>
-                          </div>
-                          <div className="text-lg font-bold text-palette-1-foreground mb-1">
-                            {formatCurrency(priceTierAnalysis.insights.averageMenuPrice)}
-                          </div>
-                          <p className="text-xs text-palette-1-foreground">
-                            サロン全体のメニュー価格平均です。新メニューの価格設定の基準として活用してください。
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 p-3 bg-muted rounded-lg">
-                        <p className="text-xs text-muted-foreground">
-                          <strong>💼 戦略提案:</strong>{' '}
-                          売上No.1と人気No.1が異なる場合は、人気価格帯のメニューを売上の高い価格帯にアップグレードする施策を検討してみてください。
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* 詳細ランキングタブ */}
-          <TabsContent value="ranking" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3Icon className="h-5 w-5" />
-                  メニュー売上詳細ランキング
-                </CardTitle>
-                <CardDescription>全メニューの売上実績一覧</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : menuRanking.length > 0 ? (
-                  <div className="space-y-3">
-                    {menuRanking.map((item, index) => (
-                      <Link className="block" key={item.id} href={`/dashboard/menu/${item.id}`}>
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Badge variant={index < 3 ? 'default' : 'secondary'}>
-                              {index + 1}位
-                            </Badge>
-                            <div>
-                              <h4 className="font-semibold">{item.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                シェア: {item.percentage.toFixed(1)}%
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold">{formatCurrency(item.value)}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {index < 3 && <TrendingUpIcon className="h-4 w-4 inline mr-1" />}
-                              トップランク
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">データがありません</div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
