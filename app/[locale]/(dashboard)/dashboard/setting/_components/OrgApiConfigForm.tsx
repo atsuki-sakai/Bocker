@@ -7,6 +7,7 @@ import { Loading, ZodTextField } from '@/components/common'
 import { Key, Save, EyeOff, Eye, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useLocale } from 'next-intl'
+import Image from 'next/image'
 import {
   Accordion,
   AccordionItem,
@@ -433,6 +434,18 @@ const ApiSettingsCard = () => {
           </motion.div>
         </div>
       </form>
+      <div className="flex flex-col relative mt-8">
+        <h4 className="text-base font-bold">Bocker / 予約通知</h4>
+        <p className="text-sm text-muted-foreground">
+          予約通知の受け取りには以下の公式アカウントを追加してください。
+        </p>
+        <Image
+          src="/assets/images/line_add.png"
+          alt="LINEログインガイド"
+          width={250}
+          height={250}
+        />
+      </div>
 
       <Accordion type="multiple" className="mt-8 space-y-2">
         {/* チャンネル開設ガイド */}
