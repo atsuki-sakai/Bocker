@@ -146,6 +146,7 @@ export function convertHourToTimestamp(hour: string, targetDate?: string): numbe
   return jstMs;
 }
 
+
 /**
  * UNIXタイムスタンプ（ミリ秒）をHH:mm形式の時刻文字列に変換する
  * @param unixTimestampMs - UNIXタイムスタンプ（ミリ秒単位）
@@ -243,3 +244,6 @@ export function toHourString(min: number): string {
   const m = (min % 60).toString().padStart(2, '0');
   return `${h}:${m}`;
 }
+
+
+

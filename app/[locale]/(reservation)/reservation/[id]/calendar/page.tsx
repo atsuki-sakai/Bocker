@@ -9,7 +9,7 @@ import { useMutation } from 'convex/react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import { Label } from '@/components/ui/label'
-
+import { format } from 'date-fns'
 import {
   MenuView,
   StaffView,
@@ -299,6 +299,60 @@ export default function CalendarPage() {
         break
       case 'date':
         setCurrentStep('payment')
+        if (selectedStaffCompleted?.staff === 'free' && organizationComplete && selectedDate) {
+          try {
+            if (!selectedTime) {
+              toast.error('予約時間を選択してください。')
+              return
+            }
+            const startDateTime = new Date(selectedDate)
+            const [sh, sm] = selectedTime.startHour.split(':').map(Number)
+            startDateTime.setHours(sh, sm, 0, 0)
+
+            const assignedStaff = await fetchQuery(
+              api.reservation.query.calculateIntegratedAvailableTimes,
+              {
+                tenant_id: organizationComplete.organization.tenant_id as Id<'tenant'>,
+                org_id: organizationComplete.organization._id as Id<'organization'>,
+                menu_ids: selectedMenus.map((menu) => menu._id),
+                date: format(selectedDate, 'yyyy-MM-dd'),
+                option_ids: selectedOptions.map((option) => option._id),
+              }
+            )
+
+            console.log('assignedStaff', assignedStaff)
+
+            if (assignedStaff) {
+              // スタッフが自動割り当てされた場合も、顧客側表示は「指名フリー」として保持
+              // 内部的にスタッフ情報を保存するため、selectedStaffCompletedには特別なフラグをつける
+              setSelectedStaffCompleted({
+                staff: {
+                  _id: assignedStaff.timeSlots[0].availableStaffs[0].id,
+                  name: assignedStaff.timeSlots[0].availableStaffs[0].name,
+                  priority: assignedStaff.timeSlots[0].availableStaffs[0].priority,
+                  extraCharge: assignedStaff.timeSlots[0].availableStaffs[0].extra_charge ?? 0,
+                  isAutoAssigned: true, // 自動割り当てフラグ
+                } as AutoAssignedStaff,
+              })
+              console.log('assignedStaff', assignedStaff)
+            } else {
+              toast.error(
+                'この時間帯に対応可能なスタッフが見つかりませんでした。他の時間をお選びください。'
+              )
+              // 時間選択をリセット
+              setSelectedTime(null)
+              setReservationStartDateTime(null)
+              setReservationEndDateTime(null)
+            }
+          } catch (error) {
+            console.error('スタッフ自動割り当てエラー:', error)
+            toast.error('スタッフの割り当てに失敗しました。他の時間をお選びください。')
+            // 時間選択をリセット
+            setSelectedTime(null)
+            setReservationStartDateTime(null)
+            setReservationEndDateTime(null)
+          }
+        }
         break
       case 'payment':
         setCurrentStep('coupon')
@@ -1360,6 +1414,8 @@ export default function CalendarPage() {
                       }}
                       onChangeTimeAction={async (time) => {
                         setSelectedTime(time)
+                        console.log('selectedDate', selectedDate)
+                        console.log('time', time)
                         if (selectedDate) {
                           const startDateTime = new Date(selectedDate)
                           const [sh, sm] = time.startHour.split(':').map(Number)
@@ -1369,68 +1425,6 @@ export default function CalendarPage() {
                           endDateTime.setHours(eh, em, 0, 0)
                           setReservationStartDateTime(startDateTime)
                           setReservationEndDateTime(endDateTime)
-
-                          // フリー指名の場合は自動でスタッフを割り当て
-                          if (
-                            selectedStaffCompleted?.staff === 'free' &&
-                            organizationComplete &&
-                            selectedDate
-                          ) {
-                            try {
-                              const startDateTime = new Date(selectedDate)
-                              const [sh, sm] = time.startHour.split(':').map(Number)
-                              startDateTime.setHours(sh, sm, 0, 0)
-
-                              const assignedStaff = await fetchQuery(
-                                api.reservation.query.getBestAvailableStaffForTimeSlot,
-                                {
-                                  tenant_id: organizationComplete.organization
-                                    .tenant_id as Id<'tenant'>,
-                                  org_id: organizationComplete.organization
-                                    ._id as Id<'organization'>,
-                                  menu_ids: selectedMenus.map((menu) => menu._id),
-                                  date: selectedDate.toLocaleDateString('ja-JP', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                  }), // YYYY-MM-DD形式
-                                  start_time_unix: startDateTime.getTime(),
-                                  end_time_unix: endDateTime.getTime(),
-                                }
-                              )
-
-                              if (assignedStaff) {
-                                // スタッフが自動割り当てされた場合も、顧客側表示は「指名フリー」として保持
-                                // 内部的にスタッフ情報を保存するため、selectedStaffCompletedには特別なフラグをつける
-                                setSelectedStaffCompleted({
-                                  staff: {
-                                    _id: assignedStaff.staff_id,
-                                    name: assignedStaff.staff_name,
-                                    priority: assignedStaff.priority,
-                                    extraCharge: assignedStaff.extra_charge,
-                                    isAutoAssigned: true, // 自動割り当てフラグ
-                                  } as AutoAssignedStaff,
-                                })
-                              } else {
-                                toast.error(
-                                  'この時間帯に対応可能なスタッフが見つかりませんでした。他の時間をお選びください。'
-                                )
-                                // 時間選択をリセット
-                                setSelectedTime(null)
-                                setReservationStartDateTime(null)
-                                setReservationEndDateTime(null)
-                              }
-                            } catch (error) {
-                              console.error('スタッフ自動割り当てエラー:', error)
-                              toast.error(
-                                'スタッフの割り当てに失敗しました。他の時間をお選びください。'
-                              )
-                              // 時間選択をリセット
-                              setSelectedTime(null)
-                              setReservationStartDateTime(null)
-                              setReservationEndDateTime(null)
-                            }
-                          }
                         }
                       }}
                     />
