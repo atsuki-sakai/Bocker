@@ -20,7 +20,6 @@ import { Loading } from '@/components/common'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   CalendarDays,
@@ -67,15 +66,15 @@ const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
             <div
               key={slot.index}
               className={cn(
-                'relative h-12 text-xs flex items-center justify-center transition-colors bg-secondary z-10',
+                'relative h-12 text-xs flex items-center justify-center transition-colors z-10',
                 // 太い線を削除し、通常のボーダーのみ使用
                 slot.minutes % 60 === 0
-                  ? 'w-24 border-l border-border font-semibold bg-background'
+                  ? 'w-24 border-l border-border font-semibold bg-neon-foreground'
                   : 'w-24 border-l border-border/50'
               )}
             >
               {slot.minutes % 60 === 0 && (
-                <span className="absolute left-1 top-1/2 -translate-y-1/2 whitespace-nowrap text-primary font-semibold">
+                <span className="absolute left-1 top-1/2 -translate-y-1/2 whitespace-nowrap text-accent-2 font-semibold">
                   {slot.timeLabel}
                 </span>
               )}
@@ -198,31 +197,33 @@ const StaffTimelineRow = memo(
       >
         {/* スタッフ名（左端固定） */}
         <div className="sticky left-0 z-20 bg-background border-r border-border w-20 md:w-40 p-2 md:p-4 flex h-full items-center">
-          <div className="flex flex-col md:flex-row items-center gap-3 w-full">
-            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shadow-sm">
-              {staffData.staff.images && staffData.staff.images.length > 0 ? (
-                <Image
-                  src={staffData.staff.images[0].thumbnail_url}
-                  alt={staffData.staff.name}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-              ) : (
-                <User className="w-5 h-5 text-primary" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0 w-full">
-              <div className="font-semibold text-xs text-center  md:text-sm text-primary truncate">
-                {staffData.staff.name}
+          <Link className="pointer-cursor" href={`/dashboard/staff/${staffData.staff._id}`}>
+            <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shadow-sm">
+                {staffData.staff.images && staffData.staff.images.length > 0 ? (
+                  <Image
+                    src={staffData.staff.images[0].thumbnail_url}
+                    alt={staffData.staff.name}
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <User className="w-5 h-5 text-primary" />
+                )}
               </div>
-              <div className="text-xs text-link-foreground flex items-center gap-1">
-                <Clock className="hidden md:block w-3 h-3" />
-                {reservationBars.length}
-                {t('reservationCount')}
+              <div className="flex-1 min-w-0 w-full">
+                <div className="font-semibold text-xs text-center  md:text-sm text-primary truncate">
+                  {staffData.staff.name}
+                </div>
+                <div className="text-xs text-link-foreground flex items-center gap-1">
+                  <Clock className="hidden md:block w-3 h-3" />
+                  {reservationBars.length}
+                  {t('reservationCount')}
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* タイムライン部分 */}
@@ -241,7 +242,7 @@ const StaffTimelineRow = memo(
                       : 'w-24 border-l border-border/50',
 
                     // 30分ごとに微妙な色の変化を追加
-                    slot.minutes % 60 === 30 && 'bg-secondary'
+                    slot.minutes % 60 !== 30 && 'bg-neon-foreground'
                   )}
                 />
               )
@@ -540,7 +541,6 @@ export default function ReservationTimeLine() {
   )
 
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<'timeline' | 'list'>('timeline')
   const [reservationCounts, setReservationCounts] = useState<{ date: string; count: number }[]>([])
 
   // ■ データ取得（最適化されたカスタムフック使用）
@@ -608,12 +608,6 @@ export default function ReservationTimeLine() {
     [timeSlots]
   )
 
-  // ■ 全予約リストの計算（リストビュー用）
-  const allReservations = useMemo(
-    () => staffTimelineData.flatMap((staff) => staff.reservations),
-    [staffTimelineData]
-  )
-
   // ■ イベントハンドラー
   const handleReservationClick = useCallback((reservation: ReservationWithDetails) => {
     setSelectedReservation(reservation)
@@ -637,13 +631,13 @@ export default function ReservationTimeLine() {
   const isWeekendDate = isWeekend(selectedDate)
 
   return (
-    <div className={`h-fit bg-background w-full ${subscription === null ? 'hidden' : ''}`}>
+    <div className={`h-fit w-full ${subscription === null ? 'hidden' : ''}`}>
       {/* ヘッダー部分 */}
-      <div className="w-full bg-background backdrop-blur-sm border-b-2 border-border space-y-4 shadow-sm">
+      <div className="w-full md:space-y-2 md:p-4">
         {/* 日付選択とビュー切り替え */}
         {/* 今日から2週間後までの予約件数を表示 */}
-        <div className="px-4">
-          <div className="flex gap-1 overflow-x-auto pb-2">
+        <div className="pb-2 mt-2">
+          <div className="w-full flex gap-2 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
             {reservationCounts.map((item) => {
               const date = new Date(item.date)
               const dayOfWeek = format(date, 'E', { locale: locale === 'ja' ? ja : enUS })
@@ -656,7 +650,7 @@ export default function ReservationTimeLine() {
                   key={item.date}
                   onClick={() => setSelectedDate(date)}
                   className={cn(
-                    'flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[52px] w-full ',
+                    'flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[52px] w-full snap-start',
                     'border hover:border-primary/50 hover:shadow-sm',
                     isSelected &&
                       'bg-accent text-accent-foreground border-accent-foreground shadow-md',
@@ -685,7 +679,7 @@ export default function ReservationTimeLine() {
             })}
           </div>
         </div>
-        <div className="flex flex-col md:flex-row items-center justify-between w-full px-4 pb-4">
+        <div className="flex items-center justify-between w-full my-4 ">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-4 w-full">
               <div className="flex items-center justify-end md:justify-start gap-2 w-full">
@@ -709,58 +703,36 @@ export default function ReservationTimeLine() {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-4 w-full md:mt-0 mt-4 ">
+          <div className="flex items-center justify-end gap-4 w-full md:mt-0">
             <Button variant="outline" onClick={() => setSelectedDate(new Date())}>
               {t('today')}
             </Button>
-            <div className="flex items-center gap-3">
-              <Tabs
-                value={viewMode}
-                onValueChange={(value) => setViewMode(value as 'timeline' | 'list')}
-              >
-                <TabsList>
-                  <TabsTrigger value="timeline">{t('timeline')}</TabsTrigger>
-                  <TabsTrigger value="list">{t('list')}</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
           </div>
         </div>
       </div>
 
       {/* メインコンテンツ */}
       <div className="overflow-hidden">
-        <Tabs value={viewMode} className="w-full">
-          <TabsContent value="timeline" className="m-0">
-            <div className="overflow-auto  bg-background pb-4">
-              <div className="relative max-h-[calc(100vh-200px)] min-w-max">
-                {/* タイムラインヘッダー */}
-                <TimelineHeader timeSlots={halfHourSlots} />
+        <div className="overflow-x-auto  bg-background border-t border-x border-border">
+          <div className="relative max-h-[calc(100vh-200px)] min-w-max">
+            {/* タイムラインヘッダー */}
+            <TimelineHeader timeSlots={halfHourSlots} />
 
-                {/* スタッフ行 */}
-                <div>
-                  {staffTimelineData.map((staffData, index) => (
-                    <StaffTimelineRow
-                      key={staffData.staff._id}
-                      staffData={staffData}
-                      timeSlots={halfHourSlots}
-                      selectedDate={selectedDate}
-                      onReservationClick={handleReservationClick}
-                      isEven={index % 2 === 0}
-                    />
-                  ))}
-                </div>
-              </div>
+            {/* スタッフ行 */}
+            <div>
+              {staffTimelineData.map((staffData, index) => (
+                <StaffTimelineRow
+                  key={staffData.staff._id}
+                  staffData={staffData}
+                  timeSlots={halfHourSlots}
+                  selectedDate={selectedDate}
+                  onReservationClick={handleReservationClick}
+                  isEven={index % 2 === 0}
+                />
+              ))}
             </div>
-          </TabsContent>
-
-          <TabsContent value="list" className="m-0">
-            <ReservationList
-              reservations={allReservations}
-              onReservationClick={handleReservationClick}
-            />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
 
       {/* 予約詳細ダイアログ */}

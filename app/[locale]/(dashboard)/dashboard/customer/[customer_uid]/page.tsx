@@ -4,7 +4,6 @@ import { DashboardSection, withManagerAccess } from '@/components/common' // Ass
 import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common' // Assuming this is your loading component
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator' // Useful for separating sections
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip' // For displaying full IDs on hover
 import { ScrollArea } from '@/components/ui/scroll-area' // For potentially long notes
 import {
@@ -185,286 +184,396 @@ function CustomerDetailPage() {
         link: `/dashboard/customer/${customerUid}/edit`,
       }}
     >
-      <div>
-        <div className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <h3 className="text-3xl font-bold text-primary">
-              {completeCustomer.customer.last_name ?? t('notRegistered')}{' '}
-              {completeCustomer.customer.first_name ?? t('notRegistered')}
-              <span className="text-sm text-muted-foreground ml-1">{t('honorific')}</span>
-            </h3>
-          </div>
-          <Badge>
-            <div className="flex flex-col md:flex-row items-center justify-end space-x-2">
-              <span className="text-sm font-medium">{t('totalPoints')}</span>
-              <span className="text-base ml-1">
-                {completeCustomer.customerPoints?.total_points ?? 0}
-              </span>
-            </div>
-          </Badge>
-        </div>
-        {completeCustomer.customer.line_user_name && (
-          <div className="flex flex-col md:flex-row items-center justify-start space-x-2">
-            <p className="w-fit text-sm mt-1 text-accent-2 border-accent-2 border rounded-md font-bold py-1 px-3">
-              {t('lineUserName')}: {completeCustomer.customer.line_user_name}
-            </p>
-          </div>
-        )}
-        <div className="space-y-6 pt-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <User className="mr-2 h-5 w-5 text-muted-foreground" />
-              {t('basicInfo')}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Last Name */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-muted-foreground">{t('lastName')}:</span>
-                <span className="text-base font-semibold">
-                  {completeCustomer.customer.last_name || t('notRegistered')}
-                </span>
-              </div>
-              {/* First Name */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-muted-foreground">{t('firstName')}:</span>
-                <span className="text-base font-semibold">
-                  {completeCustomer.customer.first_name || t('notRegistered')}
-                </span>
-              </div>
-              {/* Phone Number - spans both columns on medium screens and above */}
-              <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
-                <Phone className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">{t('phone')}:</span>
-                <span className="text-base">
-                  {completeCustomer.customer.phone || t('notRegistered')}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">{t('email')}:</span>
-                <span className="text-base">
-                  {completeCustomer.customer.email || t('notRegistered')}
-                </span>
-              </div>
-            </div>
-          </div>
-          <Separator />
-          <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <NotebookPen className="mr-2 h-5 w-5 text-muted-foreground" />
-              {t('additionalInfo')}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Cake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">{t('birthday')}:</span>
-                <span className="text-base">{formattedBirthday}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Cake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">{t('age')}:</span>
-                <span className="text-base">
-                  {completeCustomer.customerDetail?.birthday
-                    ? new Date().getFullYear() -
-                      new Date(completeCustomer.customerDetail.birthday).getFullYear() +
-                      ' ' +
-                      t('age_suffix')
-                    : t('notRegistered')}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Cake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">{t('gender')}:</span>
-                <span className="text-base">
-                  {completeCustomer.customerDetail?.gender === 'male'
-                    ? t('male')
-                    : completeCustomer.customerDetail?.gender === 'female'
-                      ? t('female')
-                      : t('unselected')}
-                </span>
-              </div>
-              {/* Notes - potentially long, use ScrollArea or Collapsible */}
-              <div className="col-span-1 md:col-span-2">
-                {' '}
-                {/* Notes span full width */}
-                <span className="text-sm font-medium text-muted-foreground flex items-center mb-2">
-                  <NotebookPen className="mr-2 h-5 w-5 text-muted-foreground" />
-                  {t('notes')}:
-                </span>
-                {completeCustomer.customerDetail?.notes ? (
-                  <ScrollArea className="h-24 w-full rounded-md border p-4 text-sm">
-                    {' '}
-                    {/* ScrollArea for long notes */}
-                    {completeCustomer.customerDetail.notes}
-                  </ScrollArea>
-                ) : (
-                  <p className="text-base text-muted-foreground italic">{t('noNotes')}</p>
+      <div className="min-h-screen bg-gradient-to-br from-background to-secondary pb-8">
+        <div className="space-y-4 md:space-y-8">
+          <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
+            <div className="p-4 md:p-8">
+              <div className="flex items-center gap-3 mb-4 md:mb-6">
+                <div className="p-2 rounded-lg bg-primary">
+                  <User className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <h2 className="text-xl font-bold text-primary">{t('basicInfo')}</h2>
+                {completeCustomer.customer.line_user_name && (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="border-accent-2 text-accent-2 bg-accent-2-foreground px-3 py-1 text-sm font-medium"
+                    >
+                      LINE: {completeCustomer.customer.line_user_name}
+                    </Badge>
+                  </div>
                 )}
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('lastName')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {completeCustomer.customer.last_name || t('notRegistered')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('firstName')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {completeCustomer.customer.first_name || t('notRegistered')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('phone')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {completeCustomer.customer.phone || t('notRegistered')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('email')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {completeCustomer.customer.email || t('notRegistered')}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <Separator />
-          <div>
-            <h3 className="text-lg font-semibold mb-3 flex items-center">
-              <History className="mr-2 h-5 w-5 text-muted-foreground" />
-              {t('usageInfo')}
-            </h3>
-
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-muted-foreground">{t('lastVisit')}:</span>
-              <span className="text-sm">{formattedLastReservationDate}</span>
+          <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
+            <div className="p-4 md:p-8">
+              <div className="flex items-center gap-3 mb-4 md:mb-6">
+                <div className="p-2 rounded-lg bg-palette-1">
+                  <NotebookPen className="h-5 w-5 text-palette-1-foreground" />
+                </div>
+                <h2 className="text-xl font-bold text-primary">{t('additionalInfo')}</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Cake className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('birthday')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">{formattedBirthday}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('age')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {completeCustomer.customerDetail?.birthday
+                        ? new Date().getFullYear() -
+                          new Date(completeCustomer.customerDetail.birthday).getFullYear() +
+                          ' ' +
+                          t('age_suffix')
+                        : t('notRegistered')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('gender')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {completeCustomer.customerDetail?.gender === 'male'
+                        ? t('male')
+                        : completeCustomer.customerDetail?.gender === 'female'
+                          ? t('female')
+                          : t('unselected')}
+                    </p>
+                  </div>
+                </div>
+                <div className="md:col-span-2 space-y-2 md:space-y-3">
+                  <div className="flex items-center gap-2">
+                    <NotebookPen className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                      {t('notes')}
+                    </h3>
+                  </div>
+                  {completeCustomer.customerDetail?.notes ? (
+                    <div className="p-4 rounded-lg bg-secondary border border-border">
+                      <ScrollArea className="h-24 w-full">
+                        <p className="text-sm text-primary leading-relaxed">
+                          {completeCustomer.customerDetail.notes}
+                        </p>
+                      </ScrollArea>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-lg bg-muted border border-border">
+                      <p className="text-sm text-muted-foreground italic">{t('noNotes')}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-2 col-span-1 md:col-span-2">
-              <span className="text-sm font-medium text-muted-foreground">{t('visitCount')}:</span>
-              <span className="text-sm">
-                {t('visitCountValue', {
-                  count: completeCustomer.customer.total_reservation_count || 0,
-                })}
-              </span>
+          </div>
+          <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
+            <div className="p-4 md:p-8">
+              <div className="flex items-center gap-3 mb-4 md:mb-6">
+                <div className="p-2 rounded-lg bg-palette-2">
+                  <History className="h-5 w-5 text-palette-2-foreground" />
+                </div>
+                <h2 className="text-xl font-bold text-primary">{t('usageInfo')}</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('lastVisit')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {formattedLastReservationDate}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {t('visitCount')}
+                    </p>
+                    <p className="text-sm font-semibold text-primary">
+                      {t('visitCountValue', {
+                        count: completeCustomer.customer.total_reservation_count || 0,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {completeCustomer.customer.tags && completeCustomer.customer.tags.length > 0 ? (
-            <>
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <Tag className="mr-2 h-5 w-5 text-muted-foreground" />
-                  {t('tags')}
-                </h3>
-                <div className="flex flex-wrap gap-2 mb-4">
+          <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
+            <div className="p-4 md:p-8">
+              <div className="flex items-center gap-3 mb-4 md:mb-6">
+                <div className="p-2 rounded-lg bg-palette-4">
+                  <Tag className="h-5 w-5 text-palette-4-foreground" />
+                </div>
+                <h2 className="text-xl font-bold text-primary">{t('tags')}</h2>
+              </div>
+              {completeCustomer.customer.tags && completeCustomer.customer.tags.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
                   {completeCustomer.customer.tags.map((tag: string, index: number) => (
                     <Badge
                       key={`${tag}-${index}`}
                       variant="outline"
-                      className="text-sm bg-accent-2 text-accent-foreground"
+                      className="px-3 py-2 text-sm font-medium bg-accent-2 text-accent-2-foreground border-accent-2"
                     >
                       {tag}
                     </Badge>
                   ))}
                 </div>
-              </div>
-            </>
-          ) : (
-            // Display a message if no tags are present
-            <>
-              <div className="flex items-center space-x-2 text-muted-foreground text-sm pb-2">
-                <Tag className="h-5 w-5" />
-                <span>{t('noTags')}</span>
-              </div>
-            </>
-          )}
+              ) : (
+                <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-muted border border-border">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">{t('noTags')}</p>
+                </div>
+              )}
+            </div>
+          </div>
           {/* --- End Tags Section --- */}
 
-          {/* ポイント取引履歴セクション */}
-          <Separator />
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold flex items-center">
-                <Coins className="mr-2 h-5 w-5 text-muted-foreground" />
-                {t('pointHistory')}
-              </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleTransactionHistory}
-                disabled={isLoadingTransactions}
-              >
-                {showTransactions ? t('hideHistory') : t('showHistory')}
-              </Button>
-            </div>
+          <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
+            <div className="p-4 md:p-8">
+              <div className="flex items-end justify-between mb-4 md:mb-6">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-palette-5">
+                      <Coins className="h-5 w-5 text-palette-5-foreground" />
+                    </div>
+                    <h2 className="text-xl font-bold text-primary">{t('pointHistory')}</h2>
+                  </div>
+                  <div className="flex items-center justify-start  w-full">
+                    <div className="text-right flex items-center gap-2">
+                      <Coins className="h-6 w-6 text-palette-3-foreground" />
 
-            {showTransactions && (
-              <div className="rounded-md border">
-                {isLoadingTransactions ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    {t('loadingTransactions')}
+                      <p className="text-2xl font-bold text-palette-3-foreground">
+                        {completeCustomer.customerPoints?.total_points ?? 0}
+                      </p>
+                      <small className="text-xs font-bold text-palette-3-foreground uppercase tracking-wide">
+                        P
+                      </small>
+                    </div>
                   </div>
-                ) : pointTransactions.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    {t('noTransactions')}
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('transactionDate')}</TableHead>
-                        <TableHead>{t('transactionType')}</TableHead>
-                        <TableHead>{t('description')}</TableHead>
-                        <TableHead className="text-right">{t('points')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pointTransactions.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            {transaction.transaction_date_unix
-                              ? new Date(transaction.transaction_date_unix * 1000).toLocaleString(
-                                  locale
-                                )
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {transaction.points && transaction.points > 0 ? (
-                                <>
-                                  <TrendingUp className="h-4 w-4 text-success" />
-                                  <span className="text-success">{t('earned')}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <TrendingDown className="h-4 w-4 text-destructive" />
-                                  <span className="text-destructive">
-                                    {transaction.transaction_type === 'manual_subtract'
-                                      ? t('manualSubtract')
-                                      : t('used')}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {transaction.description || '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {transaction.points && transaction.points > 0 ? (
-                              <span className="text-success">+{transaction.points}</span>
-                            ) : (
-                              <span className="text-destructive">{transaction.points}</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={toggleTransactionHistory}
+                  disabled={isLoadingTransactions}
+                  className="transition-all duration-200"
+                >
+                  {showTransactions ? t('hideHistory') : t('showHistory')}
+                </Button>
               </div>
-            )}
+
+              {showTransactions && (
+                <div className="rounded-xl border border-border overflow-hidden">
+                  {isLoadingTransactions ? (
+                    <div className="p-4 md:p-6 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto md:mb-4" />
+                      <p className="text-sm text-muted-foreground">{t('loadingTransactions')}</p>
+                    </div>
+                  ) : pointTransactions.length === 0 ? (
+                    <div className="p-4 md:p-6 text-center">
+                      <Coins className="h-8 md:h-12 w-8 md:w-12 text-muted-foreground mx-auto md:mb-4" />
+                      <p className="text-sm text-muted-foreground">{t('noTransactions')}</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted">
+                            <TableHead className="font-semibold text-primary">
+                              {t('transactionDate')}
+                            </TableHead>
+                            <TableHead className="font-semibold text-primary">
+                              {t('transactionType')}
+                            </TableHead>
+                            <TableHead className="font-semibold text-primary">
+                              {t('description')}
+                            </TableHead>
+                            <TableHead className="text-right font-semibold text-primary">
+                              {t('points')}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pointTransactions.map((transaction) => (
+                            <TableRow
+                              key={transaction.id}
+                              className="hover:bg-muted transition-colors"
+                            >
+                              <TableCell className="font-medium">
+                                {transaction.transaction_date_unix
+                                  ? new Date(
+                                      transaction.transaction_date_unix * 1000
+                                    ).toLocaleString(locale)
+                                  : '-'}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {transaction.points && transaction.points > 0 ? (
+                                    <>
+                                      <div className="p-1 rounded-full bg-success">
+                                        <TrendingUp className="h-3 w-3 text-success-foreground" />
+                                      </div>
+                                      <span className="text-success font-medium">
+                                        {t('earned')}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="p-1 rounded-full bg-destructive">
+                                        <TrendingDown className="h-3 w-3 text-destructive-foreground" />
+                                      </div>
+                                      <span className="text-destructive font-medium">
+                                        {transaction.transaction_type === 'manual_subtract'
+                                          ? t('manualSubtract')
+                                          : t('used')}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {transaction.description || '-'}
+                              </TableCell>
+                              <TableCell className="text-right font-bold">
+                                {transaction.points && transaction.points > 0 ? (
+                                  <span className="text-success text-lg">
+                                    +{transaction.points}
+                                  </span>
+                                ) : (
+                                  <span className="text-destructive text-lg">
+                                    {transaction.points}
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex flex-col items-start space-y-2 text-sm text-muted-foreground pt-4 border-t">
-          <div className="flex items-center space-x-2">
-            <CalendarDays className="h-4 w-4" />
-            <span>
-              {t('registrationDate')}: {formattedCreationTime}
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Info className="h-4 w-4" />
-            <span>{t('customerId')}: </span>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="underline cursor-help">
-                    {completeCustomer.customer.uid.substring(0, 8)}...
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{completeCustomer.customer.uid}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        <div className="md:px-4 space-y-4 md:space-y-8">
+          <div className="p-4 md:p-6 ">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-secondary">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {t('registrationDate')}
+                  </p>
+                  <p className="text-sm font-semibold text-primary">{formattedCreationTime}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-secondary">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    {t('customerId')}
+                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-sm font-mono text-primary underline cursor-help">
+                          {completeCustomer.customer.uid.substring(0, 8)}...
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-mono text-xs">{completeCustomer.customer.uid}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

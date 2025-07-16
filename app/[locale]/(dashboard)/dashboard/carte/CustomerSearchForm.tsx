@@ -397,16 +397,13 @@ export default function CustomerSearchForm() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-sm">
+                      <span className="text-muted-foreground text-sm text-nowrap">
                         {tCarte('unregistered')}
                       </span>
                     )}
                   </TableCell>
                   <TableCell className="px-4">
-                    <Button
-                      className="text-xs bg-link text-link-foreground hover:opacity-80 transition-opacity duration-300"
-                      variant="ghost"
-                    >
+                    <Button size="sm">
                       <Link href={`/dashboard/carte/${customerData.customer.uid}`}>
                         {tCarte('viewDetails')}
                       </Link>

@@ -180,6 +180,9 @@ export const DateView = ({
         date: format(selectedDate, 'yyyy-MM-dd'),
       })
         .then((result) => {
+          console.log('result', result)
+          console.log('result.available', result.available)
+          console.log('result.timeSlots', result.timeSlots)
           if (result.available && result.timeSlots) {
             // 統合スロットをTimeRange形式に変換
             const timeRanges = result.timeSlots.map((slot) => ({

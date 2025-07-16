@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import DashboardSection from '@/components/common/DashboardSection'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
@@ -62,9 +63,12 @@ const pageSize: number = 20
 
 export default function StaffSchedulePage() {
   const t = useTranslations('staff.schedule')
+  const searchParams = useSearchParams()
+  const initialStaffId = searchParams.get('staffId') as Id<'staff'> | null
+  console.log('initialStaffId', initialStaffId)
   const { tenantId, orgId } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
-  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(null)
+  const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(initialStaffId)
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const [isAllDay, setIsAllDay] = useState<{ [key: string]: boolean }>({})
   // 日付と時間情報を保持する状態

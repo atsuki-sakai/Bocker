@@ -296,7 +296,6 @@ export default function CustomerEditForm() {
 
   return (
     <div className="container mx-auto py-4">
-      <h2 className="text-2xl font-bold text-muted-foreground mb-4">{t('editTitle')}</h2>
       {completeCustomer.customer?.line_user_name && (
         <p className="text-sm text-active mb-4 p-2 border border-active rounded-md w-fit">
           <span className="font-bold">{t('lineUserName')} </span>{' '}

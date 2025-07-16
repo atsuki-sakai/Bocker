@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTranslations } from 'next-intl'
+import { CalendarDays, PiggyBank } from 'lucide-react'
 
 // アイコン
 import { User, Trash, Star, Tag, Mail, Calendar, FileEdit } from 'lucide-react'
@@ -174,139 +175,203 @@ export default function StaffDetails() {
   }
 
   return (
-    <div className="pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/5 pb-8">
       {/* スタッフヘッダーカード - 改良版 */}
-      <div>
-        <div className="mb-6">
-          <div className="p-0">
-            <div className="flex flex-col md:flex-row w-full">
+      <div className="max-w-6xl mx-auto md:px-4">
+        <div className="mb-8">
+          <div className="bg-card rounded-2xl shadow-lg border border-border/50 overflow-hidden">
+            <div className="flex flex-col lg:flex-row">
               {/* サムネイル部分 - スタイル改良 */}
-              <div className="flex items-center justify-center mx-auto overflow-hidden md:w-1/3">
+              <div className="lg:w-1/3 flex md:items-start md:mt-4 justify-center p-4">
                 {staffAllData.images && staffAllData.images.length > 0 ? (
-                  <div className="w-full h-full max-w-2xl mx-auto">
+                  <div className="relative w-full max-w-sm aspect-square">
                     <Image
                       src={staffAllData.images[0].original_url}
                       alt={staffAllData.name || ''}
-                      width={1920}
-                      height={1920}
-                      className="object-cover rounded-md"
+                      width={400}
+                      height={400}
+                      className="object-cover rounded-2xl shadow-lg"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-2xl" />
                   </div>
                 ) : (
-                  <div className="text-3xl font-semibold text-primary/70 flex items-center justify-center h-full w-full">
-                    {getInitials(staffAllData.name || '')}
+                  <div className="w-full max-w-sm aspect-square bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl flex items-center justify-center border-2 border-dashed border-primary/20">
+                    <div className="text-4xl font-bold text-primary/40">
+                      {getInitials(staffAllData.name || '')}
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* 情報部分 - レイアウト改良 */}
-              <div className="py-6 md:w-2/3 xl:ml-10">
-                <div className="flex flex-col xl:flex-row justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-primary">{staffAllData.name}</h2>
-                    <div className="flex items-center gap-4 mt-2">
-                      <Badge variant={staffAllData.is_active ? 'default' : 'outline'}>
-                        {staffAllData.is_active ? t('common.active') : t('common.inactive')}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="border-accent-2 text-accent-2 bg-accent-2-foreground"
-                      >
-                        {getRoleDisplay(staffAllData.role || '')}
-                      </Badge>
-                      {staffWithInvitation && staffWithInvitation.connect_clerk && (
-                        <Badge variant="outline">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {t('staff.common.authenticatedStaff')}
+              <div className="flex-1 p-4 md:p-8 space-y-6">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start">
+                  <div className="space-y-4">
+                    <div>
+                      <h1 className="text-3xl font-bold text-primary mb-2">{staffAllData.name}</h1>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge variant={staffAllData.is_active ? 'default' : 'outline'}>
+                          {staffAllData.is_active ? t('common.active') : t('common.inactive')}
                         </Badge>
-                      )}
+                        <Badge
+                          variant="outline"
+                          className="border-accent-2 text-accent-2 bg-accent-2-foreground px-3 py-1 text-sm font-medium"
+                        >
+                          {getRoleDisplay(staffAllData.role || '')}
+                        </Badge>
+                        {staffWithInvitation && staffWithInvitation.connect_clerk && (
+                          <Badge
+                            variant="outline"
+                            className="border-info text-info bg-info-foreground px-3 py-1 text-sm font-medium"
+                          >
+                            <Mail className="h-3 w-3 mr-1" />
+                            {t('staff.common.authenticatedStaff')}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary border border-border">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            {t('staff.add.gender')}
+                          </p>
+                          <p className="text-sm font-semibold text-primary">
+                            {getGenderText(staffAllData.gender || 'unselected')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary border border-border">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            {t('staff.add.age')}
+                          </p>
+                          <p className="text-sm font-semibold text-primary">
+                            {staffAllData.age
+                              ? t('staff.common.ageValue', { age: staffAllData.age })
+                              : t('staff.common.ageNotSet')}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 text-sm text-muted-foreground mt-4 xl:mt-0">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-primary font-bold text-lg">
-                        {getGenderText(staffAllData.gender || 'unselected')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-primary font-bold text-lg">
-                        {staffAllData.age
-                          ? t('staff.common.ageValue', { age: staffAllData.age })
-                          : t('staff.common.ageNotSet')}
-                      </span>
-                    </div>
+                  <div className="flex flex-col gap-3 mt-6 lg:mt-0">
                     {staffAllData.instagram_link && (
-                      <div className="flex items-center gap-2 ml-4 xl:ml-0">
-                        <Link
-                          href={staffAllData.instagram_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Instagram className="h-6 w-6 mr-5 text-pop" />
-                        </Link>
-                      </div>
+                      <Link
+                        href={staffAllData.instagram_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                      >
+                        <Instagram className="h-5 w-5" />
+                        <span className="text-sm font-medium">Instagram</span>
+                      </Link>
                     )}
                   </div>
                 </div>
 
                 {userEmail && (
-                  <div className="mt-4 w-full flex justify-start items-center mb-4">
-                    <Link
-                      href={`mailto:${userEmail}`}
-                      className="text-link-foreground underline text-sm"
-                    >
-                      {userEmail}
-                    </Link>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary border border-border">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Email
+                      </p>
+                      <Link
+                        href={`mailto:${userEmail}`}
+                        className="text-sm font-semibold text-link-foreground hover:text-link-foreground transition-colors"
+                      >
+                        {userEmail}
+                      </Link>
+                    </div>
                   </div>
                 )}
 
-                <span className="text-xs text-muted-foreground">
-                  {t('staff.details.introduction')}
-                </span>
-                <p className=" text-primary tracking-wide leading-6  mb-5  border-border">
-                  {staffAllData.description || t('staff.details.noIntroduction')}
-                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <FileEdit className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                      {t('staff.details.introduction')}
+                    </h3>
+                  </div>
+                  <div className="p-4 rounded-lg bg-secondary border border-border">
+                    <p className="text-sm text-primary leading-relaxed">
+                      {staffAllData.description || t('staff.details.noIntroduction')}
+                    </p>
+                  </div>
+                </div>
 
                 {staffAllData.tags && staffAllData.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {staffAllData.tags.map((tag) => (
-                      <Badge key={tag}>{tag}</Badge>
-                    ))}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                        Tags
+                      </h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {staffAllData.tags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant="outline"
+                          className="px-3 py-1 text-xs font-medium"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* 指名料金 */}
-                  <div className="flex justify-between  p-3 rounded-lg border border-palette-1-foreground bg-palette-1 transition-shadow">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-palette-1-foreground">
-                        <Tag className="h-4 w-4" />
-                        <p className="text-xs font-bold">{t('staff.add.nominationFee')}</p>
+                  <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-palette-1/20 to-palette-1/30 rounded-xl" />
+                    <div className="relative p-6 rounded-xl border border-palette-1-foreground/20 bg-palette-1/10 backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-palette-1-foreground/40">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 rounded-lg bg-palette-1-foreground/10">
+                          <PiggyBank className="h-5 w-5 text-palette-1-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-palette-1-foreground/80 uppercase tracking-wide">
+                            {t('staff.add.nominationFee')}
+                          </p>
+                          <p className="text-2xl font-bold text-palette-1-foreground">
+                            ¥{staffAllData.extra_charge?.toLocaleString() || 0}
+                          </p>
+                        </div>
                       </div>
-                      <p className="font-bold text-lg text-palette-1-foreground">
-                        ¥{staffAllData.extra_charge || 0}
-                      </p>
-                      <p className="mt-1 text-xs text-palette-1-foreground max-w-xs">
+                      <p className="text-xs text-palette-1-foreground/70 leading-relaxed">
                         {t('staff.add.nominationFeeHelp')}
                       </p>
                     </div>
                   </div>
 
                   {/* 優先度 */}
-                  <div className="flex justify-between  p-3 rounded-lg border border-palette-2-foreground bg-palette-2 transition-shadow">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 text-palette-2-foreground">
-                        <Star className="h-4 w-4" />
-                        <p className="text-xs font-bold">{t('staff.add.priority')}</p>
+                  <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-palette-2/20 to-palette-2/30 rounded-xl" />
+                    <div className="relative p-6 rounded-xl border border-palette-2-foreground/20 bg-palette-2/10 backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-palette-2-foreground/40">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 rounded-lg bg-palette-2-foreground/10">
+                          <Star className="h-5 w-5 text-palette-2-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-palette-2-foreground/80 uppercase tracking-wide">
+                            {t('staff.add.priority')}
+                          </p>
+                          <p className="text-2xl font-bold text-palette-2-foreground">
+                            {staffAllData.priority || 0}
+                            <span className="text-sm text-palette-2-foreground/70 ml-1">
+                              /{MAX_PRIORITY}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                      <p className="font-bold text-lg text-palette-2-foreground">
-                        {staffAllData.priority || 0}
-                        <span className="text-xs text-palette-2-foreground">/{MAX_PRIORITY}</span>
-                      </p>
-                      <p className="mt-1 text-xs text-palette-2-foreground max-w-xs">
+                      <p className="text-xs text-palette-2-foreground/70 leading-relaxed">
                         {t('staff.add.priorityHelp')}
                       </p>
                     </div>
@@ -315,48 +380,70 @@ export default function StaffDetails() {
 
                 {/* 対応外メニュー表示 */}
                 {exclusionMenus && exclusionMenus.length > 0 && (
-                  <div className="mt-4 p-3 bg-muted rounded-md border border-border">
-                    <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      {t('staff.add.exclusionMenuTitle')}
-                    </h3>
-                    <ul className="flex flex-wrap gap-2">
-                      {exclusionMenus.map((menu) => (
-                        <li
-                          key={menu.menu_id.slice(0, 12)}
-                          className="bg-background border border-border p-1 px-2 text-xs text-muted-foreground rounded-md shadow-sm"
-                        >
-                          {menu.name}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                        {t('staff.add.exclusionMenuTitle')}
+                      </h3>
+                    </div>
+                    <div className="p-4 rounded-lg bg-warning/5 border border-warning/20">
+                      <div className="flex flex-wrap gap-2">
+                        {exclusionMenus.map((menu) => (
+                          <Badge
+                            key={menu.menu_id.slice(0, 12)}
+                            variant="outline"
+                            className="border-warning/50 text-warning-foreground bg-warning/10 px-2 py-1 text-xs font-medium"
+                          >
+                            {menu.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          <div className=" py-3 flex justify-between">
-            <div className="text-xs text-muted-foreground tracking-wider">
-              <span>{t('staff.details.createdAt')}: </span>
-              {new Date(staffAllData._creationTime).toLocaleDateString()}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 text-destructive bg-destructive-foreground hover:text-destructive-foreground"
-                onClick={handleShowDeleteDialog}
-              >
-                <Trash className="h-4 w-4" />
-                {t('common.delete')}
-              </Button>
-              <Link href={`/dashboard/staff/${staff_id}/edit`}>
-                <Button variant="default" size="sm" className="gap-1">
-                  <FileEdit className="h-4 w-4" />
-                  {t('common.edit')}
+          <div className="mt-8 p-3 bg-secondary rounded-xl border border-border">
+            <div className="flex flex-wrap justify-between items-start sm:items-center gap-3">
+              <div className="text-xs text-muted-foreground tracking-wider font-medium">
+                <span>{t('staff.details.createdAt')}: </span>
+                <span className="font-semibold text-primary">
+                  {new Date(staffAllData._creationTime).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleShowDeleteDialog}
+                >
+                  <Trash className="h-4 w-4" />
+                  {t('common.delete')}
                 </Button>
-              </Link>
+                <Link href={`/dashboard/staff/${staff_id}/edit`}>
+                  <Button
+                    size="sm"
+                    className="gap-2 hover:bg-primary/10 transition-all duration-200"
+                  >
+                    <FileEdit className="h-4 w-4" />
+                    {t('common.edit')}
+                  </Button>
+                </Link>
+                <Link href={`/dashboard/staff/schedule?staffId=${staff_id}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 transition-all duration-200 shadow-sm"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    {t('common.schedule')}
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -364,13 +451,31 @@ export default function StaffDetails() {
 
       {/* 削除確認ダイアログ */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('staff.common.deleteConfirm')}</DialogTitle>
-            <DialogDescription>{t('staff.common.deleteConfirmDesc')}</DialogDescription>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <Trash className="h-6 w-6 text-destructive" />
+            </div>
+            <DialogTitle className="text-xl font-semibold">
+              {t('staff.common.deleteConfirm')}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-2">
+              {t('staff.common.deleteConfirmDesc')}
+            </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="destructive" onClick={handleDeleteStaff}>
+          <DialogFooter className="flex gap-3 sm:gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="flex-1 sm:flex-none"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteStaff}
+              className="flex-1 sm:flex-none bg-gradient-to-r from-destructive to-destructive/80 hover:from-destructive/90 hover:to-destructive/70 transition-all duration-200"
+            >
               {t('staff.edit.delete')}
             </Button>
           </DialogFooter>

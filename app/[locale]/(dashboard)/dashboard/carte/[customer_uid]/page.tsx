@@ -8,9 +8,15 @@ import { useIntegratedReservations } from '@/hooks/useIntegratedReservations'
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { CarteRepository } from '@/services/supabase/repositories'
 import type { RowType } from '@/services/supabase/SupabaseService'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import {
   HairWaveLevel,
   HairVolume,
@@ -20,7 +26,6 @@ import {
   HairDryness,
 } from '@/services/supabase/repositories/carte/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
 import type { ReservationMenu, ReservationOption } from '@/convex/types'
 import {
   CalendarDays,
@@ -35,9 +40,10 @@ import {
   FileText,
   XCircle,
   AlertCircle,
-  Zap,
+  ChevronRight,
   UserCheck,
   Scissors,
+  Info,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ja, enUS } from 'date-fns/locale'
@@ -123,7 +129,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
 
         // カルテ情報の取得
         const carte = await carteRepo.findByCustomer(tenantId, orgId, customerUid)
-        
+
         // カルテが存在しない場合でもデフォルト値を設定して表示
         const defaultCarteData: CustomerCarteData = {
           skin_type: null,
@@ -215,11 +221,6 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
 
   // 初回データ取得
   useEffect(() => {
-    console.log('useEffect')
-    console.log('customerUid', customerUid)
-    console.log('tenantId', tenantId)
-    console.log('orgId', orgId)
-    console.log('isLoaded', isLoaded)
     if (customerUid && tenantId && orgId && isLoaded) {
       console.log('fetchCustomerData')
       fetchCustomerData()
@@ -229,7 +230,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   // 日付フォーマット
   const formatDate = (timestamp: number | null) => {
     if (!timestamp) return '-'
-    return format(new Date(timestamp), 'yyyy年MM月dd日 HH:mm', {
+    return format(new Date(timestamp), 'yyyy年MM月dd日', {
       locale: locale === 'ja' ? ja : enUS,
     })
   }
@@ -308,635 +309,820 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
     )
   }
 
+  const customerName =
+    customerData.customer?.last_name && customerData.customer?.first_name
+      ? `${customerData.customer?.last_name} ${customerData.customer?.first_name}`
+      : tCarte('detail.notSet')
+
   return (
     <DashboardSection
       title={tCarte('detail.title')}
       backLink="/dashboard/carte"
       backLinkTitle={tCarte('detail.backToSearch')}
     >
-      <div className="space-y-6">
-        {/* 顧客基本情報 */}
-        <Card>
-          <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              {tCarte('detail.customerInfo')}
-            </CardTitle>
-            <div className="flex flex-col md:flex-row items-end justify-end gap-4">
-              <Button variant="default" size="sm" asChild>
-                <Link href={`/dashboard/customer/${customerUid}/edit`}>
-                  {tCarte('detail.customerEdit')}
-                  <UserCheck className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-              <Button variant="default" size="sm" asChild>
-                <Link href={`/dashboard/carte/${customerUid}/edit`}>
-                  {tCarte('detail.edit')}
-                  <Pencil className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{tCarte('detail.name')}</span>
-                    <span>
-                      {customerData.customer?.last_name && customerData.customer?.first_name
-                        ? `${customerData.customer?.last_name} ${customerData.customer?.first_name}`
-                        : tCarte('detail.notSet')}
-                    </span>
+      <div className="min-h-screen pb-8">
+        <div className="space-y-3 md:space-y-6">
+          {/* 顧客基本情報 - Uber風デザイン */}
+          <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+            <div className="bg-muted p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary rounded-full">
+                    <User className="w-6 h-6 text-primary-foreground" />
                   </div>
-                  <p className="font-medium">
-                    {customerData.customer?.line_user_name ? (
-                      <span className="text-sm text-muted-foreground">
-                        LINE: {customerData.customer?.line_user_name}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        LINE: {tCarte('detail.notSet')}
-                      </span>
-                    )}
-                  </p>
+                  <div>
+                    <h2 className="text-xl font-bold ">{customerName}</h2>
+                    <p className=" text-sm">
+                      {customerData.customer?.line_user_name
+                        ? `LINE ${customerData.customer?.line_user_name}`
+                        : `LINE ${tCarte('detail.notSet')}`}
+                    </p>
+                  </div>
                 </div>
-
-                {customerData.customer?.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span>{customerData.customer?.email}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{customerData.customer?.phone || tCarte('detail.notSet')}</span>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/customer/${customerUid}/edit`}>
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      {tCarte('detail.customerEdit')}
+                    </Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href={`/dashboard/carte/${customerUid}/edit`}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      {tCarte('detail.edit')}
+                    </Link>
+                  </Button>
                 </div>
               </div>
-              <div className="space-y-3">
-                {customerData.customerDetail?.birthday && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      {tCarte('detail.birthday')}
-                    </span>
-                    <p className="font-medium">
-                      {format(new Date(customerData.customerDetail.birthday), 'yyyy年MM月dd日')}
-                      <span className="text-sm text-muted-foreground ml-2">
-                        {tCarte('detail.age', {
-                          age: calculateAge(customerData.customerDetail.birthday),
-                        })}
-                      </span>
-                    </p>
-                  </div>
-                )}
+            </div>
 
-                {customerData.customerPoints && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">
-                      {tCarte('detail.totalPoints')}
-                    </span>
-                    <p className="font-medium text-lg">
-                      {tCarte('detail.pointsUnit', {
-                        points: customerData.customerPoints.total_points || 0,
-                      })}
-                    </p>
-                  </div>
-                )}
-                {customerCarteData?.ltv_price ? (
-                  <div>
-                    <span className="text-sm text-muted-foreground">{tCarte('detail.ltv')}</span>
-                    <p className="font-medium text-lg">
-                      {formatPrice(customerCarteData.ltv_price)}
-                    </p>
-                  </div>
-                ) : null}
-
-                <div>
-                  <span className="text-sm text-muted-foreground">
-                    {tCarte('detail.totalReservationCount')}
-                  </span>
-                  <p className="font-medium text-lg">
-                    {customerData?.customer?.total_reservation_count ?? 0} 回
-                  </p>
-                </div>
-
-                <div>
-                  <span className="text-sm text-muted-foreground">{tCarte('detail.ltv')}</span>
-                  <p className="font-medium text-lg">
-                    ¥ {customerCarteData?.ltv_price?.toLocaleString() ?? 0}
-                  </p>
-                </div>
-
-                {customerData.customer?.tags && customerData.customer.tags.length > 0 && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">{tCarte('table.tags')}</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {customerData.customer.tags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
+            <Accordion type="single" collapsible>
+              <AccordionItem value="item-1">
+                <AccordionTrigger className="px-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-palette-4">
+                      <Info className="w-5 h-5 text-palette-4-foreground" />
                     </div>
+                    <h5 className="text-base md:text-xl font-bold text-primary">
+                      {tCarte('detail.customerInfo')}
+                    </h5>
                   </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* カルテ情報 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              {tCarte('detail.carteInfo')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {customerCarteData ? (
-              <Tabs defaultValue="customer" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="customer" className="text-xs">
-                    <UserCheck className="w-3 h-3 mr-1" />
-                    {tCarte('edit.tabs.customer')}
-                  </TabsTrigger>
-                  <TabsTrigger value="store" className="text-xs">
-                    <Scissors className="w-3 h-3 mr-1" />
-                    {tCarte('edit.tabs.store')}
-                  </TabsTrigger>
-                  <TabsTrigger value="medical" className="text-xs">
-                    <FileText className="w-3 h-3 mr-1" />
-                    {tCarte('edit.tabs.medical')}
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* 🟢 顧客記入項目タブ */}
-                <TabsContent value="customer">
-                  <Card className="shadow-md border-border">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <UserCheck className="w-5 h-5" />
-                        {tCarte('edit.customerPrefs.title')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* 基本的な顧客設定を2列レイアウトでコンパクトに */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.customerPrefs.preferSilence')}
-                          </span>
-                          <p className="text-sm mt-1">
-                            {customerCarteData.prefer_silence === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.customerPrefs.avoidSalesTalk')}
-                          </span>
-                          <p className="text-sm mt-1">
-                            {customerCarteData.avoid_sales_talk === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.customerPrefs.avoidPrivateTopics')}
-                          </span>
-                          <p className="text-sm mt-1">
-                            {customerCarteData.avoid_private_topics === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.customerPrefs.allowPhotoSns')}
-                          </span>
-                          <p className="text-sm mt-1">
-                            {customerCarteData.allow_photo_sns === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.sharedPrefs.preferHairStyling')}
-                          </span>
-                          <p className="text-sm mt-1">
-                            {customerCarteData.prefer_hair_styling === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.sharedPrefs.useStylingProduct')}
-                          </span>
-                          <p className="text-sm mt-1">
-                            {customerCarteData.use_styling_product === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {customerCarteData.daily_styling_time && (
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.customerPrefs.dailyStylingTime')}
-                          </span>
-                          <p className="text-sm mt-1">{customerCarteData.daily_styling_time}分</p>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="p-3 md:p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {/* 連絡先情報 */}
+                      {customerData.customer?.email && (
+                        <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-secondary border border-border">
+                          <div className="p-2 rounded-lg bg-muted">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              {tCarte('detail.email')}
+                            </p>
+                            <p className="text-sm font-semibold text-primary truncate">
+                              {customerData.customer?.email}
+                            </p>
+                          </div>
                         </div>
                       )}
 
-                      {customerCarteData.avoid_chemicals && (
+                      <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-secondary border border-border">
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                        </div>
                         <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.customerPrefs.avoidChemicals')}
-                          </span>
-                          <p className="text-sm mt-1 whitespace-pre-wrap">
-                            {customerCarteData.avoid_chemicals}
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            {tCarte('detail.phone')}
                           </p>
+                          <p className="text-sm font-semibold text-primary">
+                            {customerData.customer?.phone || tCarte('detail.notSet')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 誕生日・年齢 */}
+                      {customerData.customerDetail?.birthday && (
+                        <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-secondary border border-border">
+                          <div className="p-2 rounded-lg bg-muted">
+                            <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              {tCarte('detail.birthday')}
+                            </p>
+                            <p className="text-sm font-semibold text-primary">
+                              {format(
+                                new Date(customerData.customerDetail.birthday),
+                                'yyyy年MM月dd日'
+                              )}
+                              <span className="text-xs text-muted-foreground ml-2">
+                                ({calculateAge(customerData.customerDetail.birthday)}歳)
+                              </span>
+                            </p>
+                          </div>
                         </div>
                       )}
 
-                      <Separator />
-
-                      {/* 敏感肌・アレルギー関連 */}
-                      <div>
-                        <h3 className="text-lg font-medium mb-3">
-                          {tCarte('edit.sharedPrefs.sensitivitySection')}
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                          <div>
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {tCarte('edit.sharedPrefs.hasSensitiveSkin')}
-                            </span>
-                            <p className="text-sm mt-1">
-                              {customerCarteData.has_sensitive_skin === true ? 'はい' : 'いいえ'}
-                            </p>
+                      {/* ポイント */}
+                      {customerData.customerPoints && (
+                        <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-gradient-to-r from-palette-3 to-palette-3 border border-palette-3">
+                          <div className="p-2 rounded-lg bg-palette-3">
+                            <CreditCard className="w-4 h-4 text-palette-3-foreground" />
                           </div>
                           <div>
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {tCarte('edit.sharedPrefs.fragranceSensitivity')}
-                            </span>
-                            <p className="text-sm mt-1">
-                              {customerCarteData.fragrance_sensitivity === true ? 'はい' : 'いいえ'}
+                            <p className="text-xs font-medium text-palette-3-foreground uppercase tracking-wide">
+                              {tCarte('detail.totalPoints')}
+                            </p>
+                            <p className="text-lg font-bold text-palette-3-foreground">
+                              {customerData.customerPoints.total_points || 0}P
                             </p>
                           </div>
-                          <div>
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {tCarte('edit.sharedPrefs.useContactLenses')}
-                            </span>
-                            <p className="text-sm mt-1">
-                              {customerCarteData.use_contact_lenses === true ? 'はい' : 'いいえ'}
-                            </p>
-                          </div>
-                        </div>
-                        {customerCarteData.sensitive_skin_detail && (
-                          <div className="mt-3">
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {tCarte('edit.sharedPrefs.sensitiveSkinDetail')}
-                            </span>
-                            <p className="text-sm mt-1 whitespace-pre-wrap">
-                              {customerCarteData.sensitive_skin_detail}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                {/* 🔵 店舗記入項目タブ */}
-                <TabsContent value="store">
-                  <Card className="shadow-md border-border">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Scissors className="w-5 h-5" />
-                        {tCarte('edit.storeAssessment.title')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.hairThickness')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.hair_thickness === 'fine'
-                              ? tCarte('edit.hairThickness.fine')
-                              : customerCarteData.hair_thickness === 'medium'
-                                ? tCarte('edit.hairThickness.medium')
-                                : customerCarteData.hair_thickness === 'coarse'
-                                  ? tCarte('edit.hairThickness.coarse')
-                                  : tCarte('detail.notSet')}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.hairVolume')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.hair_volume === 'low'
-                              ? tCarte('edit.hairVolume.low')
-                              : customerCarteData.hair_volume === 'medium'
-                                ? tCarte('edit.hairVolume.medium')
-                                : customerCarteData.hair_volume === 'high'
-                                  ? tCarte('edit.hairVolume.high')
-                                  : tCarte('detail.notSet')}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.hairWaveLevel')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.hair_wave_level === 'straight'
-                              ? tCarte('edit.hairWaveLevel.straight')
-                              : customerCarteData.hair_wave_level === 'slight'
-                                ? tCarte('edit.hairWaveLevel.slight')
-                                : customerCarteData.hair_wave_level === 'moderate'
-                                  ? tCarte('edit.hairWaveLevel.moderate')
-                                  : customerCarteData.hair_wave_level === 'strong'
-                                    ? tCarte('edit.hairWaveLevel.strong')
-                                    : tCarte('detail.notSet')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.hairDamageTendency')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.hair_damage_tendency === 'strong'
-                              ? '強い'
-                              : customerCarteData.hair_damage_tendency === 'medium'
-                                ? '中程度'
-                                : customerCarteData.hair_damage_tendency === 'weak'
-                                  ? '弱い'
-                                  : tCarte('detail.notSet')}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.poorDyePerm')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.poor_dye_perm_retention === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.quickColorFade')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.quick_color_fade === true ? 'はい' : 'いいえ'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.hairDryness')}
-                          </span>
-                          <p className="mt-1">
-                            {customerCarteData.hair_dryness === 'high'
-                              ? '高い'
-                              : customerCarteData.hair_dryness === 'medium'
-                                ? '中程度'
-                                : customerCarteData.hair_dryness === 'low'
-                                  ? '低い'
-                                  : tCarte('detail.notSet')}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div>
-                        <span className="text-sm font-semibold text-muted-foreground">
-                          {tCarte('edit.storeAssessment.scalpCondition')}
-                        </span>
-                        <p className="mt-1">
-                          {customerCarteData.scalp_condition === 'normal'
-                            ? tCarte('edit.scalpCondition.normal')
-                            : customerCarteData.scalp_condition === 'dry'
-                              ? tCarte('edit.scalpCondition.dry')
-                              : customerCarteData.scalp_condition === 'oily'
-                                ? tCarte('edit.scalpCondition.oily')
-                                : customerCarteData.scalp_condition === 'sensitive'
-                                  ? tCarte('edit.scalpCondition.sensitive')
-                                  : tCarte('detail.notSet')}
-                        </p>
-                      </div>
-                      {customerCarteData.scalp_trouble_detail && (
-                        <div>
-                          <span className="text-sm font-semibold text-muted-foreground">
-                            {tCarte('edit.storeAssessment.scalpTroubleDetail')}
-                          </span>
-                          <p className="mt-1">{customerCarteData.scalp_trouble_detail}</p>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
 
-                {/* 医療情報タブ */}
-                <TabsContent value="medical">
-                  <Card className="shadow-md border-border">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        {tCarte('edit.medicalInfo.title')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <span className="text-sm font-semibold text-muted-foreground">
-                          {tCarte('edit.medicalInfo.allergyHistory')}
-                        </span>
-                        <p className="mt-1 whitespace-pre-wrap">
-                          {customerCarteData.allergy_history || tCarte('detail.notSet')}
-                        </p>
+                      {/* 来店回数 */}
+                      <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-gradient-to-r from-palette-2 to-palette-2 border border-palette-2">
+                        <div className="p-2 rounded-lg bg-palette-2">
+                          <CalendarDays className="w-4 h-4 text-palette-2-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-palette-2-foreground uppercase tracking-wide">
+                            {tCarte('detail.totalReservationCount')}
+                          </p>
+                          <p className="text-lg font-bold text-palette-2-foreground">
+                            {customerData?.customer?.total_reservation_count ?? 0}回
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-sm font-semibold text-muted-foreground">
-                          {tCarte('edit.medicalInfo.medicalHistory')}
-                        </span>
-                        <p className="mt-1 whitespace-pre-wrap">
-                          {customerCarteData.medical_history || tCarte('detail.notSet')}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                {tCarte('detail.loadingCarteInfo')}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* 施術履歴 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5" />
-              {tCarte('detail.reservationHistory')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4">
-              {reservations.length > 0 ? (
-                reservations
-                  .filter(
-                    (item) =>
-                      item.status !== 'cancelled' &&
-                      item.status !== 'pending' &&
-                      item.status !== 'refunded'
-                  )
-                  .map((item) => (
-                    <Link
-                      href={`/dashboard/carte/${customerUid}/reservation/${item.id}`}
-                      key={item.id}
-                    >
-                      <Card
-                        key={item.id}
-                        className="border-l-4 relative"
-                        style={{
-                          borderLeftColor:
-                            item.status === 'completed'
-                              ? 'accent-green-500'
-                              : item.status === 'cancelled'
-                                ? 'destructive'
-                                : item.status === 'confirmed'
-                                  ? 'neon'
-                                  : 'secondary',
-                        }}
-                      >
-                        <CardContent className="pt-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                                <span className="font-medium">
-                                  {formatDate(item.startTimeUnix)}
-                                </span>
-                                {/* リアルタイムインジケーター */}
-                                {item.source === 'convex' && (
-                                  <Badge variant="outline" className="gap-1 text-xs bg-warning">
-                                    <Zap className="w-3 h-3 text-warning-foreground" />
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <User className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm">
-                                  {tCarte('detail.assignedStaff', {
-                                    staffName: item.staffName || tCarte('detail.staffFree'),
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                            {getStatusBadge(item.status)}
+                      {/* LTV */}
+                      {customerCarteData?.ltv_price && (
+                        <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-gradient-to-r from-palette-1 to-palette-1 border border-palette-1">
+                          <div className="p-2 rounded-lg bg-palette-1">
+                            <CreditCard className="w-4 h-4 text-palette-1-foreground" />
                           </div>
-                          {item.detail && (
-                            <div className="mt-3 space-y-2">
-                              {/* メニュー情報 */}
-                              {item.detail.menus &&
-                                Array.isArray(item.detail.menus) &&
-                                item.detail.menus.length > 0 && (
-                                  <div>
-                                    <span className="text-sm text-muted-foreground">
-                                      {tCarte('detail.menu')}
-                                    </span>
-                                    <div className="mt-1">
-                                      {(item.detail.menus as ReservationMenu[]).map(
-                                        (menu: ReservationMenu, index: number) => (
-                                          <Badge key={index} variant="outline" className="mr-1">
-                                            {menu.name}
-                                          </Badge>
-                                        )
-                                      )}
+                          <div>
+                            <p className="text-xs font-medium text-palette-1-foreground uppercase tracking-wide">
+                              {tCarte('detail.ltv')}
+                            </p>
+                            <p className="text-lg font-bold text-palette-1-foreground">
+                              {formatPrice(customerCarteData.ltv_price)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* タグ */}
+                    {customerData.customer?.tags && customerData.customer.tags.length > 0 && (
+                      <div className="mt-6">
+                        <p className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
+                          {tCarte('table.tags')}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {customerData.customer.tags.map((tag, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="px-3 py-1 text-xs font-medium bg-accent-2 text-accent-2-foreground border-accent-2"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          {/* カルテ情報 - モダンタブデザイン */}
+          <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="item-2">
+                <AccordionTrigger className="px-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-palette-4">
+                      <FileText className="w-5 h-5 text-palette-4-foreground" />
+                    </div>
+                    <h2 className="text-base md:text-xl font-bold text-primary">
+                      {tCarte('detail.carteInfo')}
+                    </h2>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="p-3 md:p-6">
+                    {customerCarteData ? (
+                      <Tabs defaultValue="customer" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 h-12 bg-secondary border border-border rounded-xl">
+                          <TabsTrigger
+                            value="customer"
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all duration-200 font-medium"
+                          >
+                            <UserCheck className="w-4 h-4 mr-2" />
+                            {tCarte('edit.tabs.customer')}
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="store"
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all duration-200 font-medium"
+                          >
+                            <Scissors className="w-4 h-4 mr-2" />
+                            {tCarte('edit.tabs.store')}
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="medical"
+                            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all duration-200 font-medium"
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            {tCarte('edit.tabs.medical')}
+                          </TabsTrigger>
+                        </TabsList>
+
+                        {/* 🟢 顧客記入項目タブ */}
+                        <TabsContent value="customer">
+                          <div className="space-y-6">
+                            {/* 基本的な顧客設定 */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {[
+                                {
+                                  key: 'prefer_silence',
+                                  label: tCarte('edit.customerPrefs.preferSilence'),
+                                  value: customerCarteData.prefer_silence,
+                                },
+                                {
+                                  key: 'avoid_sales_talk',
+                                  label: tCarte('edit.customerPrefs.avoidSalesTalk'),
+                                  value: customerCarteData.avoid_sales_talk,
+                                },
+                                {
+                                  key: 'avoid_private_topics',
+                                  label: tCarte('edit.customerPrefs.avoidPrivateTopics'),
+                                  value: customerCarteData.avoid_private_topics,
+                                },
+                                {
+                                  key: 'allow_photo_sns',
+                                  label: tCarte('edit.customerPrefs.allowPhotoSns'),
+                                  value: customerCarteData.allow_photo_sns,
+                                },
+                                {
+                                  key: 'prefer_hair_styling',
+                                  label: tCarte('edit.sharedPrefs.preferHairStyling'),
+                                  value: customerCarteData.prefer_hair_styling,
+                                },
+                                {
+                                  key: 'use_styling_product',
+                                  label: tCarte('edit.sharedPrefs.useStylingProduct'),
+                                  value: customerCarteData.use_styling_product,
+                                },
+                              ].map((item) => (
+                                <div key={item.key} className="group relative overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-r from-secondary to-secondary rounded-xl" />
+                                  <div className="relative p-4 rounded-xl border border-border bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-primary">
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3 font-medium">
+                                      {item.label}
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className={`w-4 h-4 rounded-full ${item.value === true ? 'bg-success shadow-lg' : 'bg-muted'} transition-all duration-300`}
+                                      />
+                                      <p
+                                        className={`text-sm font-semibold ${item.value === true ? 'text-success' : 'text-muted-foreground'}`}
+                                      >
+                                        {item.value === true ? 'はい' : 'いいえ'}
+                                      </p>
                                     </div>
                                   </div>
-                                )}
-
-                              {/* オプション情報 */}
-                              {item.detail.options &&
-                                Array.isArray(item.detail.options) &&
-                                item.detail.options.length > 0 && (
-                                  <div>
-                                    <span className="text-sm text-muted-foreground">
-                                      {tCarte('detail.option')}
-                                    </span>
-                                    <div className="mt-1">
-                                      {(item.detail.options as ReservationOption[]).map(
-                                        (option: ReservationOption, index: number) => (
-                                          <Badge
-                                            key={index}
-                                            variant="secondary"
-                                            className="mr-1 text-xs"
-                                          >
-                                            {option.name}
-                                          </Badge>
-                                        )
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-
-                              {/* 料金情報 */}
-                              <div className="flex items-center justify-between pt-2 border-t">
-                                <div className="flex items-center gap-2">
-                                  <CreditCard className="w-4 h-4 text-muted-foreground" />
-                                  <span className="text-sm">
-                                    {item.detail.paymentMethod === 'cash'
-                                      ? tCarte('detail.paymentMethod.cash')
-                                      : tCarte('detail.paymentMethod.card')}
-                                  </span>
                                 </div>
-                                <span className="font-semibold">
-                                  {formatPrice(item.detail.totalPrice || 0)}
-                                </span>
+                              ))}
+                            </div>
+
+                            {customerCarteData.daily_styling_time && (
+                              <div className="relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-2 to-palette-2 rounded-xl" />
+                                <div className="relative p-6 rounded-xl border border-palette-2 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-palette-2/40">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 rounded-lg bg-palette-2">
+                                      <CalendarDays className="w-4 h-4 text-palette-2-foreground" />
+                                    </div>
+                                    <p className="text-xs text-palette-2-foreground uppercase tracking-wide font-medium">
+                                      {tCarte('edit.customerPrefs.dailyStylingTime')}
+                                    </p>
+                                  </div>
+                                  <p className="text-lg font-bold text-palette-2-foreground">
+                                    {customerCarteData.daily_styling_time}分
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {customerCarteData.avoid_chemicals && (
+                              <div className="relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-warning to-warning rounded-xl" />
+                                <div className="relative p-6 rounded-xl border border-warning bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-warning">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 rounded-lg bg-warning">
+                                      <AlertCircle className="w-4 h-4 text-warning-foreground" />
+                                    </div>
+                                    <p className="text-xs text-warning-foreground uppercase tracking-wide font-medium">
+                                      {tCarte('edit.customerPrefs.avoidChemicals')}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm font-medium text-warning-foreground whitespace-pre-wrap leading-relaxed">
+                                    {customerCarteData.avoid_chemicals}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 敏感肌・アレルギー関連 */}
+                            <div className="space-y-6">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-warning">
+                                  <AlertCircle className="w-5 h-5 text-warning-foreground" />
+                                </div>
+                                <h3 className="text-lg font-bold text-primary">
+                                  {tCarte('edit.sharedPrefs.sensitivitySection')}
+                                </h3>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {[
+                                  {
+                                    key: 'has_sensitive_skin',
+                                    label: tCarte('edit.sharedPrefs.hasSensitiveSkin'),
+                                    value: customerCarteData.has_sensitive_skin,
+                                  },
+                                  {
+                                    key: 'fragrance_sensitivity',
+                                    label: tCarte('edit.sharedPrefs.fragranceSensitivity'),
+                                    value: customerCarteData.fragrance_sensitivity,
+                                  },
+                                  {
+                                    key: 'use_contact_lenses',
+                                    label: tCarte('edit.sharedPrefs.useContactLenses'),
+                                    value: customerCarteData.use_contact_lenses,
+                                  },
+                                ].map((item) => (
+                                  <div key={item.key} className="group relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-warning to-warning rounded-xl" />
+                                    <div className="relative p-4 rounded-xl border border-warning bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-warning">
+                                      <p className="text-xs text-warning-foreground uppercase tracking-wide mb-3 font-medium">
+                                        {item.label}
+                                      </p>
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className={`w-4 h-4 rounded-full ${item.value === true ? 'bg-warning shadow-lg' : 'bg-muted'} transition-all duration-300`}
+                                        />
+                                        <p
+                                          className={`text-sm font-semibold ${item.value === true ? 'text-warning-foreground' : 'text-muted-foreground'}`}
+                                        >
+                                          {item.value === true ? 'はい' : 'いいえ'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
 
-                              {/* 備考 */}
-                              {item.detail.notes && (
-                                <div className="text-sm text-muted-foreground">
-                                  {tCarte('detail.notes', { notes: item.detail.notes })}
+                              {customerCarteData.sensitive_skin_detail && (
+                                <div className="relative overflow-hidden group">
+                                  <div className="absolute inset-0 bg-gradient-to-r from-destructive to-destructive rounded-xl" />
+                                  <div className="relative p-6 rounded-xl border border-destructive bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-destructive">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <div className="p-2 rounded-lg bg-destructive">
+                                        <AlertCircle className="w-4 h-4 text-destructive-foreground" />
+                                      </div>
+                                      <p className="text-xs text-destructive-foreground uppercase tracking-wide font-medium">
+                                        {tCarte('edit.sharedPrefs.sensitiveSkinDetail')}
+                                      </p>
+                                    </div>
+                                    <p className="text-sm font-medium text-destructive-foreground whitespace-pre-wrap leading-relaxed">
+                                      {customerCarteData.sensitive_skin_detail}
+                                    </p>
+                                  </div>
                                 </div>
                               )}
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  {tCarte('detail.noReservationHistory')}
-                </div>
-              )}
+                          </div>
+                        </TabsContent>
 
-              {hasMore && (
-                <div className="flex justify-center mt-6">
-                  <Button
-                    onClick={loadMore}
-                    variant="outline"
-                    className="gap-2"
-                    disabled={!hasMore}
-                  >
-                    <span>{tCommon('loadMore')}</span>
-                    {hasMore ? (
-                      <ChevronDown size={16} />
+                        {/* 🔵 店舗記入項目タブ */}
+                        <TabsContent value="store" className="mt-6">
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-palette-5">
+                                <Scissors className="w-5 h-5 text-palette-5-foreground" />
+                              </div>
+                              <h3 className="text-lg font-bold text-primary">
+                                {tCarte('edit.storeAssessment.title')}
+                              </h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-5/20 to-palette-5/30 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-5/20 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-5/40">
+                                  <p className="text-xs text-palette-5-foreground/80 uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.hairThickness')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-palette-5-foreground">
+                                    {customerCarteData.hair_thickness === 'fine'
+                                      ? tCarte('edit.hairThickness.fine')
+                                      : customerCarteData.hair_thickness === 'medium'
+                                        ? tCarte('edit.hairThickness.medium')
+                                        : customerCarteData.hair_thickness === 'coarse'
+                                          ? tCarte('edit.hairThickness.coarse')
+                                          : tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-1 to-palette-1 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-1 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-1/40">
+                                  <p className="text-xs text-palette-1-foreground uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.hairVolume')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-palette-1-foreground">
+                                    {customerCarteData.hair_volume === 'low'
+                                      ? tCarte('edit.hairVolume.low')
+                                      : customerCarteData.hair_volume === 'medium'
+                                        ? tCarte('edit.hairVolume.medium')
+                                        : customerCarteData.hair_volume === 'high'
+                                          ? tCarte('edit.hairVolume.high')
+                                          : tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-2 to-palette-2 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-2 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-2/40">
+                                  <p className="text-xs text-palette-2-foreground uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.hairWaveLevel')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-palette-2-foreground">
+                                    {customerCarteData.hair_wave_level === 'straight'
+                                      ? tCarte('edit.hairWaveLevel.straight')
+                                      : customerCarteData.hair_wave_level === 'slight'
+                                        ? tCarte('edit.hairWaveLevel.slight')
+                                        : customerCarteData.hair_wave_level === 'moderate'
+                                          ? tCarte('edit.hairWaveLevel.moderate')
+                                          : customerCarteData.hair_wave_level === 'strong'
+                                            ? tCarte('edit.hairWaveLevel.strong')
+                                            : tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent my-6" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-3 to-palette-3 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-3 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
+                                  <p className="text-xs text-palette-3-foreground uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.hairDamageTendency')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-palette-3-foreground">
+                                    {customerCarteData.hair_damage_tendency === 'strong'
+                                      ? '強い'
+                                      : customerCarteData.hair_damage_tendency === 'medium'
+                                        ? '中程度'
+                                        : customerCarteData.hair_damage_tendency === 'weak'
+                                          ? '弱い'
+                                          : tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-4/20 to-palette-4/30 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-4/20 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-4/40">
+                                  <p className="text-xs text-palette-4-foreground/80 uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.poorDyePerm')}
+                                  </p>
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-4 h-4 rounded-full ${customerCarteData.poor_dye_perm_retention === true ? 'bg-palette-4-foreground shadow-lg' : 'bg-muted'} transition-all duration-300`}
+                                    />
+                                    <p className="text-sm font-semibold text-palette-4-foreground">
+                                      {customerCarteData.poor_dye_perm_retention === true
+                                        ? 'はい'
+                                        : 'いいえ'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-1 to-palette-1 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-1 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-1/40">
+                                  <p className="text-xs text-palette-1-foreground uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.quickColorFade')}
+                                  </p>
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-4 h-4 rounded-full ${customerCarteData.quick_color_fade === true ? 'bg-palette-1-foreground shadow-lg' : 'bg-muted'} transition-all duration-300`}
+                                    />
+                                    <p className="text-sm font-semibold text-palette-1-foreground">
+                                      {customerCarteData.quick_color_fade === true
+                                        ? 'はい'
+                                        : 'いいえ'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="group relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-palette-2 to-palette-2 rounded-xl" />
+                                <div className="relative p-4 rounded-xl border border-palette-2 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-2/40">
+                                  <p className="text-xs text-palette-2-foreground uppercase tracking-wide mb-3 font-medium">
+                                    {tCarte('edit.storeAssessment.hairDryness')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-palette-2-foreground">
+                                    {customerCarteData.hair_dryness === 'high'
+                                      ? '高い'
+                                      : customerCarteData.hair_dryness === 'medium'
+                                        ? '中程度'
+                                        : customerCarteData.hair_dryness === 'low'
+                                          ? '低い'
+                                          : tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent my-6" />
+
+                            <div className="group relative overflow-hidden">
+                              <div className="absolute inset-0 bg-gradient-to-r from-palette-5/20 to-palette-5/30 rounded-xl" />
+                              <div className="relative p-4 rounded-xl border border-palette-5/20 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-5/40">
+                                <p className="text-xs text-palette-5-foreground/80 uppercase tracking-wide mb-3 font-medium">
+                                  {tCarte('edit.storeAssessment.scalpCondition')}
+                                </p>
+                                <p className="text-sm font-semibold text-palette-5-foreground">
+                                  {customerCarteData.scalp_condition === 'normal'
+                                    ? tCarte('edit.scalpCondition.normal')
+                                    : customerCarteData.scalp_condition === 'dry'
+                                      ? tCarte('edit.scalpCondition.dry')
+                                      : customerCarteData.scalp_condition === 'oily'
+                                        ? tCarte('edit.scalpCondition.oily')
+                                        : customerCarteData.scalp_condition === 'sensitive'
+                                          ? tCarte('edit.scalpCondition.sensitive')
+                                          : tCarte('detail.notSet')}
+                                </p>
+                              </div>
+                            </div>
+
+                            {customerCarteData.scalp_trouble_detail && (
+                              <div className="relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-warning to-warning rounded-xl" />
+                                <div className="relative p-6 rounded-xl border border-warning bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-warning">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 rounded-lg bg-warning">
+                                      <AlertCircle className="w-4 h-4 text-warning-foreground" />
+                                    </div>
+                                    <p className="text-xs text-warning-foreground uppercase tracking-wide font-medium">
+                                      {tCarte('edit.storeAssessment.scalpTroubleDetail')}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm font-medium text-warning-foreground leading-relaxed">
+                                    {customerCarteData.scalp_trouble_detail}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </TabsContent>
+
+                        {/* 医療情報タブ */}
+                        <TabsContent value="medical" className="mt-6">
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-lg bg-destructive">
+                                <FileText className="w-5 h-5 text-destructive-foreground" />
+                              </div>
+                              <h3 className="text-lg font-bold text-primary">
+                                {tCarte('edit.medicalInfo.title')}
+                              </h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-destructive to-destructive rounded-xl" />
+                                <div className="relative p-6 rounded-xl border border-destructive bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-destructive">
+                                  <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 rounded-lg bg-destructive-foreground">
+                                      <AlertCircle className="w-4 h-4 text-destructive" />
+                                    </div>
+                                    <p className="text-xs text-destructive uppercase tracking-wide font-medium">
+                                      {tCarte('edit.medicalInfo.allergyHistory')}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm font-medium text-destructive whitespace-pre-wrap leading-relaxed">
+                                    {customerCarteData.allergy_history || tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-warning to-warning rounded-xl" />
+                                <div className="relative p-6 rounded-xl border border-warning-foreground bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-warning">
+                                  <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 rounded-lg bg-warning">
+                                      <FileText className="w-4 h-4 text-warning-foreground" />
+                                    </div>
+                                    <p className="text-xs text-warning-foreground uppercase tracking-wide font-medium">
+                                      {tCarte('edit.medicalInfo.medicalHistory')}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm font-medium text-warning-foreground whitespace-pre-wrap leading-relaxed">
+                                    {customerCarteData.medical_history || tCarte('detail.notSet')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     ) : (
-                      <RefreshCw size={16} className="animate-spin" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        {tCarte('detail.loadingCarteInfo')}
+                      </div>
                     )}
-                  </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          {/* 施術履歴 - モダンデザイン */}
+          <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+            <div className="p-3 md:p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-palette-3">
+                  <CalendarDays className="w-5 h-5 text-palette-3-foreground" />
                 </div>
-              )}
+                <h2 className="text-base md:text-xl font-bold text-primary">
+                  {tCarte('detail.reservationHistory')}
+                </h2>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="p-3 md:p-6">
+              <div className="grid grid-cols-1 gap-4">
+                {reservations.length > 0 ? (
+                  reservations
+                    .filter(
+                      (item) =>
+                        item.status !== 'cancelled' &&
+                        item.status !== 'pending' &&
+                        item.status !== 'refunded'
+                    )
+                    .map((item) => (
+                      <Link
+                        href={`/dashboard/carte/${customerUid}/reservation/${item.id}`}
+                        key={item.id}
+                      >
+                        <Card
+                          key={item.id}
+                          className="border-l-4 border-neon relative shadow-md hover:shadow-lg"
+                          style={{
+                            borderLeftColor:
+                              item.status === 'completed'
+                                ? 'neon'
+                                : item.status === 'cancelled'
+                                  ? 'destructive'
+                                  : item.status === 'confirmed'
+                                    ? 'neon'
+                                    : 'secondary',
+                          }}
+                        >
+                          <CardContent className="pt-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                                  <span className="font-medium">
+                                    {formatDate(item.startTimeUnix)}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-link-foreground font-semibold">
+                                  {format(new Date(item.startTimeUnix), 'HH:mm', {
+                                    locale: locale === 'ja' ? ja : enUS,
+                                  })}{' '}
+                                  ~{' '}
+                                  {format(new Date(item.endTimeUnix), 'HH:mm', {
+                                    locale: locale === 'ja' ? ja : enUS,
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <User className="w-4 h-4 text-muted-foreground" />
+                                  <span className="text-sm">
+                                    {tCarte('detail.assignedStaff', {
+                                      staffName: item.staffName || tCarte('detail.staffFree'),
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                              {getStatusBadge(item.status)}
+                            </div>
+                            {item.detail && (
+                              <div className="mt-3 space-y-2">
+                                {/* メニュー情報 */}
+                                {item.detail.menus &&
+                                  Array.isArray(item.detail.menus) &&
+                                  item.detail.menus.length > 0 && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">
+                                        {tCarte('detail.menu')}
+                                      </span>
+                                      <div className="mt-1">
+                                        {(item.detail.menus as ReservationMenu[]).map(
+                                          (menu: ReservationMenu, index: number) => (
+                                            <Badge key={index} variant="outline" className="mr-1">
+                                              {menu.name}
+                                            </Badge>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* オプション情報 */}
+                                {item.detail.options &&
+                                  Array.isArray(item.detail.options) &&
+                                  item.detail.options.length > 0 && (
+                                    <div>
+                                      <span className="text-sm text-muted-foreground">
+                                        {tCarte('detail.option')}
+                                      </span>
+                                      <div className="mt-1">
+                                        {(item.detail.options as ReservationOption[]).map(
+                                          (option: ReservationOption, index: number) => (
+                                            <Badge
+                                              key={index}
+                                              variant="secondary"
+                                              className="mr-1 text-xs"
+                                            >
+                                              {option.name}
+                                            </Badge>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* 料金情報 */}
+                                <div className="flex items-center justify-between pt-2 border-t">
+                                  <span className="font-semibold">
+                                    {formatPrice(item.detail.totalPrice || 0)}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-link-foreground">
+                                      {tCarte('detail.more')}
+                                    </span>
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                </div>
+
+                                {/* 備考 */}
+                                {item.detail.notes && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {tCarte('detail.notes', { notes: item.detail.notes })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {tCarte('detail.noReservationHistory')}
+                  </div>
+                )}
+
+                {hasMore && (
+                  <div className="flex justify-center mt-6">
+                    <Button
+                      onClick={loadMore}
+                      variant="outline"
+                      className="gap-2 hover:bg-primary/10 transition-all duration-200"
+                      disabled={!hasMore}
+                    >
+                      <span>{tCommon('loadMore')}</span>
+                      {hasMore ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <RefreshCw size={16} className="animate-spin" />
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </DashboardSection>
   )

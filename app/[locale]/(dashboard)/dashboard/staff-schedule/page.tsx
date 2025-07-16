@@ -1,6 +1,7 @@
 // カレンダーの日付表示部分を修正し、予約がある日には特別なマークを表示する
 'use client'
 
+
 import { ChevronLeft, ChevronRight, Ellipsis, Loader2 } from 'lucide-react'
 import { DashboardSection } from '@/components/common'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
@@ -104,7 +105,7 @@ export default function StaffSchedulePage() {
         }
       : 'skip',
     {
-      initialNumItems: 100,
+      initialNumItems: 150,
     }
   )
 
