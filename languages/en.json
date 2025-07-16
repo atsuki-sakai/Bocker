@@ -229,6 +229,7 @@
     "point": {
       "points": "{count} points"
     },
+    "schedule": "Staff Schedule",
     "search": "Search",
     "filter": "Filter",
     "reset": "Reset",
@@ -772,6 +773,10 @@
         "staffFree": "No Staff Preference",
         "totalReservations": "Total Reservations",
         "totalSales": "Total Sales",
+        "email": "Email",
+        "phone": "Phone Number",
+        "customerInfo": "Customer Information",
+        "more": "View Treatment Details",
         "reservationHistory": "Reservation History",
         "noReservationHistory": "No reservation history",
         "assignedStaff": "Staff: {staffName}",
