@@ -1197,8 +1197,54 @@ export const calculateReservationTime = query({
       return timeSlots
     })
 
-    const finalSlots = subtractedSchedulesWithStep.flat()
+    // 同時予約制限を超えた時間枠を除外
+    const unfilteredSlots = subtractedSchedulesWithStep.flat()
     
+    // 指定日の全ての確定予約を取得（店舗全体）
+    const allReservationsOnDate = await ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('date', args.date)
+          .eq('status', 'confirmed')
+          .eq('is_archive', false)
+      )
+      .collect()
+
+    // 店舗の同時受付可能席数を取得
+    const availableSheet = tenantReservationConfig?.available_sheet || 3
+
+    // 各時間スロットで既存予約数をチェックし、availableSheetを超える時間帯を除外
+    const finalSlots = unfilteredSlots.filter((slot) => {
+      // 時間文字列をタイムスタンプに変換
+      const startTimestamp = convertHourToTimestamp(slot.startHour, args.date)
+      const endTimestamp = convertHourToTimestamp(slot.endHour, args.date)
+
+      if (!startTimestamp || !endTimestamp) {
+        console.warn(`時間変換失敗: ${slot.startHour}-${slot.endHour}`)
+        return false
+      }
+
+      // この時間帯と重複する既存予約数をカウント
+      // 連続した予約（終了時刻 = 開始時刻）は重複とみなさない
+      const overlappingReservations = allReservationsOnDate.filter(reservation => {
+        return reservation.start_time_unix < endTimestamp && 
+               reservation.end_time_unix > startTimestamp
+      })
+      
+      const conflictCount = overlappingReservations.length
+      const remainingCapacity = availableSheet - conflictCount
+
+      // 残り枠がある場合のみスロットを保持
+      if (remainingCapacity <= 0) {
+        console.log(`時間帯 ${slot.startHour}-${slot.endHour}: 席数上限(${availableSheet})に達しているため除外 (既存予約: ${conflictCount}件)`)
+        return false
+      }
+
+      return true
+    })
     
     return finalSlots
   },
