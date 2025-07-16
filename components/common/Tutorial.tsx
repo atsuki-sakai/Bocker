@@ -261,11 +261,11 @@ export const Tutorial = () => {
   }
   return (
     <div
-      className={`container max-w-6xl mx-auto pb-8 ${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : ' blur-sm pointer-events-none select-none'}`}
+      className={`${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? 'container max-w-6xl mx-auto' : ' blur-sm pointer-events-none select-none'}`}
     >
       {!isAllRequiredStepsCompleted() && (
         <>
-          <div className="mb-6 p-4 rounded-lg border border-neon">
+          <div className="my-6 p-4 rounded-lg border border-neon">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold mb-2 text-neon">{t('setupGuide.title')}</h1>

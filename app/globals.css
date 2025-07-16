@@ -30,7 +30,7 @@ body {
     --primary-foreground: oklch(0.985 0.001 106.423);
     --button: oklch(0.46 0.0846 175.9);
     --button-foreground: oklch(1 0 none);
-    --secondary: oklch(0.97 0.005 106.423);
+    --secondary: oklch(0.97 0 none);
     --secondary-foreground: oklch(0.35 0.015 231.99);
     --muted: oklch(0.96 0.008 106.423);
     --muted-foreground: oklch(0.55 0.020 231.99);

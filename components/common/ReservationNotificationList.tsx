@@ -6,11 +6,11 @@ import { useTenantAndOrganization } from "@/hooks/useTenantAndOrganization";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CheckCircle2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { convertReservationStatus } from "@/convex/types";
-import { Button } from "../ui/button";
-import { Id } from "@/convex/_generated/dataModel";
-import { toast } from "sonner";
-import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { ja } from 'date-fns/locale'
+import { Button } from '../ui/button'
+import { Id } from '@/convex/_generated/dataModel'
+import { toast } from 'sonner'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loading } from '@/components/common'
 
 export default function ReservationNotificationList() {
@@ -63,17 +63,20 @@ export default function ReservationNotificationList() {
       {notifications?.length === 0 ? (
         <div className="absolute -top-3 right-0 flex items-center justify-center gap-2 z-10">
           <CheckCircle2 className="w-4 h-4 text-accent-2" />
-          <p className="text-xs">新規予約通知はありません。</p>
+          <p className="text-xs md:text-sm text-muted-foreground">新規予約通知はありません。</p>
         </div>
       ) : (
         <Accordion type="single" collapsible className="w-full overflow-x-auto">
           <AccordionItem value="notifications">
             <div className="flex justify-between items-center gap-2 w-full">
-              <AccordionTrigger className="py-2 px-3 rounded-lg transition-colors hover:no-underline flex-1">
+              <AccordionTrigger className="py-1 mb-2 px-3 bg-link border border-link-foreground text-muted-foreground rounded-lg transition-colors hover:no-underline flex-1">
                 <div className="flex flex-col md:flex-row items-start md:items-center md:gap-2 w-full">
                   {notifications && notifications.length > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-xs">
-                      <strong className="text-base text-accent-2"> {notifications.length}</strong>{' '}
+                      <strong className="text-base text-link-foreground">
+                        {' '}
+                        {notifications.length}
+                      </strong>{' '}
                       件の新規予約
                     </span>
                   )}
@@ -87,17 +90,14 @@ export default function ReservationNotificationList() {
               >
                 <span className="text-xs hidden md:block">全て確認済みにする</span>
                 <span className="text-xs md:hidden">全て確認</span>
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3 h-3" />
               </Button>
             </div>
             <AccordionContent className="pt-2 overflow-x-auto w-full">
               <div className="space-y-2">
                 {notifications?.map((notification) => (
-                  <div
-                    key={notification._id}
-                    className="flex items-center justify-between p-2 gap-2"
-                  >
-                    <div className="flex flex-col items-center">
+                  <div key={notification._id} className="flex items-center justify-between ">
+                    <div className="flex flex-col items-center mr-2">
                       <Button
                         variant="destructive"
                         size="sm"
@@ -109,20 +109,29 @@ export default function ReservationNotificationList() {
                     <div className="flex flex-col gap-1 w-full text-nowrap">
                       <div className="flex flex-col md:flex-row  items-start md:items-center gap-2">
                         <div className="flex gap-4 items-center">
-                          <span className="text-xs px-2 py-0.5 bg-accent-2-foreground text-accent-2 border border-accent-2 rounded-md">
-                            {convertReservationStatus(notification.status)}
-                          </span>
-                          <div className="text-sm text-muted-foreground">
-                            <span className="font-bold text-accent-2">
-                              {format(notification.start_time_unix, 'yyyy年MM月dd日 HH:mm')} ~{' '}
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-semibold text-primary">
+                              {format(notification.start_time_unix, 'yyyy年MM月dd日(EEE)', {
+                                locale: ja,
+                              })}
+                            </span>
+                            <span className="text-sm text-link-foreground underline">
+                              {format(notification.start_time_unix, 'HH:mm')} ~{' '}
                               {format(notification.end_time_unix, 'HH:mm')}
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-muted-foreground mx-2">
-                            担当 - {notification.staff_name} / 顧客名 - {notification.customer_name}{' '}
-                            様
+                          <span className="text-xs text-muted-foreground">
+                            <small className="font-bold border border-muted-foreground rounded-md px-1 py-0.5 mr-1">
+                              担当
+                            </small>
+                            {notification.staff_name}
+                            {' - '}
+                            <small className="font-bold border border-muted-foreground rounded-md px-1 py-0.5 mr-1">
+                              顧客名
+                            </small>
+                            {notification.customer_name}
                           </span>
                         </div>
                       </div>
