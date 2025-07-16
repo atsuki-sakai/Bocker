@@ -30,6 +30,7 @@ interface ReservationWithDetails {
   end_time_unix: number
   status: string
   date: string
+  note?: string
 }
 
 interface StaffSchedule {
@@ -78,23 +79,23 @@ interface UseTimelineDataReturn {
 const TIME_SLOT_MINUTES = 10
 const TOTAL_MINUTES_PER_DAY = 24 * 60
 const RESERVATION_COLORS = {
-  confirmed: 'bg-blue-100 border-blue-300 text-blue-800',
-  pending: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-  cancelled: 'bg-red-100 border-red-300 text-red-800',
-  completed: 'bg-green-100 border-green-300 text-green-800',
+  confirmed: 'bg-link text-link-foreground',
+  pending: 'bg-warning text-warning-foreground',
+  cancelled: 'bg-destructive text-destructive-foreground',
+  completed: 'bg-success text-success-foreground',
 } as const
 
 const FREE_NOMINATION_COLORS = {
-  confirmed: 'bg-purple-100 border-purple-300 text-purple-800',
-  pending: 'bg-orange-100 border-orange-300 text-orange-800',
-  cancelled: 'bg-red-100 border-red-300 text-red-800',
-  completed: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+  confirmed: 'bg-palette-5 text-palette-5-foreground',
+  pending: 'bg-warning text-warning-foreground',
+  cancelled: 'bg-destructive text-destructive-foreground',
+  completed: 'bg-success text-success-foreground',
 } as const
 
 const SCHEDULE_COLORS = {
-  break: 'bg-gray-100 border-gray-300 text-gray-800',
-  holiday: 'bg-red-50 border-red-200 text-red-700',
-  work: 'bg-green-50 border-green-200 text-green-700',
+  break: 'bg-muted text-muted-foreground',
+  holiday: 'bg-destructive text-destructive-foreground',
+  work: 'bg-success text-success-foreground',
 } as const
 
 // ■ ユーティリティ関数

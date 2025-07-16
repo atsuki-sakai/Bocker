@@ -481,13 +481,13 @@ export const findByCustomerAndDate = query({
   },
 })
 
-/**
- * サロン・スタッフ・日付から当日の予約受付可能時間帯を算出
- * - サロン・スタッフ・例外休業を考慮し予約枠を算出
- * - 重複・席数・既存予約考慮はmutation/helpersに委譲
- * - 本関数は「予約可能な時間帯」の情報のみ返す
- * データ取得専用でバリデーションはmutationで担保
- */
+// /**
+//  * サロン・スタッフ・日付から当日の予約受付可能時間帯を算出
+//  * - サロン・スタッフ・例外休業を考慮し予約枠を算出
+//  * - 重複・席数・既存予約考慮はmutation/helpersに委譲
+//  * - 本関数は「予約可能な時間帯」の情報のみ返す
+//  * データ取得専用でバリデーションはmutationで担保
+//  */
 export const findAvailableTimeSlots = query({
   args: {
     tenant_id: v.id('tenant'),
@@ -641,22 +641,37 @@ export const findAvailableTimeSlots = query({
 
     // サロン開始時刻とスタッフ開始時刻のうち、遅い方を採用
     let resultStart = Math.max(salonStart!, staffStart!)
-    // 現在時刻を日本時間にシフト
-    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
-    // 本日かどうか判定（日本時間ベース）
-    if (
-      jstNow.getUTCFullYear() === targetDate.getFullYear() &&
-      jstNow.getUTCMonth() === targetDate.getMonth() &&
-      jstNow.getUTCDate() === targetDate.getDate()
-    ) {
-      // 現在時刻＋待機時間を10分刻みに丸め
-      const rawNextLater = Date.now() + todayFirstLaterMinutes
-      const stepMs = 10 * 60 * 1000
-      const alignedNextLater = Math.ceil(rawNextLater / stepMs) * stepMs
-      resultStart = Math.max(resultStart, alignedNextLater)
-    }
+    // 現在日時 (JST) を取得
+    const nowJstDateStr = new Date()
+      .toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: 'Asia/Tokyo',
+      })
+      .replace(/\//g, '-')
+
+    // 当日判定（JST ベース）
+    if (nowJstDateStr === args.date) {
+       // 現在時刻＋待機時間を10分刻みに丸め
+       const rawNextLater = Date.now() + todayFirstLaterMinutes
+       const stepMs = 10 * 60 * 1000
+       const alignedNextLater = Math.ceil(rawNextLater / stepMs) * stepMs
+       resultStart = Math.max(resultStart, alignedNextLater)
+     }
+
+    // 予約可能開始 >= 終了 の場合のガードは resultEnd 計算後に実施（下部へ移動）
+
     // サロン終了時刻とスタッフ終了時刻のうち、早い方を採用
     const resultEnd = Math.min(salonEnd!, staffEnd!)
+
+    // --- 追加ガード: 予約可能開始 >= 終了なら予約枠無しを返す ---
+    if (resultStart >= resultEnd) {
+      return {
+        startHour: convertTimestampToHour(resultEnd),
+        endHour: convertTimestampToHour(resultEnd),
+      }
+    }
 
     // 予約できる時間の範囲の開始時刻と終了時刻を文字列に変換
     const startHour = convertTimestampToHour(resultStart)
@@ -1189,8 +1204,10 @@ export const calculateReservationTime = query({
   },
 })
 
+
 /**
  * 指名フリー予約用：複数スタッフの統合空き時間を計算
+ * 同一時間帯の最大予約数（availableSheet）を考慮して利用可能な時間枠のみを返す
  * @returns IntegratedAvailabilityInfo 統合された空き時間情報
  */
 export const calculateIntegratedAvailableTimes = query({
@@ -1207,6 +1224,8 @@ export const calculateIntegratedAvailableTimes = query({
     totalAvailableStaffs: v.number(),
   }),
   handler: async (ctx, args): Promise<IntegratedAvailabilityInfo> => {
+   
+
     // 日付形式バリデーション
     if (!validateDateStrFormat(args.date)) {
       throw new ConvexError({
@@ -1216,24 +1235,50 @@ export const calculateIntegratedAvailableTimes = query({
       });
     }
 
-    // 1. 対応可能なスタッフを取得（認証チェックをスキップ）
-    // 顧客予約フローからの呼び出しのため認証は不要
-    const availableStaffs = await ctx.runQuery(
-      internal.staff.query.findByAvailableStaffsInternal,
-      {
-        tenant_id: args.tenant_id,
-        org_id: args.org_id,
-        menu_ids: args.menu_ids,
-      }
-    );
+    // 1. 予約設定と対応可能なスタッフを並列で取得
+    const [reservationConfig, availableStaffs] = await Promise.all([
+      // 予約設定取得（availableSheet取得のため）
+      ctx.db
+        .query('reservation_config')
+        .withIndex('by_tenant_org_archive', (q) =>
+          q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('is_archive', false)
+        )
+        .first(),
+      
+      // 対応可能なスタッフを取得（認証チェックをスキップ）
+      ctx.runQuery(
+        internal.staff.query.findByAvailableStaffsInternal,
+        {
+          tenant_id: args.tenant_id,
+          org_id: args.org_id,
+          menu_ids: args.menu_ids,
+        }
+      )
+    ]);
 
     if (availableStaffs.length === 0) {
+      console.log('対応可能スタッフが0人のため終了')
       return { 
         available: false, 
         timeSlots: [],
         totalAvailableStaffs: 0 
       };
     }
+
+    // 店舗ごとの同時受付可能席数を取得
+    const availableSheet = reservationConfig?.available_sheet || 3
+
+    // 2. 当日の既存予約を取得
+    const existingReservations = await ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('date', args.date)
+          .eq('status', 'confirmed')
+          .eq('is_archive', false)
+      )
+      .collect()
 
     // メニューとオプションの合計時間を計算（パフォーマンス最適化：並列取得）
     const [menus, options] = await Promise.all([
@@ -1252,7 +1297,7 @@ export const calculateIntegratedAvailableTimes = query({
     const totalDuration = validMenus.reduce((sum, menu) => sum + (menu.duration_min || 0), 0) +
                          validOptions.reduce((sum, option) => sum + (option?.duration_min || 0), 0);
 
-    // 2. 各スタッフの空き時間を並列で取得（エラーハンドリング付き）
+    // 3. 各スタッフの空き時間を並列で取得（エラーハンドリング付き）
     const staffAvailabilities = await Promise.all(
       availableStaffs.map(async (staff) => {
         try {
@@ -1290,15 +1335,16 @@ export const calculateIntegratedAvailableTimes = query({
       })
     );
 
-    // 3. 時間帯ごとに統合（Map使用でO(n)で処理）
+    // 4. 時間帯ごとに統合（Map使用でO(n)で処理）
     const integratedSlots = new Map<string, IntegratedTimeSlot>();
 
     staffAvailabilities.forEach(({ staff, times }) => {
+      console.log('staff', staff)
       if (times && times.length > 0) {
         times.forEach((timeRange: TimeRange) => {
           const key = `${timeRange.startHour}-${timeRange.endHour}`;
           const existing = integratedSlots.get(key);
-          
+
           if (existing) {
             existing.availableStaffs.push({
               id: staff._id,
@@ -1322,8 +1368,41 @@ export const calculateIntegratedAvailableTimes = query({
       }
     });
 
-    // 4. 各スロットのスタッフを優先度でソート
-    const sortedSlots: IntegratedTimeSlot[] = Array.from(integratedSlots.values()).map(slot => ({
+    // 5. 各時間帯で既存予約数をチェックし、availableSheetを超える時間帯を除外
+    const filteredSlots = new Map<string, IntegratedTimeSlot>();
+
+    for (const [key, slot] of integratedSlots.entries()) {
+      // 時間文字列をタイムスタンプに変換
+      const startTimestamp = convertHourToTimestamp(slot.start, args.date);
+      const endTimestamp = convertHourToTimestamp(slot.end, args.date);
+
+      if (!startTimestamp || !endTimestamp) {
+        console.warn(`時間変換失敗: ${key}`)
+        continue;
+      }
+
+      // この時間帯と重複する既存予約数をカウント
+      // 連続した予約（終了時刻 = 開始時刻）は重複とみなさない
+      // 例: 13:00~14:00と14:00~15:00は許可、13:00~14:01と14:00~15:00は拒否
+      const overlappingReservations = existingReservations.filter(reservation => {
+        const isOverlapping = reservation.start_time_unix < endTimestamp && 
+                            reservation.end_time_unix > startTimestamp;
+        
+        return isOverlapping;
+      });
+      const conflictCount = overlappingReservations.length;
+      const remainingCapacity = availableSheet - conflictCount;
+
+      // 残り枠がある場合のみスロットを追加
+      if (remainingCapacity > 0) {
+        filteredSlots.set(key, slot);
+      } else {
+        console.log(`時間帯 ${key}: 上限に達しているため除外`);
+      }
+    }
+
+    // 6. 各スロットのスタッフを優先度でソート
+    const sortedSlots: IntegratedTimeSlot[] = Array.from(filteredSlots.values()).map(slot => ({
       ...slot,
       availableStaffs: slot.availableStaffs.sort((a, b) => {
         const priorityDiff = b.priority - a.priority;
@@ -1332,7 +1411,7 @@ export const calculateIntegratedAvailableTimes = query({
       }),
     }));
 
-    // 5. スロット自体を開始時間でソート
+    // 7. スロット自体を開始時間でソート
     sortedSlots.sort((a, b) => {
       const aMinutes = hourToMinutes(a.start);
       const bMinutes = hourToMinutes(b.start);
@@ -1777,9 +1856,6 @@ export const getBestAvailableStaffForTimeSlot = query({
       )
       .collect()
 
-    console.log('1. 全アクティブスタッフ数:', allStaff.length)
-    console.log('スタッフリスト:', allStaff.map(s => ({ id: s._id, name: s.name })))
-
     if (allStaff.length === 0) {
       console.log('アクティブスタッフが0人のため終了')
       return null
@@ -1794,7 +1870,6 @@ export const getBestAvailableStaffForTimeSlot = query({
           q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id).eq('menu_id', menu_id).eq('is_archive', false)
         )
         .collect()
-      console.log(`メニュー ${menu_id} の除外スタッフ:`, exclusions)
       return exclusions
     })
     const allExclusions = await Promise.all(exclusionsPromises)
@@ -1805,10 +1880,6 @@ export const getBestAvailableStaffForTimeSlot = query({
     // 3. メニューに対応可能なスタッフのみフィルタリング
     const availableStaff = allStaff.filter((staff) => !excludedIds.has(staff._id))
 
-    console.log('2. 除外されたスタッフID:', Array.from(excludedIds))
-    console.log('3. メニュー対応可能スタッフ数:', availableStaff.length)
-    console.log('対応可能スタッフリスト:', availableStaff.map(s => ({ id: s._id, name: s.name })))
-
     if (availableStaff.length === 0) {
       console.log('メニュー対応可能スタッフが0人のため終了')
       return null
@@ -1817,13 +1888,11 @@ export const getBestAvailableStaffForTimeSlot = query({
     // 対象日の曜日を取得
     const targetDate = new Date(args.date)
     const dayOfWeek = getDayOfWeek(targetDate)
-    console.log('対象日:', args.date, '曜日:', dayOfWeek)
 
     const filteredBySchedule: typeof availableStaff = []
 
     // 4. スケジュール・週間勤務時間チェックで更にスタッフを絞り込み
     for (const staff of availableStaff) {
-      console.log(`\n=== スタッフ ${staff.name} のスケジュールチェック開始 ===`)
       let skip = false
 
       // 4.1 当日の例外スケジュール取得
@@ -1839,8 +1908,6 @@ export const getBestAvailableStaffForTimeSlot = query({
         )
         .collect()
 
-      console.log('例外スケジュール数:', staffSchedules.length)
-      
       // 例外スケジュールチェック
       for (const sch of staffSchedules) {
         console.log('例外スケジュール:', {
@@ -1850,7 +1917,7 @@ export const getBestAvailableStaffForTimeSlot = query({
         })
 
         if (sch.is_all_day) {
-          console.log('→ 終日スケジュールあり、スキップ')
+         
           skip = true
           break
         }
@@ -1861,7 +1928,7 @@ export const getBestAvailableStaffForTimeSlot = query({
           args.start_time_unix < sch.end_time_unix &&
           args.end_time_unix > sch.start_time_unix
         ) {
-          console.log('→ 時間帯重複あり、スキップ')
+        
           skip = true
           break
         }
@@ -1896,42 +1963,13 @@ export const getBestAvailableStaffForTimeSlot = query({
         )
         .first()
 
-      // 週間スケジュールの詳細ログ
-      if (weekSchedule) {
-        console.log('週間スケジュール取得結果:', {
-          day_of_week: weekSchedule.day_of_week,
-          is_open: weekSchedule.is_open,
-          start_hour: weekSchedule.start_hour,
-          end_hour: weekSchedule.end_hour,
-          _id: weekSchedule._id
-        })
-      } else {
-        // is_open条件を外して再度確認（デバッグ用）
-        const allSchedules = await ctx.db
-          .query('staff_week_schedule')
-          .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
-            q
-              .eq('tenant_id', args.tenant_id)
-              .eq('org_id', args.org_id)
-              .eq('staff_id', staff._id)
-              .eq('day_of_week', dayOfWeek as DayOfWeek)
-              .eq('is_open', true)
-              .eq('is_archive', false)
-          )
-          .collect()
-        
-        console.log('週間スケジュール未取得。全件確認:', allSchedules.map(s => ({
-          _id: s._id,
-          is_open: s.is_open,
-          start_hour: s.start_hour,
-          end_hour: s.end_hour
-        })))
-      }
 
       if (!weekSchedule) {
         console.log('→ 週間スケジュールなし or is_open=false、スキップ')
         continue
       }
+
+      console.log(args.date)
 
       // 勤務時間内判定
       const workStart = weekSchedule.start_hour
@@ -1942,10 +1980,10 @@ export const getBestAvailableStaffForTimeSlot = query({
         : Number.MAX_SAFE_INTEGER
 
       console.log('勤務時間チェック:', {
-        workStart: new Date(workStart).toLocaleString('ja-JP'),
-        workEnd: new Date(workEnd).toLocaleString('ja-JP'),
-        reservationStart: new Date(args.start_time_unix).toLocaleString('ja-JP'),
-        reservationEnd: new Date(args.end_time_unix).toLocaleString('ja-JP'),
+        workStart: convertTimestampToHour(workStart),
+        workEnd: convertTimestampToHour(workEnd),
+        reservationStart: convertTimestampToHour(args.start_time_unix),
+        reservationEnd: convertTimestampToHour(args.end_time_unix),
         workStartHour: weekSchedule.start_hour,
         workEndHour: weekSchedule.end_hour
       })
@@ -1958,10 +1996,6 @@ export const getBestAvailableStaffForTimeSlot = query({
       console.log('→ スケジュールOK、追加')
       filteredBySchedule.push(staff)
     }
-
-    console.log('\n4. スケジュール確認後のスタッフ数:', filteredBySchedule.length)
-    console.log('スケジュール確認後スタッフリスト:', filteredBySchedule.map(s => ({ id: s._id, name: s.name })))
-
     if (filteredBySchedule.length === 0) {
       console.log('スケジュール確認後スタッフが0人のため終了')
       return null
@@ -1975,22 +2009,12 @@ export const getBestAvailableStaffForTimeSlot = query({
       .collect()
     const configMap = new Map(configs.map((config) => [config.staff_id, config]))
 
-    console.log('5. スタッフ設定数:', configs.length)
-    console.log('設定があるスタッフID:', configs.map(c => ({ 
-      staff_id: c.staff_id, 
-      priority: c.priority,
-      extra_charge: c.extra_charge 
-    })))
+
 
     // 6. ダブルブッキングをチェックし、対応可能なスタッフを絞り込み
     const availableStaffWithConfigs = []
     for (const staff of filteredBySchedule) {
-      console.log(`\nスタッフ ${staff.name} のダブルブッキングチェック開始 ===`)
       const config = configMap.get(staff._id)
-      console.log(`スタッフ設定:`, config ? {
-        priority: config.priority,
-        extra_charge: config.extra_charge
-      } : 'なし')
 
       if (!config) {
         console.log(`→ 設定がないため除外`)
@@ -2008,18 +2032,17 @@ export const getBestAvailableStaffForTimeSlot = query({
         })
 
         if (!isDoubleBooked) {
-          console.log(`→ ダブルブッキングなし、追加対象`)
+
+          
+          
           availableStaffWithConfigs.push({
             staff_id: staff._id,
             staff_name: staff.name || '',
             priority: config?.priority || 1,
             extra_charge: config?.extra_charge || 0,
           })
-        } else {
-          console.log(`→ ダブルブッキングあり、除外`)
-        }
-      } catch (error) {
-        console.warn(`→ 可用性チェックでエラー:`, error)
+        } 
+      } catch {
         continue
       }
     }
@@ -2099,3 +2122,7 @@ export const getReservationCountsByDateRange = query({
     return result
   },
 })
+
+
+
+

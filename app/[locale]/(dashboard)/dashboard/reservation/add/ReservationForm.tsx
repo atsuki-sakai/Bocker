@@ -974,7 +974,9 @@ export default function ReservationForm() {
                           <span className="text-sm font-medium">メニューを絞り込み</span>
                           {(selectedCategories.length > 0 || selectedGender || selectedType) && (
                             <Badge variant="outline" className="ml-2">
-                              {selectedCategories.length + (selectedGender ? 1 : 0) + (selectedType ? 1 : 0)}
+                              {selectedCategories.length +
+                                (selectedGender ? 1 : 0) +
+                                (selectedType ? 1 : 0)}
                             </Badge>
                           )}
                         </div>
@@ -982,7 +984,9 @@ export default function ReservationForm() {
                       <AccordionContent>
                         {/* カテゴリーフィルター */}
                         <div className="mb-4">
-                          <div className="text-xs font-medium text-muted-foreground mb-2">カテゴリー</div>
+                          <div className="text-xs font-medium text-muted-foreground mb-2">
+                            カテゴリー
+                          </div>
                           <div className="flex flex-wrap gap-2">
                             {MENU_CATEGORY_VALUES.map((category) => {
                               const isSelected = selectedCategories.includes(category)
@@ -992,11 +996,15 @@ export default function ReservationForm() {
                                   variant={isSelected ? 'default' : 'outline'}
                                   className={cn(
                                     'cursor-pointer transition-all',
-                                    isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                                    isSelected
+                                      ? 'bg-accent-2 hover:bg-accent-2/90'
+                                      : 'hover:bg-muted'
                                   )}
                                   onClick={() => {
                                     if (isSelected) {
-                                      setSelectedCategories((prev) => prev.filter((c) => c !== category))
+                                      setSelectedCategories((prev) =>
+                                        prev.filter((c) => c !== category)
+                                      )
                                     } else {
                                       setSelectedCategories((prev) => [...prev, category])
                                     }
@@ -1017,7 +1025,7 @@ export default function ReservationForm() {
                             {[
                               { value: 'male', label: '男性' },
                               { value: 'female', label: '女性' },
-                              { value: 'unselected', label: '指定なし' }
+                              { value: 'unselected', label: '指定なし' },
                             ].map((gender) => {
                               const isSelected = selectedGender === gender.value
                               return (
@@ -1026,13 +1034,17 @@ export default function ReservationForm() {
                                   variant={isSelected ? 'default' : 'outline'}
                                   className={cn(
                                     'cursor-pointer transition-all',
-                                    isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                                    isSelected
+                                      ? 'bg-accent-2 hover:bg-accent-2/90'
+                                      : 'hover:bg-muted'
                                   )}
                                   onClick={() => {
                                     if (isSelected) {
                                       setSelectedGender(null)
                                     } else {
-                                      setSelectedGender(gender.value as 'male' | 'female' | 'unselected')
+                                      setSelectedGender(
+                                        gender.value as 'male' | 'female' | 'unselected'
+                                      )
                                     }
                                   }}
                                 >
@@ -1046,12 +1058,14 @@ export default function ReservationForm() {
 
                         {/* タイプフィルター */}
                         <div className="mb-4">
-                          <div className="text-xs font-medium text-muted-foreground mb-2">タイプ</div>
+                          <div className="text-xs font-medium text-muted-foreground mb-2">
+                            タイプ
+                          </div>
                           <div className="flex flex-wrap gap-2">
                             {[
                               { value: 'all', label: '全て' },
                               { value: 'first_time', label: '初回' },
-                              { value: 'repeat', label: 'リピーター' }
+                              { value: 'repeat', label: 'リピーター' },
                             ].map((type) => {
                               const isSelected = selectedType === type.value
                               return (
@@ -1060,7 +1074,9 @@ export default function ReservationForm() {
                                   variant={isSelected ? 'default' : 'outline'}
                                   className={cn(
                                     'cursor-pointer transition-all',
-                                    isSelected ? 'bg-accent-2 hover:bg-accent-2/90' : 'hover:bg-muted'
+                                    isSelected
+                                      ? 'bg-accent-2 hover:bg-accent-2/90'
+                                      : 'hover:bg-muted'
                                   )}
                                   onClick={() => {
                                     if (isSelected) {
@@ -1130,7 +1146,9 @@ export default function ReservationForm() {
                               </div>
                             )}
                             <div>
-                              <h3 className="font-semibold text-base">{menu.name}</h3>
+                              <h3 className="font-semibold text-base md:text-nowrap">
+                                {menu.name}
+                              </h3>
                               <p className="text-sm text-muted-foreground">{menu.duration_min}分</p>
                               <div className="flex items-center gap-2 mt-1">
                                 {menu.sale_price && menu.sale_price > 0 ? (
@@ -1150,7 +1168,7 @@ export default function ReservationForm() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-end w-full gap-2 min-w-18">
+                          <div className="flex items-center justify-end w-full gap-2 min-w-18 mt-2 md:mt-0">
                             <Button
                               type="button"
                               size="icon"

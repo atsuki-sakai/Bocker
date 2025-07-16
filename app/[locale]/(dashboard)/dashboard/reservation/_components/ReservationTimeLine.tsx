@@ -4,12 +4,17 @@ import React, { useState, useMemo, useCallback, memo, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTimelineData, useReservationBars } from '@/hooks/useTimelineData'
+import { toast } from 'sonner'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { fetchMutation } from 'convex/nextjs'
+import { useRouter } from 'next/navigation'
 import type {
   StaffTimelineData,
   ReservationWithDetails,
   TimeSlot,
   ReservationBar,
 } from '@/hooks/useTimelineData'
+import { Loader2 } from 'lucide-react'
 import { RESERVATION_COLORS, FREE_NOMINATION_COLORS } from '@/hooks/useTimelineData'
 import { Loading } from '@/components/common'
 import { Card, CardContent } from '@/components/ui/card'
@@ -52,7 +57,7 @@ const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
       {/* スタッフ名カラムのヘッダー */}
       <div className="sticky left-0 z-40 bg-background border-r border-border w-20 md:w-40 p-3 flex items-center justify-center font-bold text-muted-foreground">
         <User className="w-4 h-4 mr-2" />
-        <span className="hidden md:block text-sm">{t('staff')}</span>
+        <span className="hidden md:block text-xs">{t('staff')}</span>
       </div>
 
       {/* 時間スロットヘッダー */}
@@ -133,33 +138,33 @@ const ReservationBarComponent = memo(
         )}
         style={{
           left: `${startColumn * SLOT_WIDTH + 1}px`, // 少し右にずらして視覚的な間隔を作る
-          width: `${spanColumns * SLOT_WIDTH - 4}px`, // 間隔調整を改善
+          width: `${spanColumns * SLOT_WIDTH - 2}px`, // 間隔調整を改善
           zIndex: 20,
         }}
         onClick={() => onReservationClick(reservation)}
         title={`${reservation.is_free_nomination ? '[指名フリー] ' : ''}${reservation.customer_name} (${convertTimestampToHour(reservation.start_time_unix)} - ${convertTimestampToHour(reservation.end_time_unix)})`}
       >
         <div className="flex flex-col items-start gap-1 overflow-hidden">
-          {reservation.is_free_nomination && (
-            <span className="text-xs text-nowrap bg-purple-200 text-purple-800 px-1 rounded-full font-medium">
-              指名フリー <small>(スタッフの変更可)</small>
-            </span>
-          )}
           <div className="flex items-center gap-1">
             {getStatusIcon(reservation.status)}
             <span className="truncate font-medium">
-              {reservation.customer_name ?? t('nameNotSet')} 様
+              {reservation.staff_name ?? t('nameNotSet')}
             </span>
+            {reservation.is_free_nomination && (
+              <div className="text-xs text-nowrap bg-palette-5-foreground text-palette-5 px-1 rounded-full font-medium">
+                <small>指名フリー</small>
+              </div>
+            )}
           </div>
           {/* 時間表示（幅が十分な場合のみ） */}
-          <div className="flex items-center justify-between w-full gap-1">
-            {spanColumns > 6 && (
-              <span className="text-xs opacity-75">
-                {convertTimestampToHour(reservation.start_time_unix)}~
-                {convertTimestampToHour(reservation.end_time_unix)}
-              </span>
-            )}
-            <span className="text-xs opacity-75">{reservation.staff_name}</span>
+          <div className="flex flex-col items-start justify-between w-full gap-1">
+            <span className="text-xs font-bold underline">
+              {convertTimestampToHour(reservation.start_time_unix)}~
+              {convertTimestampToHour(reservation.end_time_unix)}
+            </span>
+            <span className="text-xs opacity-75 text-nowrap truncate">
+              {reservation.customer_name}様
+            </span>
           </div>
         </div>
       </div>
@@ -273,6 +278,9 @@ const ReservationDetailDialog = memo(
     onClose: () => void
   }) => {
     const t = useTranslations('reservations')
+    const router = useRouter()
+    const { showErrorToast } = useErrorHandler()
+    const [updating, setUpdating] = useState(false)
 
     if (!reservation) return null
 
@@ -280,32 +288,59 @@ const ReservationDetailDialog = memo(
     const enhancedColor =
       colorSet[reservation.status as keyof typeof colorSet] || colorSet.confirmed
 
+    const handleCompleteReservation = async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      try {
+        setUpdating(true)
+        if (!reservation) return
+
+        await fetchMutation(api.reservation.manage.handleReservationManage, {
+          mode: 'status',
+          payload: {
+            reservationId: reservation._id,
+            status: 'completed',
+          },
+        })
+
+        toast.success('施術のステータスを完了にしました。')
+        router.push('/dashboard/reservation')
+      } catch (error) {
+        showErrorToast(error)
+      } finally {
+        setUpdating(false)
+        onClose()
+      }
+    }
+
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {reservation.is_free_nomination ? (
-                <Shuffle className="w-5 h-5 text-purple-600" />
+                <Shuffle className="w-5 h-5 text-palette-5-foreground" />
               ) : (
                 <User className="w-5 h-5" />
               )}
               {t('detail')}
               {reservation.is_free_nomination && (
-                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium ml-2">
+                <span className="text-xs bg-palette-5-foreground text-palette-5 px-2 py-1 rounded-full font-medium ml-2">
                   指名フリー
                 </span>
               )}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-semibold text-primary">{t('customerName')}</label>
-                <p className="text-sm text-primary mt-1 font-medium">{reservation.customer_name}</p>
+              <div className="w-full flex flex-col items-start gap-2">
+                <label className="text-xs font-semibold text-primary">担当スタッフ</label>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <p className="text-sm text-primary font-medium">{reservation.staff_name}</p>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-semibold text-primary">{t('status')}</label>
+              <div className="w-full">
+                <label className="text-xs font-semibold text-primary">{t('status')}</label>
                 <div className="mt-1">
                   <Badge className={cn('text-xs px-2 py-1 rounded-full', enhancedColor)}>
                     {t(`statuses.${reservation.status}`)}
@@ -313,32 +348,58 @@ const ReservationDetailDialog = memo(
                 </div>
               </div>
             </div>
+            <div className="w-full flex flex-col items-start gap-2">
+              <label className="text-xs font-semibold text-primary">顧客名</label>
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                <p className="text-sm text-primary font-medium">{reservation.customer_name}様</p>
+              </div>
+            </div>
             <div>
               <label className="text-sm font-semibold text-primary">{t('dateTime')}</label>
-              <div className="mt-1 p-3 bg-muted rounded-lg">
-                <p className="text-sm text-primary flex items-center gap-2">
+              <div className="mt-1 p-3 bg-link rounded-lg font-bold text-link-foreground">
+                <p className="text-sm flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
                   {convertTimestampToDateString(reservation.start_time_unix)}
                 </p>
-                <p className="text-sm text-primary flex items-center gap-2 mt-1">
+                <p className="text-sm flex items-center gap-2 mt-1">
                   <Clock className="w-4 h-4" />
                   {convertTimestampToHour(reservation.start_time_unix)} -{' '}
                   {convertTimestampToHour(reservation.end_time_unix)}
                 </p>
               </div>
+              <div className="w-full flex flex-col items-start gap-2 mt-2">
+                <label className="text-xs font-semibold text-primary">備考</label>
+                <p className="text-sm text-muted-foreground">
+                  {reservation.note || '備考はありません'}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-4">
-              <Button asChild>
-                <Link href={`/dashboard/reservation/${reservation._id}`}>{t('moreDetail')}</Link>
-              </Button>
-              {/* 顧客IDが存在する場合のみカルテリンクを表示 */}
-              {reservation.customer_uid && (
-                <Button asChild>
-                  <Link href={`/dashboard/carte/${reservation.customer_uid}`}>
-                    カルテを確認する
-                  </Link>
+            <div className="pt-8 flex flex-col items-center justify-between gap-6">
+              <div className="flex  gap-2 w-full">
+                <Button className="w-full" asChild variant="outline">
+                  <Link href={`/dashboard/reservation/${reservation._id}`}>{t('moreDetail')}</Link>
                 </Button>
-              )}
+
+                {/* 顧客IDが存在する場合のみカルテリンクを表示 */}
+                {reservation.customer_uid && (
+                  <Button className="w-full" asChild variant="outline">
+                    <Link href={`/dashboard/carte/${reservation.customer_uid}`}>
+                      カルテを確認する
+                    </Link>
+                  </Button>
+                )}
+              </div>
+              <Button onClick={handleCompleteReservation} className="w-full" disabled={updating}>
+                {updating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    ステータスを更新中...
+                  </>
+                ) : (
+                  '施術を完了にする'
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -425,11 +486,11 @@ const ReservationList = memo(
                   <div className="space-y-2 flex-1">
                     <div className="font-semibold text-primary flex flex-wrap items-center gap-2">
                       {reservation.is_free_nomination ? (
-                        <Shuffle className="w-4 h-4 text-palette-5 flex-shrink-0" />
+                        <Shuffle className="w-4 h-4 text-palette-5-foreground flex-shrink-0" />
                       ) : (
                         <User className="w-4 h-4 flex-shrink-0" />
                       )}
-                      <span className="break-all">{reservation.customer_name}</span>
+                      <span className="break-all">{reservation.staff_name}</span>
                       {reservation.is_free_nomination && (
                         <span className="text-xs bg-palette-5-foreground text-palette-5 px-2 py-1 rounded-full font-medium whitespace-nowrap">
                           指名フリー
@@ -438,7 +499,7 @@ const ReservationList = memo(
                     </div>
                     <div className="text-sm text-muted-foreground">
                       <span className="font-semibold">{t('assignedStaff')}</span>{' '}
-                      <span className="break-all">{reservation.staff_name}</span>
+                      <span className="break-all">{reservation.customer_name}</span>
                     </div>
                     <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <Clock className="w-3 h-3 flex-shrink-0" />
@@ -597,9 +658,10 @@ export default function ReservationTimeLine() {
                   className={cn(
                     'flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[52px] w-full ',
                     'border hover:border-primary/50 hover:shadow-sm',
-                    isSelected && 'bg-link-foreground text-link border-link shadow-md',
-                    isToday && !isSelected && 'border-primary font-semibold',
-                    item.count > 0 && !isSelected && 'bg-neon-foreground border-neon',
+                    isSelected &&
+                      'bg-accent text-accent-foreground border-accent-foreground shadow-md',
+                    isToday && !isSelected && 'font-semibold',
+                    item.count > 0 && !isSelected && 'bg-neon-foreground',
                     isWeekend && !isSelected && 'text-destructive'
                   )}
                 >

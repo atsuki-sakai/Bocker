@@ -15,8 +15,8 @@ import {
   archiveReservationWithDetails,
   deleteReservationWithDetails,
   checkReservationDoubleBooking,
-  getConflictingReservation,
-  findBestAvailableStaffForTimeSlot
+  findBestAvailableStaffForTimeSlot,
+  checkAdvancedStaffSwapPossibility
 } from '@/convex/reservation/reservation.helpers';
 
 /**
@@ -785,95 +785,92 @@ export const changeStaffForFreeNomination = mutation({
       });
     }
 
-    // 5. 重複予約の詳細チェック（指名フリー同士の入れ替え対応）
-    const conflictingReservation = await getConflictingReservation(ctx, {
-      tenant_id: reservation.tenant_id,
-      org_id: reservation.org_id,
-      staff_id: args.new_staff_id,
-      date: reservation.date,
-      start_time_unix: reservation.start_time_unix,
-      end_time_unix: reservation.end_time_unix,
-      excludeReservationId: reservation._id // 現在の予約は除外
-    });
+    // 5. 現在の予約詳細情報を取得（メニュー対応チェック用）
+    const currentReservationDetail = await ctx.db
+      .query('reservation_detail')
+      .withIndex('by_reservation_archive', (q) =>
+        q.eq('reservation_id', reservation._id).eq('is_archive', false)
+      )
+      .first();
 
-    // 重複予約がある場合の処理
-    if (conflictingReservation) {
-      // 双方が指名フリーの場合は入れ替えを許可
-      if (conflictingReservation.is_free_nomination && reservation.is_free_nomination) {
-        // 現在のスタッフIDを取得
-        const currentStaffId = reservation.assigned_staff_id || reservation.staff_id;
-        
-        if (!currentStaffId) {
-          throw new ConvexError({
-            statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
-            severity: ERROR_SEVERITY.ERROR,
-            message: '現在の予約にスタッフが割り当てられていません',
-          });
-        }
-
-        // 現在のスタッフ情報を取得
-        const currentStaff = await ctx.db.get(currentStaffId);
-        if (!currentStaff) {
-          throw new ConvexError({
-            statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-            severity: ERROR_SEVERITY.ERROR,
-            message: '現在のスタッフ情報が見つかりません',
-          });
-        }
-
-        // 入れ替え先（重複している予約）に現在のスタッフを割り当てた場合の重複チェック
-        const wouldConflictAfterSwap = await checkReservationDoubleBooking(ctx, {
-          tenant_id: conflictingReservation.tenant_id,
-          org_id: conflictingReservation.org_id,
-          staff_id: currentStaffId,
-          date: conflictingReservation.date,
-          start_time_unix: conflictingReservation.start_time_unix,
-          end_time_unix: conflictingReservation.end_time_unix,
-          excludeReservationId: conflictingReservation._id, // 入れ替え対象の予約自身は除外
-        });
-
-        if (wouldConflictAfterSwap) {
-          throw new ConvexError({
-            statusCode: ERROR_STATUS_CODE.CONFLICT,
-            severity: ERROR_SEVERITY.ERROR,
-            message: '入れ替え先のスタッフは、その時間帯に他の予約があるため入れ替えできません',
-          });
-        }
-
-        // 入れ替え処理：重複している予約のスタッフを現在のスタッフに変更
-        const conflictStaffChangeHistory: StaffChangeHistory = {
-          changed_by: args.changed_by,
-          changed_at: Date.now(),
-          previous_staff_id: conflictingReservation.assigned_staff_id || conflictingReservation.staff_id,
-          previous_staff_name: conflictingReservation.assigned_staff_name || conflictingReservation.staff_name,
-        };
-
-        await ctx.db.patch(conflictingReservation._id, {
-          staff_id: currentStaff._id,
-          staff_name: currentStaff.name || '',
-          assigned_staff_id: currentStaff._id,
-          assigned_staff_name: currentStaff.name || '',
-          last_staff_change: conflictStaffChangeHistory,
-          updated_at: Date.now(),
-        });
-
-        // 入れ替え処理の状態を記録
-        wasSwapped = true;
-        swappedReservationInfo = {
-          id: conflictingReservation._id,
-          newStaffName: currentStaff.name || '',
-        };
-      } else {
-        // 指名フリー同士でない場合は従来通りエラー
-        throw new ConvexError({
-          statusCode: ERROR_STATUS_CODE.CONFLICT,
-          severity: ERROR_SEVERITY.ERROR,
-          message: '選択されたスタッフは指定時間帯に他の予約があります',
-        });
-      }
+    if (!currentReservationDetail) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        message: '予約詳細が見つかりません',
+      });
     }
 
-    // 6. 変更履歴を記録して更新
+    // 6. 高度なスタッフ入れ替え可能性チェック
+    const swapCheck = await checkAdvancedStaffSwapPossibility(ctx, {
+      current_reservation: reservation,
+      current_reservation_detail: currentReservationDetail,
+      target_staff_id: args.new_staff_id,
+      target_staff: newStaff,
+    });
+
+    console.log('スタッフ入れ替えチェック結果:', swapCheck);
+
+    // 入れ替えが不可能な場合はエラーを投げる
+    if (!swapCheck.canSwap) {
+      throw new ConvexError({
+        statusCode: ERROR_STATUS_CODE.CONFLICT,
+        severity: ERROR_SEVERITY.ERROR,
+        message: swapCheck.reason || 'スタッフの入れ替えができません',
+      });
+    }
+
+    // 入れ替えが可能で、対象予約がある場合は入れ替え処理を実行
+    if (swapCheck.swappableReservation && swapCheck.swappableReservationDetail) {
+      const conflictingReservation = swapCheck.swappableReservation;
+      
+      // 現在のスタッフIDを取得
+      const currentStaffId = reservation.assigned_staff_id || reservation.staff_id;
+      
+      if (!currentStaffId) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.BAD_REQUEST,
+          severity: ERROR_SEVERITY.ERROR,
+          message: '現在の予約にスタッフが割り当てられていません',
+        });
+      }
+
+      // 現在のスタッフ情報を取得
+      const currentStaff = await ctx.db.get(currentStaffId);
+      if (!currentStaff) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+          severity: ERROR_SEVERITY.ERROR,
+          message: '現在のスタッフ情報が見つかりません',
+        });
+      }
+
+      // 入れ替え処理：重複している予約のスタッフを現在のスタッフに変更
+      const conflictStaffChangeHistory: StaffChangeHistory = {
+        changed_by: args.changed_by,
+        changed_at: Date.now(),
+        previous_staff_id: conflictingReservation.assigned_staff_id || conflictingReservation.staff_id,
+        previous_staff_name: conflictingReservation.assigned_staff_name || conflictingReservation.staff_name,
+      };
+
+      await ctx.db.patch(conflictingReservation._id, {
+        staff_id: currentStaff._id,
+        staff_name: currentStaff.name || '',
+        assigned_staff_id: currentStaff._id,
+        assigned_staff_name: currentStaff.name || '',
+        last_staff_change: conflictStaffChangeHistory,
+        updated_at: Date.now(),
+      });
+
+      // 入れ替え処理の状態を記録
+      wasSwapped = true;
+      swappedReservationInfo = {
+        id: conflictingReservation._id,
+        newStaffName: currentStaff.name || '',
+      };
+    }
+
+    // 7. 変更履歴を記録して更新
     const lastStaffChange: StaffChangeHistory = {
       changed_by: args.changed_by,
       changed_at: Date.now(),

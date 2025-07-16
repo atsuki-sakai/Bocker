@@ -45,6 +45,7 @@ export const DateView = ({
   const [availableTimes, setAvailableTimes] = useState<TimeRange[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [currentMonth, setCurrentMonth] = useState<Date>(selectedDate || startOfToday())
+  const [isFreenomination, setIsFreenomination] = useState(selectedStaff === 'free')
 
   // 予約設定を取得
   const reservationConfig = useQuery(api.organization.reservation_config.query.findByTenantAndOrg, {
@@ -116,7 +117,9 @@ export const DateView = ({
     // スタッフ指名時のみ、重複予約の上限チェックを事前に実施
     const validateAndSelect = async () => {
       // フリー指名の場合はスキップ（統合計算で除外済み）
-      if (selectedStaff && selectedStaff !== 'free') {
+      console.log('selectedStaff', selectedStaff)
+      if (selectedStaff && selectedStaff !== 'free' && !isFreenomination) {
+        console.log('free')
         const startDateTime = new Date(selectedDate)
         const [sh, sm] = time.startHour.split(':').map(Number)
         startDateTime.setHours(sh, sm, 0, 0)
@@ -161,6 +164,7 @@ export const DateView = ({
     // メニューが選択されていない場合は空き時間を計算できない
     if (selectedStaff === 'free' && selectedMenuIds.length === 0) {
       setAvailableTimes([])
+      setIsFreenomination(true)
       return
     }
 

@@ -70,6 +70,7 @@ export async function checkReservationDoubleBooking(
     start_time_unix: number
     end_time_unix: number
     excludeReservationId?: Id<'reservation'>
+    ignoreGlobalSheet?: boolean 
   }
 ): Promise<boolean> {
   // 予約設定を取得
@@ -99,8 +100,10 @@ export async function checkReservationDoubleBooking(
 
   const overlappingReservations = orgReservations.filter((reservation) => {
     // 除外ID（自分自身）は外す
-    if (args.excludeReservationId && reservation._id === args.excludeReservationId) return false
-    // 時間帯が一部でも重なればtrue
+    if (args.excludeReservationId && args.excludeReservationId === reservation._id) return false
+    
+    // 連続した予約（終了時刻 = 開始時刻）は重複とみなさない
+    // 例: 13:00~14:00と14:00~15:00は許可、13:00~14:01と14:00~15:00は拒否
     const isOverlapping = reservation.start_time_unix < args.end_time_unix &&
       reservation.end_time_unix > args.start_time_unix
     
@@ -109,7 +112,7 @@ export async function checkReservationDoubleBooking(
   
   const overlapCount = overlappingReservations.length
 
-  if (overlapCount >= availableSheet) {
+  if (!args.ignoreGlobalSheet && overlapCount >= availableSheet) {
     throw new ConvexError({
       statusCode: ERROR_STATUS_CODE.CONFLICT,
       severity: ERROR_SEVERITY.ERROR,
@@ -507,7 +510,7 @@ export async function findBestAvailableStaffForTimeSlot(
       continue
     }
 
-    // 勤務時間内判定
+    // 1. 勤務時間内判定
     const workStart = weekSchedule.start_hour
       ? convertHourToTimestamp(weekSchedule.start_hour, args.date) ?? Number.MIN_SAFE_INTEGER
       : Number.MIN_SAFE_INTEGER
@@ -515,9 +518,36 @@ export async function findBestAvailableStaffForTimeSlot(
       ? convertHourToTimestamp(weekSchedule.end_hour, args.date) ?? Number.MAX_SAFE_INTEGER
       : Number.MAX_SAFE_INTEGER
 
+    console.log(`\n=== ${staff.name} のスケジュールチェック ===`)
+    console.log(`日付: ${args.date}`)
+    console.log(`勤務時間設定: ${weekSchedule.start_hour} - ${weekSchedule.end_hour}`)
+    console.log(`予約時間: ${new Date(args.start_time_unix).toLocaleString('ja-JP')} - ${new Date(args.end_time_unix).toLocaleString('ja-JP')}`)
+
     if (args.start_time_unix < workStart || args.end_time_unix > workEnd) {
-      continue // 勤務時間外
+      console.log(`→ 勤務時間外のため除外`)
+      continue
     }
+
+    // 2. 実際の空き時間チェック（既存予約を考慮）
+    const isAvailableForTimeSlot = await checkStaffAvailabilityForTimeSlot(ctx, {
+      tenant_id: args.tenant_id,
+      org_id: args.org_id,
+      staff_id: staff._id,
+      date: args.date,
+      start_time_unix: args.start_time_unix,
+      end_time_unix: args.end_time_unix,
+      excludeReservationIds: []
+    })
+
+    console.log(`勤務時間内: OK`)
+    console.log(`空き状況: ${isAvailableForTimeSlot ? '利用可能' : '利用不可（既存予約あり）'}`)
+
+    if (!isAvailableForTimeSlot) {
+      console.log(`→ 既存予約により利用不可のため除外`)
+      continue
+    }
+
+    console.log(`→ 両方OK、追加`)
 
     // ここまで到達すればスケジュールOK
     filteredBySchedule.push(staff)
@@ -589,14 +619,332 @@ export async function findBestAvailableStaffForTimeSlot(
     return null
   }
 
-  // 6. 優先度順でソート（数値が高いほど優先度が高い）
-  availableStaffWithConfigs.sort((a, b) => b.priority - a.priority)
+  // 6. 既に空き時間チェック済みなので、全スタッフが利用可能
+  const availableAtRequestedTime = availableStaffWithConfigs.map(staff => ({
+    ...staff,
+    canStartAtRequestedTime: true
+  }))
 
-  console.log('7. 選択されたスタッフ:', availableStaffWithConfigs[0])
+  console.log('7. 指定時間で利用可能なスタッフ数:', availableAtRequestedTime.length)
+  console.log('指定時間で利用可能なスタッフ一覧:', 
+    availableAtRequestedTime.map(s => ({
+      name: s.staff_name,
+      priority: s.priority,
+      extra_charge: s.extra_charge
+    }))
+  )
+
+  // 指定時間で利用可能なスタッフがいない場合はnullを返す
+  if (availableAtRequestedTime.length === 0) {
+    console.log('指定時間で利用可能なスタッフが0人のため終了')
+    console.log('=== findBestAvailableStaffForTimeSlot デバッグ終了 ===')
+    return null
+  }
+
+  // 指定時間で利用可能なスタッフを優先度順でソート（優先度が高い方が優先）
+  availableAtRequestedTime.sort((a, b) => b.priority - a.priority)
+
+  const selectedStaff = availableAtRequestedTime[0]
+  console.log('8. 選択されたスタッフ（指定時間で利用可能な最優先スタッフ）:', {
+    name: selectedStaff.staff_name,
+    priority: selectedStaff.priority,
+    extra_charge: selectedStaff.extra_charge,
+    staff_id: selectedStaff.staff_id,
+    canStartAtRequestedTime: selectedStaff.canStartAtRequestedTime
+  })
   console.log('=== findBestAvailableStaffForTimeSlot デバッグ終了 ===')
 
-  // 7. 最優先スタッフを返す
-  return availableStaffWithConfigs[0]
+  // 7. 指定時間で利用可能な最優先スタッフを返す
+  return {
+    staff_id: selectedStaff.staff_id,
+    staff_name: selectedStaff.staff_name,
+    priority: selectedStaff.priority,
+    extra_charge: selectedStaff.extra_charge,
+  }
+}
+
+/**
+ * 指定された日のスタッフの空き時間を分単位で計算する関数
+ * 営業時間から既存予約と例外スケジュールを差し引いて、実際の空き時間を算出
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args 計算パラメータ
+ * @returns 空き時間（分）
+ */
+export async function calculateStaffAvailableMinutesForDay(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    staff_id: Id<'staff'>
+    date: string // YYYY/MM/DD形式
+  }
+): Promise<number> {
+  console.log(`=== スタッフ空き時間計算開始: ${args.staff_id} (${args.date}) ===`)
+
+  // 1. 対象日の曜日を取得
+  const dayOfWeek = getDayOfWeek(new Date(args.date))
+  
+  // 2. スタッフの週間スケジュールを取得
+  const weekSchedule = await ctx.db
+    .query('staff_week_schedule')
+    .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('day_of_week', dayOfWeek as DayOfWeek)
+        .eq('is_open', true)
+        .eq('is_archive', false)
+    )
+    .first()
+
+  if (!weekSchedule) {
+    console.log('週間スケジュールが見つからないため空き時間0分')
+    return 0
+  }
+
+  // 3. 例外スケジュール（終日休み）をチェック
+  const allDaySchedules = await ctx.db
+    .query('staff_exception_schedule')
+    .withIndex('by_tenant_org_staff_date_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('date', args.date)
+        .eq('is_archive', false)
+    )
+    .filter((q) => q.eq(q.field('is_all_day'), true))
+    .collect()
+
+  if (allDaySchedules.length > 0) {
+    console.log('終日スケジュールがあるため空き時間0分')
+    return 0
+  }
+
+  // 4. 営業時間を分単位で計算
+  const workStartHour = weekSchedule.start_hour || '09:00'
+  const workEndHour = weekSchedule.end_hour || '18:00'
+  
+  const workStartTimestamp = convertHourToTimestamp(workStartHour, args.date)
+  const workEndTimestamp = convertHourToTimestamp(workEndHour, args.date)
+  
+  if (!workStartTimestamp || !workEndTimestamp) {
+    console.log('営業時間の変換に失敗したため空き時間0分')
+    return 0
+  }
+
+  const totalWorkMinutes = Math.floor((workEndTimestamp - workStartTimestamp) / (1000 * 60))
+  console.log(`営業時間: ${workStartHour} - ${workEndHour} (${totalWorkMinutes}分)`)
+
+  // 5. 部分例外スケジュールを取得
+  const partialSchedules = await ctx.db
+    .query('staff_exception_schedule')
+    .withIndex('by_tenant_org_staff_date_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('date', args.date)
+        .eq('is_archive', false)
+    )
+    .filter((q) => q.eq(q.field('is_all_day'), false))
+    .collect()
+
+  // 6. 既存予約を取得
+  const existingReservations = await ctx.db
+    .query('reservation')
+    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('date', args.date)
+        .eq('status', 'confirmed')
+        .eq('is_archive', false)
+    )
+    .collect()
+
+  // 7. 占有時間を計算（例外スケジュール + 既存予約）
+  let occupiedMinutes = 0
+
+  // 部分例外スケジュールの時間を加算
+  partialSchedules.forEach(schedule => {
+    if (schedule.start_time_unix && schedule.end_time_unix) {
+      const duration = Math.floor((schedule.end_time_unix - schedule.start_time_unix) / (1000 * 60))
+      occupiedMinutes += duration
+      console.log(`部分例外スケジュール: ${duration}分`)
+    }
+  })
+
+  // 既存予約の時間を加算
+  existingReservations.forEach(reservation => {
+    const duration = Math.floor((reservation.end_time_unix - reservation.start_time_unix) / (1000 * 60))
+    occupiedMinutes += duration
+    console.log(`既存予約: ${duration}分`)
+  })
+
+  // 8. 空き時間を計算
+  const availableMinutes = Math.max(0, totalWorkMinutes - occupiedMinutes)
+  
+  console.log(`営業時間: ${totalWorkMinutes}分、占有時間: ${occupiedMinutes}分、空き時間: ${availableMinutes}分`)
+  console.log(`=== スタッフ空き時間計算終了: ${args.staff_id} ===`)
+
+  return availableMinutes
+}
+
+/**
+ * スタッフの次に利用可能な時間を計算する関数
+ * 指定された時間以降で最も早く施術可能な時間を返す
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args 計算パラメータ
+ * @returns 次に利用可能な開始時間（Unix timestamp）、利用不可能な場合はnull
+ */
+export async function findNextAvailableTimeForStaff(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    staff_id: Id<'staff'>
+    date: string // YYYY/MM/DD形式
+    requested_start_time: number // 希望開始時間（Unix timestamp）
+    duration_minutes: number // 施術時間（分）
+  }
+): Promise<number | null> {
+  console.log(`=== 次回利用可能時間計算開始: ${args.staff_id} (${args.date}) ===`)
+  console.log(`希望開始時間: ${new Date(args.requested_start_time).toLocaleString('ja-JP')}, 施術時間: ${args.duration_minutes}分`)
+
+  // 1. 対象日の曜日を取得
+  const dayOfWeek = getDayOfWeek(new Date(args.date))
+  
+  // 2. スタッフの週間スケジュールを取得
+  const weekSchedule = await ctx.db
+    .query('staff_week_schedule')
+    .withIndex('by_tenant_org_staff_week_open_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('day_of_week', dayOfWeek as DayOfWeek)
+        .eq('is_open', true)
+        .eq('is_archive', false)
+    )
+    .first()
+
+  if (!weekSchedule) {
+    console.log('週間スケジュールが見つからないため利用不可能')
+    return null
+  }
+
+  // 3. 営業時間の計算
+  const workStartHour = weekSchedule.start_hour || '09:00'
+  const workEndHour = weekSchedule.end_hour || '18:00'
+  
+  const workStartTimestamp = convertHourToTimestamp(workStartHour, args.date)
+  const workEndTimestamp = convertHourToTimestamp(workEndHour, args.date)
+  
+  if (!workStartTimestamp || !workEndTimestamp) {
+    console.log('営業時間の変換に失敗したため利用不可能')
+    return null
+  }
+
+  // 4. 部分例外スケジュールと既存予約を取得
+  const [partialSchedules, existingReservations] = await Promise.all([
+    ctx.db
+      .query('staff_exception_schedule')
+      .withIndex('by_tenant_org_staff_date_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('staff_id', args.staff_id)
+          .eq('date', args.date)
+          .eq('is_archive', false)
+      )
+      .filter((q) => q.eq(q.field('is_all_day'), false))
+      .collect(),
+    
+    ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('staff_id', args.staff_id)
+          .eq('date', args.date)
+          .eq('status', 'confirmed')
+          .eq('is_archive', false)
+      )
+      .collect()
+  ])
+
+  // 5. 占有時間帯を作成（例外スケジュール + 既存予約）
+  const occupiedTimeSlots: { start: number, end: number }[] = []
+
+  // 部分例外スケジュールを追加
+  partialSchedules.forEach(schedule => {
+    if (schedule.start_time_unix && schedule.end_time_unix) {
+      occupiedTimeSlots.push({
+        start: schedule.start_time_unix,
+        end: schedule.end_time_unix
+      })
+    }
+  })
+
+  // 既存予約を追加
+  existingReservations.forEach(reservation => {
+    occupiedTimeSlots.push({
+      start: reservation.start_time_unix,
+      end: reservation.end_time_unix
+    })
+  })
+
+  // 時間順でソート
+  occupiedTimeSlots.sort((a, b) => a.start - b.start)
+
+  console.log('占有時間帯:', occupiedTimeSlots.map(slot => ({
+    start: new Date(slot.start).toLocaleString('ja-JP'),
+    end: new Date(slot.end).toLocaleString('ja-JP')
+  })))
+
+  // 6. 利用可能な時間帯を探す
+  const durationMs = args.duration_minutes * 60 * 1000
+  const searchStartTime = Math.max(args.requested_start_time, workStartTimestamp)
+  
+  // 最初の空き時間をチェック（営業開始 ～ 最初の占有時間）
+  if (occupiedTimeSlots.length === 0) {
+    // 占有時間がない場合、営業時間内であれば希望時間で可能
+    if (searchStartTime + durationMs <= workEndTimestamp) {
+      console.log(`占有なし、希望時間で利用可能: ${new Date(searchStartTime).toLocaleString('ja-JP')}`)
+      return searchStartTime
+    }
+  } else {
+    // 最初の占有より前に空きがあるかチェック
+    const firstOccupied = occupiedTimeSlots[0]
+    if (searchStartTime + durationMs <= firstOccupied.start) {
+      console.log(`最初の占有前に利用可能: ${new Date(searchStartTime).toLocaleString('ja-JP')}`)
+      return searchStartTime
+    }
+
+    // 占有時間帯の間の空きをチェック
+    for (let i = 0; i < occupiedTimeSlots.length - 1; i++) {
+      const currentEnd = occupiedTimeSlots[i].end
+      const nextStart = occupiedTimeSlots[i + 1].start
+      
+      const gapStartTime = Math.max(currentEnd, searchStartTime)
+      
+      if (gapStartTime + durationMs <= nextStart) {
+        console.log(`占有時間帯の間に利用可能: ${new Date(gapStartTime).toLocaleString('ja-JP')}`)
+        return gapStartTime
+      }
+    }
+
+    // 最後の占有時間後の空きをチェック
+    const lastOccupied = occupiedTimeSlots[occupiedTimeSlots.length - 1]
+    const finalGapStartTime = Math.max(lastOccupied.end, searchStartTime)
+    
+    if (finalGapStartTime + durationMs <= workEndTimestamp) {
+      console.log(`最後の占有後に利用可能: ${new Date(finalGapStartTime).toLocaleString('ja-JP')}`)
+      return finalGapStartTime
+    }
+  }
+
+  console.log('当日は利用可能な時間がありません')
+  return null
 }
 
 
@@ -733,6 +1081,290 @@ export async function cancelNotification(
     }
 }
 
+
+/**
+ * 高度なスタッフ入れ替え可能性チェック関数
+ * 指名フリー予約同士のスタッフ入れ替えが可能かを詳細に判定する
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args チェック対象パラメータ
+ * @returns 入れ替え可能な予約候補とその詳細情報
+ */
+export async function checkAdvancedStaffSwapPossibility(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    current_reservation: Doc<'reservation'>
+    current_reservation_detail: Doc<'reservation_detail'>
+    target_staff_id: Id<'staff'>
+    target_staff: Doc<'staff'>
+  }
+): Promise<{
+  canSwap: boolean
+  swappableReservation?: Doc<'reservation'>
+  swappableReservationDetail?: Doc<'reservation_detail'>
+  reason?: string
+}> {
+  
+  console.log('=== 高度なスタッフ入れ替えチェック開始 ===')
+  console.log('現在の予約:', {
+    id: args.current_reservation._id,
+    time: `${args.current_reservation.start_time_unix}-${args.current_reservation.end_time_unix}`,
+    staff_id: args.current_reservation.staff_id
+  })
+  console.log('対象スタッフ:', { id: args.target_staff_id, name: args.target_staff.name })
+
+  // 1. 対象スタッフの同日予約を全て取得
+  const targetStaffReservations = await ctx.db
+    .query('reservation')
+    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+      q.eq('tenant_id', args.current_reservation.tenant_id)
+        .eq('org_id', args.current_reservation.org_id)
+        .eq('staff_id', args.target_staff_id)
+        .eq('date', args.current_reservation.date)
+        .eq('status', 'confirmed')
+        .eq('is_archive', false)
+    )
+    .collect()
+
+  console.log('対象スタッフの同日予約数:', targetStaffReservations.length)
+
+  // 2. 現在の予約と時間帯が重複する予約を特定
+  const overlappingReservations = targetStaffReservations.filter(reservation => {
+    const isOverlapping = reservation.start_time_unix < args.current_reservation.end_time_unix &&
+      reservation.end_time_unix > args.current_reservation.start_time_unix
+    console.log(`予約 ${reservation._id}: ${isOverlapping ? '重複あり' : '重複なし'} (${reservation.start_time_unix}-${reservation.end_time_unix} vs ${args.current_reservation.start_time_unix}-${args.current_reservation.end_time_unix})`)
+    return isOverlapping
+  })
+
+  console.log(`重複する予約の総数: ${overlappingReservations.length}`)
+
+  if (overlappingReservations.length === 0) {
+    console.log('重複する予約がないため、入れ替え不要')
+    return { canSwap: true, reason: '重複する予約がないため入れ替え不要' }
+  }
+
+  // 3. 最適な入れ替え候補を選定
+  for (const conflictingReservation of overlappingReservations) {
+    console.log(`入れ替え候補をチェック中: 予約ID ${conflictingReservation._id}`)
+
+    // 3.1 指名フリー予約同士かチェック
+    if (!conflictingReservation.is_free_nomination || !args.current_reservation.is_free_nomination) {
+      console.log('指名フリー同士でないため、この候補をスキップ')
+      continue
+    }
+
+    // 3.2 予約詳細を取得
+    const conflictingDetail = await ctx.db
+      .query('reservation_detail')
+      .withIndex('by_reservation_archive', (q) =>
+        q.eq('reservation_id', conflictingReservation._id).eq('is_archive', false)
+      )
+      .first()
+
+    if (!conflictingDetail) {
+      console.log('予約詳細が見つからないため、この候補をスキップ')
+      continue
+    }
+
+    // 3.3 現在のスタッフが対象予約のメニューに対応可能かチェック
+    const currentStaffId = args.current_reservation.assigned_staff_id || args.current_reservation.staff_id
+    if (!currentStaffId) {
+      console.log('現在のスタッフIDが取得できないため、この候補をスキップ')
+      continue
+    }
+
+    console.log('3.3 現在のスタッフのメニュー対応チェック開始')
+    console.log('現在のスタッフID:', currentStaffId)
+    console.log('対象予約のメニューIDs:', conflictingDetail.menus.map(m => m.id))
+    
+    const canCurrentStaffHandleTargetMenus = await checkStaffMenuCompatibility(ctx, {
+      tenant_id: args.current_reservation.tenant_id,
+      org_id: args.current_reservation.org_id,
+      staff_id: currentStaffId,
+      menu_ids: conflictingDetail.menus.map(m => m.id)
+    })
+
+    console.log('現在のスタッフのメニュー対応可否:', canCurrentStaffHandleTargetMenus)
+
+    if (!canCurrentStaffHandleTargetMenus) {
+      console.log('現在のスタッフが対象予約のメニューに対応できないため、この候補をスキップ')
+      continue
+    }
+
+    // 3.4 対象スタッフが現在の予約のメニューに対応可能かチェック
+    console.log('3.4 対象スタッフのメニュー対応チェック開始')
+    console.log('対象スタッフID:', args.target_staff_id)
+    console.log('現在の予約のメニューIDs:', args.current_reservation_detail.menus.map(m => m.id))
+    
+    const canTargetStaffHandleCurrentMenus = await checkStaffMenuCompatibility(ctx, {
+      tenant_id: args.current_reservation.tenant_id,
+      org_id: args.current_reservation.org_id,
+      staff_id: args.target_staff_id,
+      menu_ids: args.current_reservation_detail.menus.map(m => m.id)
+    })
+
+    console.log('対象スタッフのメニュー対応可否:', canTargetStaffHandleCurrentMenus)
+
+    if (!canTargetStaffHandleCurrentMenus) {
+      console.log('対象スタッフが現在の予約のメニューに対応できないため、この候補をスキップ')
+      continue
+    }
+
+    // 3.5 入れ替え後の前後予約との重複チェック
+    console.log('3.5 入れ替え後の空き状況チェック開始')
+    console.log('現在のスタッフ', currentStaffId, 'が対象予約の時間帯', `${conflictingReservation.start_time_unix}-${conflictingReservation.end_time_unix}`, 'で利用可能かチェック')
+    
+    // 現在のスタッフの空き状況チェック時は、入れ替え対象の予約と現在の予約の両方を除外
+    const isCurrentStaffAvailableForSwap = await checkStaffAvailabilityForTimeSlot(ctx, {
+      tenant_id: args.current_reservation.tenant_id,
+      org_id: args.current_reservation.org_id,
+      staff_id: currentStaffId,
+      date: args.current_reservation.date,
+      start_time_unix: conflictingReservation.start_time_unix,
+      end_time_unix: conflictingReservation.end_time_unix,
+      excludeReservationIds: [conflictingReservation._id, args.current_reservation._id] // 両方の予約を除外
+    })
+
+    console.log('現在のスタッフの空き状況:', isCurrentStaffAvailableForSwap)
+
+    if (!isCurrentStaffAvailableForSwap) {
+      console.log('現在のスタッフが入れ替え先時間帯で他の予約と重複するため、この候補をスキップ')
+      continue
+    }
+
+    console.log('対象スタッフ', args.target_staff_id, 'が現在の予約の時間帯', `${args.current_reservation.start_time_unix}-${args.current_reservation.end_time_unix}`, 'で利用可能かチェック')
+    
+    // 対象スタッフの空き状況チェック時は、現在の予約と入れ替え対象の予約の両方を除外
+    const isTargetStaffAvailableForSwap = await checkStaffAvailabilityForTimeSlot(ctx, {
+      tenant_id: args.current_reservation.tenant_id,
+      org_id: args.current_reservation.org_id,
+      staff_id: args.target_staff_id,
+      date: args.current_reservation.date,
+      start_time_unix: args.current_reservation.start_time_unix,
+      end_time_unix: args.current_reservation.end_time_unix,
+      excludeReservationIds: [args.current_reservation._id, conflictingReservation._id] // 両方の予約を除外
+    })
+
+    console.log('対象スタッフの空き状況:', isTargetStaffAvailableForSwap)
+
+    if (!isTargetStaffAvailableForSwap) {
+      console.log('対象スタッフが入れ替え先時間帯で他の予約と重複するため、この候補をスキップ')
+      continue
+    }
+
+    // 3.6 全ての条件をクリア - この候補で入れ替え可能
+    console.log('入れ替え可能な候補が見つかりました:', conflictingReservation._id)
+    return {
+      canSwap: true,
+      swappableReservation: conflictingReservation,
+      swappableReservationDetail: conflictingDetail,
+      reason: '条件を満たす入れ替え候補が見つかりました'
+    }
+  }
+
+  console.log('入れ替え可能な候補が見つかりませんでした')
+  return {
+    canSwap: false,
+    reason: '入れ替え可能な条件を満たす予約が見つかりませんでした'
+  }
+}
+
+/**
+ * スタッフのメニュー対応可否をチェックする関数
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args チェックパラメータ
+ * @returns 対応可能ならtrue、不可能ならfalse
+ */
+export async function checkStaffMenuCompatibility(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    staff_id: Id<'staff'>
+    menu_ids: Id<'menu'>[]
+  }
+): Promise<boolean> {
+  // 各メニューに対する除外スタッフをチェック
+  for (const menu_id of args.menu_ids) {
+    const exclusion = await ctx.db
+      .query('menu_exclusion_staff')
+      .withIndex('by_tenant_org_staff_menu_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .eq('staff_id', args.staff_id)
+          .eq('menu_id', menu_id)
+          .eq('is_archive', false)
+      )
+      .first()
+
+    if (exclusion) {
+      console.log(`スタッフ ${args.staff_id} はメニュー ${menu_id} に対応できません`)
+      return false
+    }
+  }
+  
+  return true
+}
+
+/**
+ * 指定時間帯でのスタッフの空き状況をチェックする関数
+ * 
+ * @param ctx クエリまたはミューテーションコンテキスト
+ * @param args チェックパラメータ
+ * @returns 空いていればtrue、他の予約があればfalse
+ */
+export async function checkStaffAvailabilityForTimeSlot(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    staff_id: Id<'staff'>
+    date: string
+    start_time_unix: number
+    end_time_unix: number
+    excludeReservationIds: Id<'reservation'>[]
+  }
+): Promise<boolean> {
+  console.log(`-- checkStaffAvailabilityForTimeSlot 開始 --`)
+  console.log(`スタッフ: ${args.staff_id}, 時間帯: ${args.start_time_unix}-${args.end_time_unix}`)
+  console.log(`除外予約ID: ${args.excludeReservationIds}`)
+  
+  // 指定時間帯で重複する予約を検索
+  const overlappingReservations = await ctx.db
+    .query('reservation')
+    .withIndex('by_tenant_org_staff_date_status_archive', (q) =>
+      q.eq('tenant_id', args.tenant_id)
+        .eq('org_id', args.org_id)
+        .eq('staff_id', args.staff_id)
+        .eq('date', args.date)
+        .eq('status', 'confirmed')
+        .eq('is_archive', false)
+    )
+    .filter((q) =>
+      q.and(
+        // 時間の重複をチェック
+        q.lt(q.field('start_time_unix'), args.end_time_unix),
+        q.gt(q.field('end_time_unix'), args.start_time_unix),
+        // 除外IDリストに含まれない予約のみ
+        ...args.excludeReservationIds.map(excludeId => 
+          q.neq(q.field('_id'), excludeId)
+        )
+      )
+    )
+    .collect()
+
+  console.log(`重複する予約数: ${overlappingReservations.length}`)
+  overlappingReservations.forEach(reservation => {
+    console.log(`重複予約: ID=${reservation._id}, 時間=${reservation.start_time_unix}-${reservation.end_time_unix}`)
+  })
+
+  const isAvailable = overlappingReservations.length === 0
+  console.log(`空き状況結果: ${isAvailable ? '利用可能' : '利用不可'}`)
+  console.log(`-- checkStaffAvailabilityForTimeSlot 終了 --`)
+
+  return isAvailable
+}
 
 export async function cancelForCompletedReservation(
   supabaseService: SupabaseService,
