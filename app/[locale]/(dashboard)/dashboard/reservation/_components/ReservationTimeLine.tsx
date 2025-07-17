@@ -3,7 +3,7 @@ import { Link } from '@/i18n/navigation'
 import React, { useState, useMemo, useCallback, memo, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { useTimelineData, useReservationBars } from '@/hooks/useTimelineData'
+import { useTimelineData, useReservationBars, useScheduleBars } from '@/hooks/useTimelineData'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { fetchMutation } from 'convex/nextjs'
@@ -13,6 +13,8 @@ import type {
   ReservationWithDetails,
   TimeSlot,
   ReservationBar,
+  StaffSchedule,
+  ScheduleBar,
 } from '@/hooks/useTimelineData'
 import { Loader2 } from 'lucide-react'
 import { RESERVATION_COLORS, FREE_NOMINATION_COLORS } from '@/hooks/useTimelineData'
@@ -69,12 +71,12 @@ const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
                 'relative h-12 text-xs flex items-center justify-center transition-colors z-10',
                 // 太い線を削除し、通常のボーダーのみ使用
                 slot.minutes % 60 === 0
-                  ? 'w-24 border-l border-border font-semibold bg-neon-foreground'
+                  ? 'w-24 border-l-2 border-accent-2 font-semibold bg-neon-foreground'
                   : 'w-24 border-l border-border/50'
               )}
             >
               {slot.minutes % 60 === 0 && (
-                <span className="absolute left-1 top-1/2 -translate-y-1/2 whitespace-nowrap text-accent-2 font-semibold">
+                <span className="absolute left-1 top-1/2 -translate-y-1/2 whitespace-nowrap text-sm   text-accent-2 font-semibold">
                   {slot.timeLabel}
                 </span>
               )}
@@ -173,6 +175,62 @@ const ReservationBarComponent = memo(
 
 ReservationBarComponent.displayName = 'ReservationBarComponent'
 
+const ScheduleBarComponent = ({ schedule }: { schedule: ScheduleBar }) => {
+  const t = useTranslations('reservations')
+
+  // スケジュールの種類に応じて表示内容を決定
+  const renderContent = () => {
+    if (schedule.source === 'organization') {
+      // 組織全体のスケジュール（店舗休業など）
+      return null
+    }
+
+    // スタッフ個別のスケジュール
+    const staffSchedule = schedule.schedule as StaffSchedule
+    if (staffSchedule.is_all_day) {
+      return <div>{t('ReservationTimeLine.allDayOff')}</div>
+    }
+
+    if (staffSchedule.start_time_unix && staffSchedule.end_time_unix) {
+      return (
+        <div
+          className={cn(
+            'absolute top-0 h-full rounded',
+            'text-xs flex items-center px-2 gap-1 border',
+            schedule.color
+          )}
+          style={{
+            left: `${schedule.startColumn * SLOT_WIDTH + 1}px`, // 少し右にずらして視覚的な間隔を作る
+            width: `${schedule.spanColumns * SLOT_WIDTH - 2}px`, // 間隔調整を改善
+            zIndex: 20,
+          }}
+          title={schedule.type}
+        >
+          <div className="flex flex-col items-start gap-1 overflow-hidden">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              <span className="truncate font-medium">予定あり</span>
+            </div>
+            {/* 時間表示（幅が十分な場合のみ） */}
+            <div className="flex flex-col items-start justify-between w-full gap-1">
+              <span className="text-xs font-bold">
+                {convertTimestampToHour(staffSchedule.start_time_unix)}~
+                {convertTimestampToHour(staffSchedule.end_time_unix)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return <div>{t('ReservationTimeLine.scheduled')}</div> // フォールバック
+  }
+
+  return renderContent()
+}
+
+ScheduleBarComponent.displayName = 'ScheduleBarComponent'
+
 const StaffTimelineRow = memo(
   ({
     staffData,
@@ -181,13 +239,11 @@ const StaffTimelineRow = memo(
   }: {
     staffData: StaffTimelineData
     timeSlots: TimeSlot[]
-    selectedDate: Date
     onReservationClick: (reservation: ReservationWithDetails) => void
-    isEven: boolean
   }) => {
     const t = useTranslations('reservations')
-    // 予約データをバーに変換（最適化されたフック使用）
     const reservationBars = useReservationBars(staffData.reservations)
+    const scheduleBars = useScheduleBars(staffData.schedules || [])
 
     return (
       <div
@@ -249,6 +305,11 @@ const StaffTimelineRow = memo(
             })}
           </div>
 
+          <div className="absolute inset-0">
+            {scheduleBars.map((bar, index) => (
+              <ScheduleBarComponent key={`${bar.schedule.type}-${index}`} schedule={bar} />
+            ))}
+          </div>
           {/* 予約バー */}
           <div className="absolute inset-0">
             {reservationBars.map((bar, index) => (
@@ -335,10 +396,12 @@ const ReservationDetailDialog = memo(
             <div className="grid grid-cols-2 gap-4">
               <div className="w-full flex flex-col items-start gap-2">
                 <label className="text-xs font-semibold text-primary">担当スタッフ</label>
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  <p className="text-sm text-primary font-medium">{reservation.staff_name}</p>
-                </div>
+                <Link href={`/dashboard/staff/${reservation.staff_id}`} className="underline">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <p className="text-sm text-primary font-medium">{reservation.staff_name}</p>
+                  </div>
+                </Link>
               </div>
               <div className="w-full">
                 <label className="text-xs font-semibold text-primary">{t('status')}</label>
@@ -351,10 +414,12 @@ const ReservationDetailDialog = memo(
             </div>
             <div className="w-full flex flex-col items-start gap-2">
               <label className="text-xs font-semibold text-primary">顧客名</label>
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                <p className="text-sm text-primary font-medium">{reservation.customer_name}様</p>
-              </div>
+              <Link href={`/dashboard/carte/${reservation.customer_uid}`} className="underline">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <p className="text-sm text-primary font-medium">{reservation.customer_name}様</p>
+                </div>
+              </Link>
             </div>
             <div>
               <label className="text-sm font-semibold text-primary">{t('dateTime')}</label>
@@ -378,13 +443,13 @@ const ReservationDetailDialog = memo(
             </div>
             <div className="pt-8 flex flex-col items-center justify-between gap-6">
               <div className="flex  gap-2 w-full">
-                <Button className="w-full" asChild variant="outline">
+                <Button className="w-full" asChild variant="info">
                   <Link href={`/dashboard/reservation/${reservation._id}`}>{t('moreDetail')}</Link>
                 </Button>
 
                 {/* 顧客IDが存在する場合のみカルテリンクを表示 */}
                 {reservation.customer_uid && (
-                  <Button className="w-full" asChild variant="outline">
+                  <Button className="w-full" asChild variant="info">
                     <Link href={`/dashboard/carte/${reservation.customer_uid}`}>
                       カルテを確認する
                     </Link>
@@ -545,6 +610,14 @@ export default function ReservationTimeLine() {
 
   // ■ データ取得（最適化されたカスタムフック使用）
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd')
+
+  const orgExceptionSchedule = useQuery(
+    api.organization.exception_schedule.query.getByOrgAndDate,
+    tenantId && orgId && ready ? { org_id: orgId, type: 'holiday', tenant_id: tenantId } : 'skip'
+  )
+
+  console.log('orgExceptionSchedule', orgExceptionSchedule)
+
   const { staffTimelineData, timeSlots, isLoading } = useTimelineData({
     tenantId,
     orgId,
@@ -608,6 +681,8 @@ export default function ReservationTimeLine() {
     [timeSlots]
   )
 
+  console.log('orgExceptionSchedule', orgExceptionSchedule)
+
   // ■ イベントハンドラー
   const handleReservationClick = useCallback((reservation: ReservationWithDetails) => {
     setSelectedReservation(reservation)
@@ -644,6 +719,9 @@ export default function ReservationTimeLine() {
               const isWeekend = date.getDay() === 0 || date.getDay() === 6
               const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
               const isSelected = format(date, 'yyyy-MM-dd') === targetDateStr
+              const isHoliday = orgExceptionSchedule?.some(
+                (schedule) => schedule.date === item.date
+              )
 
               return (
                 <button
@@ -651,12 +729,16 @@ export default function ReservationTimeLine() {
                   onClick={() => setSelectedDate(date)}
                   className={cn(
                     'flex flex-col items-center justify-center p-2 rounded-lg transition-all min-w-[52px] w-full snap-start',
-                    'border hover:border-primary/50 hover:shadow-sm',
-                    isSelected &&
-                      'bg-accent text-accent-foreground border-accent-foreground shadow-md',
+                    'border hover:border-secondary hover:shadow-sm',
+                    isSelected
+                      ? isHoliday
+                        ? 'bg-warning text-warning-foreground border-warning-foreground'
+                        : 'bg-accent text-accent-foreground border-accent-foreground shadow-md'
+                      : null,
                     isToday && !isSelected && 'font-semibold',
                     item.count > 0 && !isSelected && 'bg-neon-foreground',
-                    isWeekend && !isSelected && 'text-destructive'
+                    isWeekend && !isSelected && 'text-destructive',
+                    isHoliday && !isSelected && 'bg-warning text-warning-foreground'
                   )}
                 >
                   <span className="text-[10px] opacity-70">{dayOfWeek}</span>
@@ -668,7 +750,7 @@ export default function ReservationTimeLine() {
                         'text-xs',
                         item.count > 0
                           ? 'font-bold'
-                          : `text-muted-foreground opacity-50 ${isSelected ? 'text-muted' : ''}`
+                          : `text-muted-foreground opacity-50 ${isSelected ? 'text-muted-foreground' : ''}`
                       )}
                     >
                       {item.count}
@@ -711,6 +793,14 @@ export default function ReservationTimeLine() {
         </div>
       </div>
 
+      {orgExceptionSchedule?.some((schedule) => schedule.date === targetDateStr) && (
+        <div className="w-full border border-destructive">
+          <div className="p-3 text-xs text-center font-bold text-destructive bg-destructive-foreground tracking-widest">
+            店舗休業日
+          </div>
+        </div>
+      )}
+
       {/* メインコンテンツ */}
       <div className="overflow-hidden">
         <div className="overflow-x-auto  bg-background border-t border-x border-border">
@@ -720,14 +810,12 @@ export default function ReservationTimeLine() {
 
             {/* スタッフ行 */}
             <div>
-              {staffTimelineData.map((staffData, index) => (
+              {staffTimelineData.map((staffData) => (
                 <StaffTimelineRow
                   key={staffData.staff._id}
                   staffData={staffData}
                   timeSlots={halfHourSlots}
-                  selectedDate={selectedDate}
                   onReservationClick={handleReservationClick}
-                  isEven={index % 2 === 0}
                 />
               ))}
             </div>
