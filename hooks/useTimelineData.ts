@@ -12,10 +12,21 @@ import {
 } from '@/lib/schedules'
 
 // ■ 型定義
+
+export interface TimelineSchedule {
+    tenant_id: Id<'tenant'>
+    org_id: Id<'organization'>
+    staff_id: Id<'staff'> | null
+    date: string
+    scheduled_by: "staff" | "organization"
+    is_all_day?: boolean | null
+    start_time_unix?: number | null
+    end_time_unix?: number | null
+}
 interface StaffTimelineData {
   staff: Doc<'staff'>
   reservations: ReservationWithDetails[]
-  schedules: StaffSchedule[]
+  schedules: TimelineSchedule[]
 }
 
 interface ReservationWithDetails {
@@ -40,6 +51,12 @@ interface StaffSchedule {
   is_all_day: boolean
 }
 
+interface OrganizationSchedule {
+  type: string
+  date: string
+  is_all_day: true // 組織スケジュールは常に全日
+}
+
 interface TimeSlot {
   index: number
   timeLabel: string
@@ -53,12 +70,21 @@ interface ReservationBar {
   color: string
 }
 
+
+interface ReservationBar {
+  reservation: ReservationWithDetails
+  startColumn: number
+  spanColumns: number
+  color: string
+}
+
 interface ScheduleBar {
-  schedule: StaffSchedule
+  schedule: StaffSchedule | OrganizationSchedule
   startColumn: number
   spanColumns: number
   color: string
   type: 'break' | 'holiday' | 'work'
+  source: 'staff' | 'organization'
 }
 
 interface UseTimelineDataProps {
@@ -73,6 +99,7 @@ interface UseTimelineDataReturn {
   timeSlots: TimeSlot[]
   totalReservations: number
   isLoading: boolean
+  schedules: TimelineSchedule[]
 }
 
 // ■ 定数
@@ -96,6 +123,12 @@ const SCHEDULE_COLORS = {
   break: 'bg-muted text-muted-foreground',
   holiday: 'bg-destructive text-destructive-foreground',
   work: 'bg-success text-success-foreground',
+} as const
+
+const ORGANIZATION_SCHEDULE_COLORS = {
+  break: 'bg-orange-200 text-orange-800',
+  holiday: 'bg-red-200 text-red-800',
+  work: 'bg-blue-200 text-blue-800',
 } as const
 
 // ■ ユーティリティ関数
@@ -156,37 +189,79 @@ const calculateReservationBar = (reservation: ReservationWithDetails): Reservati
 /**
  * スケジュールデータからタイムライン上の表示位置と幅を計算する
  * @param schedule - スケジュール情報
+ * @param source - スケジュールの種別（staff or organization）
  * @returns タイムライン表示用のバー情報
  */
-const calculateScheduleBar = (schedule: StaffSchedule): ScheduleBar => {
-  // 終日スケジュールの場合は全日表示
-  if (schedule.is_all_day) {
-    return {
-      schedule,
-      startColumn: 0,
-      spanColumns: 144, // 24時間 × 6（10分刻み）
-      color: SCHEDULE_COLORS[schedule.type as keyof typeof SCHEDULE_COLORS] || SCHEDULE_COLORS.break,
-      type: schedule.type as 'break' | 'holiday' | 'work',
-    }
-  }
+const calculateScheduleBar = (
+  schedules: TimelineSchedule[],
+): ScheduleBar[] => {
+  if (!schedules) return []
+  const scheduleBars: ScheduleBar[] = []
+  schedules.forEach(schedule => {
+    if (schedule.scheduled_by === 'organization') {
+      const colorSet = ORGANIZATION_SCHEDULE_COLORS
+      scheduleBars.push({
+        schedule: {
+          type: 'holiday',
+          date: schedule.date,
+          is_all_day: true,
+        } as OrganizationSchedule,
+        startColumn: 0,
+        spanColumns: 144, // 24時間 × 6（10分刻み）
+        color: colorSet.holiday,
+        type: 'holiday',
+        source: 'organization',
+      })
+    } else if (schedule.is_all_day) {
+      const colorSet = SCHEDULE_COLORS
+      scheduleBars.push({
+        schedule: {
+          type: 'holiday',
+          is_all_day: schedule.is_all_day,
+          start_time_unix: schedule.start_time_unix || 0,
+          end_time_unix: schedule.end_time_unix || 0,
+        } as StaffSchedule,
+        startColumn: 0,
+        spanColumns: 144, // 24時間 × 6（10分刻み）
+        color: colorSet.holiday,
+        type: 'holiday',
+        source: schedule.scheduled_by,
+      })
+    } else {
+      const START_HOUR = 5 // 5時から開始（generateTimeSlotsと統一）
+      const START_MINUTES = START_HOUR * 60 // 300分
 
-  const startHour = convertTimestampToHour(schedule.start_time_unix)
-  const endHour = convertTimestampToHour(schedule.end_time_unix)
-  
-  const startMinutes = hourToMinutes(startHour)
-  const endMinutes = hourToMinutes(endHour)
-  
-  const startColumn = Math.floor(startMinutes / TIME_SLOT_MINUTES)
-  const endColumn = Math.ceil(endMinutes / TIME_SLOT_MINUTES)
-  const spanColumns = endColumn - startColumn
-  
-  return {
-    schedule,
-    startColumn,
-    spanColumns,
-    color: SCHEDULE_COLORS[schedule.type as keyof typeof SCHEDULE_COLORS] || SCHEDULE_COLORS.break,
-    type: schedule.type as 'break' | 'holiday' | 'work',
-  }
+      const startHour = convertTimestampToHour(schedule.start_time_unix || 0)
+      const endHour = convertTimestampToHour(schedule.end_time_unix || 0)
+
+      const startMinutes = hourToMinutes(startHour)
+      const endMinutes = hourToMinutes(endHour)
+
+      // 5時を起点として調整（5時 = 0列目）
+      const adjustedStartMinutes = (startMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+      const adjustedEndMinutes = (endMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+
+      const startColumn = Math.floor(adjustedStartMinutes / TIME_SLOT_MINUTES)
+      const endColumn = Math.ceil(adjustedEndMinutes / TIME_SLOT_MINUTES)
+      const spanColumns = endColumn - startColumn
+
+      const colorSet = SCHEDULE_COLORS
+      scheduleBars.push({
+        schedule: {
+          type: "holiday",
+          is_all_day: schedule.is_all_day,
+          start_time_unix: schedule.start_time_unix || 0,
+          end_time_unix: schedule.end_time_unix || 0,
+        } as StaffSchedule,
+        startColumn: startColumn,
+        spanColumns: spanColumns,
+        color: colorSet.holiday,
+        source: schedule.scheduled_by,
+        type: "holiday",
+      })
+    }
+  })
+  return scheduleBars
 }
 
 // ■ メインフック
@@ -232,89 +307,70 @@ export function useTimelineData({
     { initialNumItems: 500 } // 予約数に応じて調整
   )
 
+  // 組織の例外スケジュール（店舗休業・特別営業時間など）を取得
+  const allSchedules = useQuery(
+    api.staff.exception_schedule.query.allSchedulesByDate,
+    ready && tenantId && orgId 
+      ? { 
+          tenant_id: tenantId, 
+          org_id: orgId, 
+          staff_ids: staffList.results.map(staff => staff._id),
+          date,
+        } 
+      : 'skip',
+  )
+
   // 時間スロットの生成（メモ化）
   const timeSlots = useMemo(() => generateTimeSlots(), [])
 
   // スタッフ別のタイムラインデータの計算（メモ化）
   const staffTimelineData = useMemo(() => {
-    if (!staffList?.results || !reservations?.results) return []
-    
-    console.log('[useTimelineData] データ確認:', {
-      staffCount: staffList.results.length,
-      reservationCount: reservations.results.length,
-      freeNominationCount: reservations.results.filter(r => r.is_free_nomination).length,
-      sampleReservations: reservations.results.slice(0, 3).map(r => ({
-        id: r._id,
-        is_free_nomination: r.is_free_nomination,
-        staff_id: r.staff_id,
-        assigned_staff_id: r.assigned_staff_id,
-        status: r.status
-      }))
-    })
-    
-    // アクティブなスタッフのみフィルタリング
+    if (!staffList?.results || !reservations?.results || !allSchedules) return []
+
     const activeStaffs = staffList.results.filter(
       staff => staff.is_active && !staff.is_archive
     )
-
-    // 予約受付済み予約のみフィルタリング
     const confirmedReservations = reservations.results.filter(
       res => res.status === 'confirmed' && !res.is_archive
     ) as ReservationWithDetails[]
-    
-    console.log('[useTimelineData] フィルタ後:', {
-      activeStaffCount: activeStaffs.length,
-      confirmedReservationCount: confirmedReservations.length,
-      confirmedFreeNominationCount: confirmedReservations.filter(r => r.is_free_nomination).length
-    })
 
-    // スタッフIDでグループ化（パフォーマンス最適化）
-    // フリー指名の場合はassigned_staff_idを使用、未割り当ての場合は通常のstaff_idを使用
+    // 予約をスタッフIDでグループ化
     const reservationsByStaff = confirmedReservations.reduce((acc, reservation) => {
-      let staffId: string | null = null
+      const staffId = reservation.is_free_nomination 
+        ? reservation.assigned_staff_id || reservation.staff_id 
+        : reservation.staff_id
       
-      if (reservation.is_free_nomination) {
-        // フリー指名の場合: assigned_staff_idがあればそれを使用、なければstaff_idを使用
-        staffId = reservation.assigned_staff_id || reservation.staff_id
-      } else {
-        // 通常の指名予約の場合
-        staffId = reservation.staff_id
-      }
-      
-      if (staffId && !acc[staffId]) {
-        acc[staffId] = []
-      }
       if (staffId) {
+        if (!acc[staffId]) acc[staffId] = []
         acc[staffId].push(reservation)
       }
       return acc
     }, {} as Record<string, ReservationWithDetails[]>)
 
-    console.log('[useTimelineData] スタッフ別グループ化結果:', {
-      reservationsByStaffKeys: Object.keys(reservationsByStaff),
-      reservationsByStaffValues: Object.entries(reservationsByStaff).map(([staffId, reservations]) => ({
-        staffId,
-        count: reservations.length,
-        freeNominationCount: reservations.filter(r => r.is_free_nomination).length
-      }))
-    })
+    // スケジュールをスタッフIDでグループ化
+    const schedulesByStaff = allSchedules.reduce((acc, schedule) => {
+      if (schedule.staff_id) {
+        if (!acc[schedule.staff_id]) acc[schedule.staff_id] = []
+        acc[schedule.staff_id].push(schedule)
+      }
+      return acc
+    }, {} as Record<string, TimelineSchedule[]>)
+
+    // 組織全体のスケジュール
+    const organizationSchedules = allSchedules.filter(
+      schedule => schedule.scheduled_by === 'organization'
+    )
 
     // スタッフごとのタイムラインデータを構築
-    // スケジュールは後で個別に取得するため、ここでは空配列
-    const result = activeStaffs.map(staff => ({
-      staff,
-      reservations: reservationsByStaff[staff._id]|| [],
-      schedules: [], // 個別取得するため空配列
-    }))
-    
-    console.log('[useTimelineData] 最終結果:', {
-      totalStaffs: result.length,
-      totalReservations: result.reduce((sum, staff) => sum + staff.reservations.length, 0),
-      staffWithReservations: result.filter(staff => staff.reservations.length > 0).length
+    return activeStaffs.map(staff => {
+      const staffSchedules = schedulesByStaff[staff._id] || []
+      return {
+        staff,
+        reservations: reservationsByStaff[staff._id] || [],
+        schedules: [...staffSchedules, ...organizationSchedules], // 個人のスケジュールと組織のスケジュールを結合
+      }
     })
-    
-    return result
-  }, [staffList?.results, reservations?.results])
+  }, [staffList?.results, reservations?.results, allSchedules])
 
   // 統計情報の計算（メモ化）
   const totalReservations = useMemo(() => 
@@ -324,8 +380,9 @@ export function useTimelineData({
 
   // ローディング状態の判定
   const isLoading = useMemo(() => 
-    !staffList || !reservations || staffList.isLoading || reservations.isLoading,
-    [staffList, reservations]
+    !staffList || !reservations || allSchedules === undefined || 
+    staffList.isLoading || reservations.isLoading,
+    [staffList, reservations, allSchedules]
   )
 
   return {
@@ -333,6 +390,7 @@ export function useTimelineData({
     timeSlots,
     totalReservations,
     isLoading,
+    schedules: allSchedules as TimelineSchedule[],
   }
 }
 
@@ -349,60 +407,18 @@ export function useReservationBars(reservations: ReservationWithDetails[]): Rese
   )
 }
 
+
 // ■ スケジュールバー計算用フック
 /**
  * スケジュール配列からタイムライン表示用のバー情報を生成する
  * @param schedules - スケジュール情報の配列
- * @returns タイムライン表示用のスケジュールバー配列
+ * @returns タイムライン表示用の予約バー配列
  */
-export function useScheduleBars(schedules: StaffSchedule[]): ScheduleBar[] {
+export function useScheduleBars(schedules: TimelineSchedule[]): ScheduleBar[] {
   return useMemo(() => 
-    schedules.map(calculateScheduleBar),
+    calculateScheduleBar(schedules),
     [schedules]
   )
-}
-
-// ■ 個別スタッフのスケジュール取得フック
-/**
- * 特定のスタッフの特定日のスケジュールを取得する
- * @param tenantId - テナントID
- * @param orgId - 組織ID
- * @param staffId - スタッフID
- * @param date - 対象日付（YYYY-MM-DD形式）
- * @param ready - データ取得の準備が完了しているかどうか
- * @returns スタッフのスケジュール配列
- */
-export function useStaffSchedules(
-  tenantId: Id<'tenant'> | null,
-  orgId: Id<'organization'> | null,
-  staffId: Id<'staff'>,
-  date: string,
-  ready: boolean
-): StaffSchedule[] {
-  
-  // 特定のスタッフ・日付のスケジュール取得
-  const scheduleData = useQuery(
-    api.staff.exception_schedule.query.getByTenantOrgStaffAndDate,
-    ready && tenantId && orgId 
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-          staff_id: staffId,
-          date
-        }
-      : 'skip'
-  )
-
-  return useMemo(() => {
-    if (!scheduleData) return []
-    
-    return [{
-      start_time_unix: scheduleData.start_time_unix || 0,
-      end_time_unix: scheduleData.end_time_unix || 0,
-      type: scheduleData.type,
-      is_all_day: scheduleData.is_all_day,
-    }]
-  }, [scheduleData])
 }
 
 // ■ エクスポート用の型と定数
@@ -410,6 +426,7 @@ export type {
   StaffTimelineData,
   ReservationWithDetails,
   StaffSchedule,
+  OrganizationSchedule,
   TimeSlot,
   ReservationBar,
   ScheduleBar
@@ -420,6 +437,7 @@ export {
   RESERVATION_COLORS,
   FREE_NOMINATION_COLORS,
   SCHEDULE_COLORS,
+  ORGANIZATION_SCHEDULE_COLORS,
   calculateReservationBar,
   calculateScheduleBar
 } 
