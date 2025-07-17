@@ -1,37 +1,21 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
 import { api } from '@/convex/_generated/api'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { Link } from '@/i18n/navigation'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
-import { useMutation } from 'convex/react'
-import { Id, Doc } from '@/convex/_generated/dataModel'
-import { toast } from 'sonner'
-import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { useTranslations } from 'next-intl'
+import { Doc } from '@/convex/_generated/dataModel'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const numberOfItems = 10
 export default function OptionList() {
   const t = useTranslations('options')
+  const router = useRouter()
   const { tenantId, orgId } = useTenantAndOrganization()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const { showErrorToast } = useErrorHandler()
-  const [deleteOptionId, setDeleteOptionId] = useState<Id<'option'> | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
   const {
     results: options,
     loadMore,
@@ -50,39 +34,6 @@ export default function OptionList() {
     }
   )
 
-  const killOption = useMutation(api.option.mutation.kill)
-
-  const showDeleteDialog = (optionId: Id<'option'>) => {
-    setIsDialogOpen(true)
-    setDeleteOptionId(optionId)
-  }
-
-  const handleDelete = async (option: Doc<'option'>) => {
-    setIsDeleting(true)
-    try {
-      killOption({
-        option_id: option._id,
-      })
-      if (option.images[0].original_url) {
-        console.log('option.images[0].original_url', option.images[0].original_url)
-        console.log('option.images[0].thumbnail_url', option.images[0].thumbnail_url)
-        await fetch('/api/storage', {
-          method: 'DELETE',
-          body: JSON.stringify({
-            originalUrl: option.images[0].original_url as string,
-            withThumbnail: true,
-          }),
-        })
-      }
-      toast.success(t('messages.deleteSuccess'))
-      setIsDialogOpen(false)
-    } catch (error) {
-      showErrorToast(error)
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   if (isLoading) {
     return <Loading />
   }
@@ -93,63 +44,49 @@ export default function OptionList() {
         <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
           <div className="overflow-hidden border border-border rounded-lg">
             <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted text-nowrap px-2">
+              <thead className="bg-neon-foreground text-nowrap px-2">
                 <tr>
                   <th
                     scope="col"
-                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-primary sm:pl-6"
+                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
                   >
                     {t('list.table.status')}
                   </th>
                   <th
                     scope="col"
-                    className="py-3.5 pr-3 pl-4 text-lefts text-sm font-semibold text-primary sm:pl-6"
+                    className="py-3.5 pr-3 pl-4 text-lefts text-sm font-semibold text-neon sm:pl-6"
                   >
                     {t('list.table.image')}
                   </th>
                   <th
                     scope="col"
-                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-primary sm:pl-6"
+                    className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
                   >
                     {t('list.table.name')}
                   </th>
-                  <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
-                  >
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neon">
                     {t('list.table.price')}
                   </th>
 
-                  <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
-                  >
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neon">
                     {t('list.table.orderLimit')}
                   </th>
-                  <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
-                  >
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neon">
                     {t('list.table.totalDuration')}
                   </th>
-                  <th
-                    scope="col"
-                    className="px-3 py-3.5 text-left text-sm font-semibold text-primary"
-                  >
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neon">
                     {t('list.table.tags')}
-                  </th>
-                  <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                    <span className="sr-only">{t('list.table.edit')}</span>
-                  </th>
-                  <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                    <span className="sr-only">{t('list.table.delete')}</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-background text-nowrap">
                 {options && options.length > 0 ? (
                   options.map((option: Doc<'option'>) => (
-                    <tr key={option._id}>
+                    <tr
+                      key={option._id}
+                      onClick={() => router.push(`/dashboard/option/${option._id}`)}
+                      className="cursor-pointer hover:bg-secondary"
+                    >
                       <td
                         className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6 `}
                       >
@@ -217,29 +154,6 @@ export default function OptionList() {
                           ? option.tags.join('、')
                           : t('list.table.notSet')}
                       </td>
-                      <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                        <Link href={`/dashboard/option/${option._id}/edit`}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-neon bg-neon-foreground hover:opacity-80"
-                          >
-                            {t('list.table.edit')}
-                            <span className="sr-only">, {option.name}</span>
-                          </Button>
-                        </Link>
-                      </td>
-                      <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => showDeleteDialog(option._id)}
-                          className="text-destructive bg-destructive-foreground hover:text-destructive-foreground"
-                        >
-                          {t('list.table.delete')}
-                          <span className="sr-only">, {option.name}</span>
-                        </Button>
-                      </td>
                     </tr>
                   ))
                 ) : (
@@ -261,33 +175,6 @@ export default function OptionList() {
           </Button>
         </div>
       )}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => setIsDialogOpen(open)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('list.confirmDialog.title')}</DialogTitle>
-            <DialogDescription>{t('list.confirmDialog.description')}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-center">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              {t('list.confirmDialog.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => handleDelete(options.find((option) => option._id === deleteOptionId)!)}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {t('edit.updating')}
-                </>
-              ) : (
-                t('list.confirmDialog.delete')
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
