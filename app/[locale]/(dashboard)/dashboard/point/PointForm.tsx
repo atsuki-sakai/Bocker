@@ -184,9 +184,9 @@ export default function PointForm() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5">
           <div className="border border-border rounded-lg overflow-hidden">
-            <div className="p-3 bg-muted">
-              <h5 className="flex items-center text-xl font-bold gap-2">
-                <Coins className="h-5 w-5 text-primary" />
+            <div className="p-3 bg-neon-foreground">
+              <h5 className="flex items-center text-xl font-bold gap-2 text-neon">
+                <Coins className="h-5 w-5 text-neon" />
                 {t('basicSettings.title')}
               </h5>
               <p className="text-sm text-muted-foreground py-2 mb-2">
@@ -337,9 +337,9 @@ export default function PointForm() {
         <div className="lg:col-span-7">
           <div>
             <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-border rounded-lg overflow-hidden">
-              <div className="bg-muted p-3">
-                <h5 className="flex items-center text-xl font-bold gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
+              <div className="bg-neon-foreground p-3">
+                <h5 className="flex items-center text-xl font-bold gap-2 text-neon">
+                  <Gift className="h-5 w-5 text-neon" />
                   {t('summary.title')}
                 </h5>
                 <p className="text-sm text-muted-foreground mt-2">{t('summary.description')}</p>
