@@ -2,10 +2,10 @@
 
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Loader2, RefreshCwIcon } from 'lucide-react'
+import { Loader2, RefreshCwIcon, FileDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, format } from 'date-fns'
 import { Users, Award, BarChart3 } from 'lucide-react'
 import type {
   SalesSummary,
@@ -97,6 +97,7 @@ export default function StaffAnalyticsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isInterval, setIsInterval] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const { showErrorToast } = useErrorHandler()
 
   // データ状態（エンタープライズレベル対応）
@@ -261,6 +262,336 @@ export default function StaffAnalyticsPage() {
     }
   }
 
+  const downloadCSVFile = useCallback((csvData: string[][], fileName: string) => {
+    const csvContent = csvData.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', fileName)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
+  }, [])
+
+  const handleExportCSV = useCallback(async () => {
+    if (!repository || !filters || !staffSummary || !staffRanking) return
+    setIsExporting(true)
+    try {
+      const dateRange = `${format(filters.dateRange.from, 'yyyy-MM-dd')}_${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+      const fileName = `スタッフ売上分析レポート_${dateRange}.csv`
+
+      const csvData = []
+
+      // ============================================
+      // 【1】レポートヘッダー
+      // ============================================
+      csvData.push(['スタッフ売上分析レポート'])
+      csvData.push(['生成日時', new Date().toLocaleString('ja-JP')])
+      csvData.push([
+        '分析期間',
+        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+      ])
+      csvData.push([])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // ============================================
+      // 【2】チームサマリー
+      // ============================================
+      csvData.push(['チーム売上サマリー'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      const totalStaff = performanceComparison
+        ? performanceComparison.performanceDistribution.high +
+          performanceComparison.performanceDistribution.medium +
+          performanceComparison.performanceDistribution.low
+        : 0
+
+      csvData.push(['指標', '数値', '評価', '前期間比較'])
+      csvData.push([
+        'アクティブスタッフ数',
+        `${totalStaff}人`,
+        totalStaff >= 10 ? '十分' : totalStaff >= 5 ? '適正' : '要増員',
+        'N/A',
+      ])
+      csvData.push([
+        'チーム総売上',
+        `¥${staffSummary.totalAmount.toLocaleString()}`,
+        staffSummary.totalAmount >= 1000000
+          ? '優秀'
+          : staffSummary.totalAmount >= 500000
+            ? '良好'
+            : '要改善',
+        periodComparison
+          ? `${periodComparison.growth.amount_percentage >= 0 ? '↗' : '↘'} ${periodComparison.growth.amount_percentage.toFixed(1)}%`
+          : 'N/A',
+      ])
+      csvData.push([
+        'チーム総予約数',
+        `${staffSummary.totalBookings}件`,
+        staffSummary.totalBookings >= 100
+          ? '優秀'
+          : staffSummary.totalBookings >= 50
+            ? '良好'
+            : '要改善',
+        periodComparison
+          ? `${periodComparison.growth.booking_percentage >= 0 ? '↗' : '↘'} ${periodComparison.growth.booking_percentage.toFixed(1)}%`
+          : 'N/A',
+      ])
+      csvData.push([
+        'スタッフ平均売上',
+        `¥${(performanceComparison?.averagePerformance?.averageAmount || 0).toLocaleString()}`,
+        (performanceComparison?.averagePerformance?.averageAmount || 0) >= 80000
+          ? '優秀'
+          : (performanceComparison?.averagePerformance?.averageAmount || 0) >= 50000
+            ? '良好'
+            : '要改善',
+        '個人目標の基準値',
+      ])
+      csvData.push([])
+
+      // チーム分析洞察
+      csvData.push(['重要な洞察'])
+      csvData.push(['-'.repeat(40)])
+      if (performanceComparison) {
+        const highPerformers = performanceComparison.performanceDistribution.high
+        const efficiencyScore = totalStaff > 0 ? Math.round((highPerformers / totalStaff) * 100) : 0
+        csvData.push(['チーム効率性', `${efficiencyScore}% （平均以上のスタッフ比率）`])
+
+        if (performanceComparison.topPerformers?.[0]) {
+          const topStaff = performanceComparison.topPerformers[0]
+          const avgAmount = performanceComparison.averagePerformance?.averageAmount || 1
+          const performanceGap = (((topStaff.total_amount - avgAmount) / avgAmount) * 100).toFixed(
+            1
+          )
+          csvData.push(['売上格差', `最高スタッフが平均より${performanceGap}%上回る`])
+        }
+      }
+      csvData.push([])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // ============================================
+      // 【3】スタッフランキング詳細
+      // ============================================
+      csvData.push(['スタッフランキング詳細'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+      csvData.push([
+        '順位',
+        'スタッフ名',
+        '売上',
+        '売上比率',
+        '予約数',
+        '平均客単価',
+        'パフォーマンス評価',
+        '改善提案',
+      ])
+
+      staffRanking.forEach((staff, index) => {
+        const staffDetail = performanceComparison?.topPerformers?.find(
+          (performer) => performer.staff_name === staff.name
+        )
+        const bookings = staffDetail?.booking_count || 0
+        const avgAmount = bookings > 0 ? Math.round(staff.value / bookings) : 0
+        const teamAvg = performanceComparison?.averagePerformance?.averageAmount || 0
+
+        let performance = ''
+        let suggestion = ''
+
+        if (staff.value >= teamAvg * 1.2) {
+          performance = '優秀'
+          suggestion = 'メンター役として活用・成功事例の共有'
+        } else if (staff.value >= teamAvg * 0.8) {
+          performance = '標準'
+          suggestion = 'スキルアップ研修・目標設定支援'
+        } else {
+          performance = '要改善'
+          suggestion = '個別指導・基礎技術向上・モチベーション支援'
+        }
+
+        csvData.push([
+          `${index + 1}位`,
+          staff.name,
+          `¥${staff.value.toLocaleString()}`,
+          `${staff.percentage.toFixed(1)}%`,
+          `${bookings}件`,
+          `¥${avgAmount.toLocaleString()}`,
+          performance,
+          suggestion,
+        ])
+      })
+      csvData.push([])
+
+      // ============================================
+      // 【4】パフォーマンス分布分析
+      // ============================================
+      if (performanceComparison) {
+        csvData.push(['パフォーマンス分布分析'])
+        csvData.push(['='.repeat(14)])
+        csvData.push([])
+        csvData.push(['分類', 'スタッフ数', '比率', '特徴', '戦略提案'])
+
+        const high = performanceComparison.performanceDistribution.high
+        const medium = performanceComparison.performanceDistribution.medium
+        const low = performanceComparison.performanceDistribution.low
+        const total = high + medium + low
+
+        csvData.push([
+          '平均以上',
+          `${high}人`,
+          `${total > 0 ? ((high / total) * 100).toFixed(1) : 0}%`,
+          'チームを牽引する高パフォーマー',
+          'リーダー育成・メンタリング制度',
+        ])
+        csvData.push([
+          '平均の50-100%',
+          `${medium}人`,
+          `${total > 0 ? ((medium / total) * 100).toFixed(1) : 0}%`,
+          '安定したパフォーマンス',
+          'スキルアップ支援・モチベーション向上',
+        ])
+        csvData.push([
+          '平均の50%未満',
+          `${low}人`,
+          `${total > 0 ? ((low / total) * 100).toFixed(1) : 0}%`,
+          '改善が必要',
+          '個別指導・基礎研修・手厚いサポート',
+        ])
+        csvData.push([])
+      }
+
+      // ============================================
+      // 【5】戦略提案・アクションプラン
+      // ============================================
+      csvData.push(['戦略提案・アクションプラン'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+      csvData.push(['優先度', 'アクション項目', '対象', '期待効果', '実行時期'])
+
+      if (performanceComparison) {
+        const highPerformers = performanceComparison.performanceDistribution.high
+        const lowPerformers = performanceComparison.performanceDistribution.low
+        const totalStaff =
+          highPerformers + performanceComparison.performanceDistribution.medium + lowPerformers
+
+        if (lowPerformers > totalStaff * 0.3) {
+          csvData.push(['緊急', 'スタッフ底上げ研修', '下位30%スタッフ', '売上20%向上', '即座'])
+          csvData.push(['', '・基礎技術研修実施', '', '', ''])
+          csvData.push(['', '・個別メンタリング制度', '', '', ''])
+        }
+
+        if (highPerformers < totalStaff * 0.3) {
+          csvData.push([
+            '重要',
+            'トップパフォーマー育成',
+            '上位スタッフ',
+            'チーム牽引力向上',
+            '1ヶ月以内',
+          ])
+          csvData.push(['', '・リーダーシップ研修', '', '', ''])
+          csvData.push(['', '・成功事例共有制度', '', '', ''])
+        }
+
+        if (staffSummary.averageAmount && staffSummary.averageAmount < 7000) {
+          csvData.push(['推奨', '客単価向上施策', '全スタッフ', '客単価15%向上', '2週間以内'])
+          csvData.push(['', '・アップセル技術研修', '', '', ''])
+          csvData.push(['', '・オプション提案スキル', '', '', ''])
+        }
+      }
+
+      csvData.push(['継続', 'パフォーマンス管理体制', '全チーム', '継続的改善', '継続'])
+      csvData.push(['', '・週次レビュー定例化', '', '', ''])
+      csvData.push(['', '・目標設定・評価制度', '', '', ''])
+      csvData.push([])
+
+      // ============================================
+      // 【6】付録：詳細データ
+      // ============================================
+      csvData.push(['付録：詳細データ'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // 全スタッフ詳細データ
+      csvData.push(['【全スタッフ詳細データ】'])
+      csvData.push([
+        'スタッフ名',
+        '売上',
+        '予約数',
+        '平均客単価',
+        '売上比率',
+        '達成度',
+        '改善ポイント',
+      ])
+      staffRanking.forEach((staff) => {
+        const staffDetail = performanceComparison?.topPerformers?.find(
+          (performer) => performer.staff_name === staff.name
+        )
+        const bookings = staffDetail?.booking_count || 0
+        const avgAmount = bookings > 0 ? Math.round(staff.value / bookings) : 0
+        const teamAvg = performanceComparison?.averagePerformance?.averageAmount || 1
+        const achievementRate = ((staff.value / teamAvg) * 100).toFixed(1)
+
+        let improvementPoint = ''
+        if (staff.value >= teamAvg * 1.2) {
+          improvementPoint = '他スタッフの指導・メンタリング'
+        } else if (bookings < (performanceComparison?.averagePerformance?.averageBookings || 0)) {
+          improvementPoint = '予約数増加・集客力向上'
+        } else if (avgAmount < teamAvg) {
+          improvementPoint = '客単価向上・アップセル技術'
+        } else {
+          improvementPoint = '総合的なスキル向上'
+        }
+
+        csvData.push([
+          staff.name,
+          `¥${staff.value.toLocaleString()}`,
+          `${bookings}件`,
+          `¥${avgAmount.toLocaleString()}`,
+          `${staff.percentage.toFixed(1)}%`,
+          `${achievementRate}%`,
+          improvementPoint,
+        ])
+      })
+      csvData.push([])
+
+      // レポート終了
+      csvData.push(['='.repeat(14)])
+      csvData.push(['レポート終了'])
+      csvData.push(['生成時刻', new Date().toLocaleString('ja-JP')])
+      csvData.push([
+        'データ期間',
+        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+      ])
+
+      // CSV出力
+      downloadCSVFile(csvData, fileName)
+      toast.success('スタッフ売上分析レポートをダウンロードしました')
+    } catch (err) {
+      console.error('Export CSV error:', err)
+      showErrorToast(err)
+    } finally {
+      setIsExporting(false)
+    }
+  }, [
+    repository,
+    filters,
+    staffSummary,
+    staffRanking,
+    performanceComparison,
+    periodComparison,
+    showErrorToast,
+    downloadCSVFile,
+  ])
+
   const buttonText = useMemo(() => {
     if (isRefreshing) return '更新中...'
     if (isInterval) return '待機中'
@@ -402,7 +733,31 @@ export default function StaffAnalyticsPage() {
             <AlertDescription className="text-destructive">{error}</AlertDescription>
           </Alert>
         )}
-
+        <div className="flex justify-end gap-4">
+          <div className="flex items-end gap-2">
+            <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4 mr-2" />
+              )}
+              データをCSVでダウンロード
+            </Button>
+            <Button
+              onClick={handleRefresh}
+              variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
+              size="sm"
+              disabled={isRefreshing || isInterval}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCwIcon className="h-4 w-4 mr-2" />
+              )}
+              {buttonText}
+            </Button>
+          </div>
+        </div>
         {/* フィルター */}
         <div className="relative">
           <AnalyticsFilters
@@ -412,23 +767,6 @@ export default function StaffAnalyticsPage() {
             showMenuFilter={false}
             type="monthly"
           />
-          <div className="absolute top-2 right-2">
-            <div className="flex items-end">
-              <Button
-                onClick={handleRefresh}
-                variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
-                size="sm"
-                disabled={isRefreshing || isInterval}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCwIcon className="h-4 w-4 mr-2" />
-                )}
-                {buttonText}
-              </Button>
-            </div>
-          </div>
         </div>
 
         {/* サマリーカード */}
