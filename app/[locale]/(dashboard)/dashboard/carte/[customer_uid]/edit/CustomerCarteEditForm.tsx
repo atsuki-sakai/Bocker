@@ -18,7 +18,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Phone } from 'lucide-react'
 import type {
   HairThickness,
   HairVolume,
@@ -28,12 +27,12 @@ import type {
 import {
   User,
   Save,
-  ArrowLeft,
   AlertTriangle,
   FileText,
   Loader2,
   UserCheck,
   Scissors,
+  Phone,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -431,21 +430,17 @@ export default function CustomerCarteEditForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="flex w-fit gap-2 overflow-x-auto">
           <TabsTrigger value="basic" className="text-xs">
-            <User className="w-3 h-3 mr-1" />
             {tCarte('edit.tabs.basic')}
           </TabsTrigger>
           <TabsTrigger value="customer" className="text-xs">
-            <UserCheck className="w-3 h-3 mr-1" />
             {tCarte('edit.tabs.customer')}
           </TabsTrigger>
           <TabsTrigger value="store" className="text-xs">
-            <Scissors className="w-3 h-3 mr-1" />
             {tCarte('edit.tabs.store')}
           </TabsTrigger>
           <TabsTrigger value="medical" className="text-xs">
-            <FileText className="w-3 h-3 mr-1" />
             {tCarte('edit.tabs.medical')}
           </TabsTrigger>
         </TabsList>
@@ -538,7 +533,7 @@ export default function CustomerCarteEditForm() {
                 {tCarte('edit.customerPrefs.title')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 mt-4">
               {/* 基本的な顧客設定を2列レイアウトでコンパクトに */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2">
@@ -551,7 +546,9 @@ export default function CustomerCarteEditForm() {
                       })
                     }
                   />
-                  <Label htmlFor="prefer_silence">{tCarte('edit.customerPrefs.preferSilence')}</Label>
+                  <Label htmlFor="prefer_silence">
+                    {tCarte('edit.customerPrefs.preferSilence')}
+                  </Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -662,7 +659,7 @@ export default function CustomerCarteEditForm() {
                 />
               </div>
 
-              <Separator />
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent my-6" />
 
               {/* 敏感肌・アレルギー関連 */}
               <div>
@@ -744,7 +741,7 @@ export default function CustomerCarteEditForm() {
                 {tCarte('edit.storeAssessment.title')}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 mt-4">
               {/* 髪の太さ・量・くせ */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -968,82 +965,93 @@ export default function CustomerCarteEditForm() {
           </Card>
         </TabsContent>
 
-
-        <TabsContent value="medical">
-          <Card className="shadow-md border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                {tCarte('edit.medicalInfo.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* アレルギー履歴 */}
-              <div>
-                <Label className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                  {tCarte('edit.medicalInfo.allergyHistory')}
-                </Label>
-                <Textarea
-                  {...register('allergy_history')}
-                  placeholder={tCarte('edit.medicalInfo.allergyPlaceholder')}
-                  rows={4}
-                  className="transition-all duration-200"
-                />
-                {errors.allergy_history && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-sm text-destructive mt-1"
-                  >
-                    {errors.allergy_history.message}
-                  </motion.p>
-                )}
+        <TabsContent value="medical" className="mt-6">
+          <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+            <div className="p-3 md:p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive">
+                  <FileText className="w-5 h-5 text-destructive-foreground" />
+                </div>
+                <h2 className="text-base md:text-xl font-bold text-primary">
+                  {tCarte('edit.medicalInfo.title')}
+                </h2>
               </div>
+            </div>
+            <div className="p-3 md:p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* アレルギー履歴 */}
+                <div className="relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-destructive to-destructive rounded-xl" />
+                  <div className="relative p-3 md:p-6 rounded-xl border border-destructive bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-destructive">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 rounded-lg bg-destructive-foreground">
+                        <AlertTriangle className="w-4 h-4 text-destructive" />
+                      </div>
+                      <p className="text-xs text-destructive uppercase tracking-wide font-medium">
+                        {tCarte('edit.medicalInfo.allergyHistory')}
+                      </p>
+                    </div>
+                    <Textarea
+                      {...register('allergy_history')}
+                      placeholder={tCarte('edit.medicalInfo.allergyPlaceholder')}
+                      rows={4}
+                      className="bg-background border-destructive/20 focus:border-destructive transition-all duration-200"
+                    />
+                    {errors.allergy_history && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-sm text-destructive mt-2"
+                      >
+                        {errors.allergy_history.message}
+                      </motion.p>
+                    )}
+                  </div>
+                </div>
 
-              {/* 病歴 */}
-              <div>
-                <Label className="flex items-center gap-2 mb-2">
-                  <FileText className="w-4 h-4 text-muted-foreground" />
-                  {tCarte('edit.medicalInfo.medicalHistory')}
-                </Label>
-                <Textarea
-                  {...register('medical_history')}
-                  placeholder={tCarte('edit.medicalInfo.medicalPlaceholder')}
-                  rows={4}
-                  className="transition-all duration-200"
-                />
-                {errors.medical_history && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-sm text-destructive mt-1"
-                  >
-                    {errors.medical_history.message}
-                  </motion.p>
-                )}
+                {/* 病歴 */}
+                <div className="relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-warning to-warning rounded-xl" />
+                  <div className="relative p-3 md:p-6 rounded-xl border border-warning bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-warning">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 rounded-lg bg-warning">
+                        <FileText className="w-4 h-4 text-warning-foreground" />
+                      </div>
+                      <p className="text-xs text-warning-foreground uppercase tracking-wide font-medium">
+                        {tCarte('edit.medicalInfo.medicalHistory')}
+                      </p>
+                    </div>
+                    <Textarea
+                      {...register('medical_history')}
+                      placeholder={tCarte('edit.medicalInfo.medicalPlaceholder')}
+                      rows={4}
+                      className="bg-background border-warning/20 focus:border-warning transition-all duration-200"
+                    />
+                    {errors.medical_history && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-sm text-warning-foreground mt-2"
+                      >
+                        {errors.medical_history.message}
+                      </motion.p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
       {/* フォームボタン */}
-      <div className="flex justify-between py-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push(`/dashboard/carte/${customer_uid}`)}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {tCarte('edit.buttons.back')}
-        </Button>
 
+      <div className="flex justify-end mt-6 gap-3">
         <Button
           type="submit"
           disabled={isSubmitting || (!carteData && !isDirty)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 px-8"
+          size="lg"
         >
           {isSubmitting ? (
             <>
