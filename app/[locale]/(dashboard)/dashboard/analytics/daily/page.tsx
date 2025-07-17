@@ -12,6 +12,7 @@ import {
   Banknote,
   Activity,
   TrendingDown,
+  FileDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -122,6 +123,7 @@ export default function DailyAnalyticsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isInterval, setIsInterval] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const { showErrorToast } = useErrorHandler()
 
   // データ状態
@@ -336,6 +338,468 @@ export default function DailyAnalyticsPage() {
     }
   }, [fetchData, isRefreshing, isInterval, showErrorToast])
 
+  const downloadCSVFile = useCallback((csvData: string[][], fileName: string) => {
+    const csvContent = csvData.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', fileName)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
+  }, [])
+
+  const handleExportCSV = useCallback(async () => {
+    if (!repository || !filters || !salesSummary || !trendData) return
+    setIsExporting(true)
+    try {
+      const dateRange = `${format(filters.dateRange.from, 'yyyy-MM-dd')}_${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+      const fileName = `売上分析レポート_${dateRange}.csv`
+
+      // Get detailed daily sales data including booking counts
+      const dailySalesData = await repository.getDailySales(filters)
+
+      const csvData = []
+
+      // ============================================
+      // 【1】レポートヘッダー
+      // ============================================
+      csvData.push(['売上分析レポート'])
+      csvData.push(['生成日時', new Date().toLocaleString('ja-JP')])
+      csvData.push([
+        '分析期間',
+        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+      ])
+      csvData.push([])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // ============================================
+      // 【2】エグゼクティブサマリー
+      // ============================================
+      csvData.push(['エグゼクティブサマリー'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      const totalDays = salesSummary.periodDays
+      const avgDaily = salesSummary.dailyAverage
+      const efficiency = Math.round((salesSummary.totalBookings / totalDays) * 100) / 100
+
+      csvData.push(['主要指標', '数値', '評価', '前期間比較'])
+      csvData.push([
+        '総売上',
+        `¥${salesSummary.totalAmount.toLocaleString()}`,
+        avgDaily >= 100000 ? '優秀' : avgDaily >= 50000 ? '良好' : '要改善',
+        periodComparison
+          ? `${periodComparison.growth.amount_percentage >= 0 ? '↗' : '↘'} ${periodComparison.growth.amount_percentage.toFixed(1)}%`
+          : 'N/A',
+      ])
+      csvData.push([
+        '総予約数',
+        `${salesSummary.totalBookings}件`,
+        efficiency >= 10 ? '優秀' : efficiency >= 5 ? '良好' : '要改善',
+        periodComparison
+          ? `${periodComparison.growth.booking_percentage >= 0 ? '↗' : '↘'} ${periodComparison.growth.booking_percentage.toFixed(1)}%`
+          : 'N/A',
+      ])
+      csvData.push([
+        '平均客単価',
+        `¥${salesSummary.averageAmount.toLocaleString()}`,
+        salesSummary.averageAmount >= 8000
+          ? '優秀'
+          : salesSummary.averageAmount >= 5000
+            ? '良好'
+            : '要改善',
+        periodComparison
+          ? `${periodComparison.growth.average_percentage >= 0 ? '↗' : '↘'} ${periodComparison.growth.average_percentage.toFixed(1)}%`
+          : 'N/A',
+      ])
+      csvData.push([
+        '1日平均売上',
+        `¥${avgDaily.toLocaleString()}`,
+        avgDaily >= 100000 ? '優秀' : avgDaily >= 50000 ? '良好' : '要改善',
+        `${totalDays}日間の平均`,
+      ])
+      csvData.push([])
+
+      // ビジネス洞察
+      csvData.push(['重要な洞察'])
+      csvData.push(['-'.repeat(40)])
+      if (periodComparison) {
+        const growthTrend =
+          periodComparison.growth.amount_percentage >= 5
+            ? '成長トレンド'
+            : periodComparison.growth.amount_percentage >= 0
+              ? '安定推移'
+              : '改善要'
+        csvData.push(['売上トレンド', growthTrend])
+
+        if (
+          periodComparison.growth.amount_percentage > periodComparison.growth.booking_percentage
+        ) {
+          csvData.push(['成長要因', '客単価向上が主要因（アップセル成功）'])
+        } else if (
+          periodComparison.growth.booking_percentage > periodComparison.growth.amount_percentage
+        ) {
+          csvData.push(['成長要因', '予約数増加が主要因（新規獲得成功）'])
+        }
+      }
+
+      if (weekdayAnalysis.bestItem && weekdayAnalysis.worstItem) {
+        const efficiency_score = Math.round(
+          (weekdayAnalysis.worstItem.totalAmount / weekdayAnalysis.bestItem.totalAmount) * 100
+        )
+        csvData.push([
+          '曜日別効率',
+          `${efficiency_score}% （${weekdayAnalysis.bestItem.dayName}が最強、${weekdayAnalysis.worstItem.dayName}が改善対象）`,
+        ])
+      }
+      csvData.push([])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // ============================================
+      // 【3】期間比較詳細
+      // ============================================
+      if (periodComparison) {
+        csvData.push(['期間比較詳細'])
+        csvData.push(['='.repeat(14)])
+        csvData.push([])
+        csvData.push(['項目', '現期間', '前期間', '差額', '成長率', '評価', '戦略提案'])
+        csvData.push([
+          '売上',
+          `¥${periodComparison.current.total_amount.toLocaleString()}`,
+          `¥${periodComparison.previous.total_amount.toLocaleString()}`,
+          `¥${(periodComparison.current.total_amount - periodComparison.previous.total_amount).toLocaleString()}`,
+          `${periodComparison.growth.amount_percentage >= 0 ? '+' : ''}${periodComparison.growth.amount_percentage.toFixed(1)}%`,
+          periodComparison.growth.amount_percentage >= 5
+            ? '優秀'
+            : periodComparison.growth.amount_percentage >= 0
+              ? '良好'
+              : '要改善',
+          periodComparison.growth.amount_percentage >= 5 ? '現状維持＋拡大投資' : '改善施策実行',
+        ])
+        csvData.push([
+          '予約数',
+          `${periodComparison.current.booking_count}件`,
+          `${periodComparison.previous.booking_count}件`,
+          `${periodComparison.current.booking_count - periodComparison.previous.booking_count}件`,
+          `${periodComparison.growth.booking_percentage >= 0 ? '+' : ''}${periodComparison.growth.booking_percentage.toFixed(1)}%`,
+          periodComparison.growth.booking_percentage >= 5
+            ? '優秀'
+            : periodComparison.growth.booking_percentage >= 0
+              ? '良好'
+              : '要改善',
+          periodComparison.growth.booking_percentage >= 0 ? 'リピート率向上' : '新規獲得強化',
+        ])
+        csvData.push([])
+      }
+
+      // ============================================
+      // 【4】日別パフォーマンス（上位・下位のみ）
+      // ============================================
+      csvData.push(['日別パフォーマンスハイライト'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      const sortedTrend = [...trendData].sort((a, b) => b.value - a.value)
+      csvData.push([
+        'ランク',
+        '日付',
+        '曜日',
+        '売上',
+        '予約数',
+        '客単価',
+        '平均差',
+        'パフォーマンス',
+      ])
+
+      // 上位5日
+      csvData.push(['--- TOP 5 高売上日 ---'])
+      sortedTrend.slice(0, Math.min(5, sortedTrend.length)).forEach((item, index) => {
+        const diff = item.value - salesSummary.dailyAverage
+        const dateStr = format(new Date(item.date), 'yyyy-MM-dd')
+        const dayData = dailySalesData.find((d) => d.sale_date === dateStr)
+        const bookingCount = dayData?.booking_count || 0
+        const avgAmount = bookingCount > 0 ? Math.round(item.value / bookingCount) : 0
+
+        csvData.push([
+          `${index + 1}位`,
+          item.date,
+          new Date(item.date).toLocaleDateString('ja-JP', { weekday: 'short' }),
+          `¥${item.value.toLocaleString()}`,
+          `${bookingCount}件`,
+          `¥${avgAmount.toLocaleString()}`,
+          `${diff >= 0 ? '+' : ''}¥${diff.toLocaleString()}`,
+          diff >= salesSummary.dailyAverage * 0.5 ? '特別好調' : diff >= 0 ? '好調' : '要改善',
+        ])
+      })
+
+      csvData.push([])
+
+      // 下位3日（改善対象）
+      csvData.push(['--- 改善対象日 ---'])
+      sortedTrend
+        .slice(-Math.min(3, sortedTrend.length))
+        .reverse()
+        .forEach((item, index) => {
+          const diff = item.value - salesSummary.dailyAverage
+          const dateStr = format(new Date(item.date), 'yyyy-MM-dd')
+          const dayData = dailySalesData.find((d) => d.sale_date === dateStr)
+          const bookingCount = dayData?.booking_count || 0
+          const avgAmount = bookingCount > 0 ? Math.round(item.value / bookingCount) : 0
+
+          csvData.push([
+            `下位${index + 1}`,
+            item.date,
+            new Date(item.date).toLocaleDateString('ja-JP', { weekday: 'short' }),
+            `¥${item.value.toLocaleString()}`,
+            `${bookingCount}件`,
+            `¥${avgAmount.toLocaleString()}`,
+            `${diff >= 0 ? '+' : ''}¥${diff.toLocaleString()}`,
+            '改善対象・要因分析必要',
+          ])
+        })
+      csvData.push([])
+
+      // ============================================
+      // 【5】曜日別戦略分析
+      // ============================================
+      if (weekdayPerformance.length > 0) {
+        csvData.push(['曜日別戦略分析'])
+        csvData.push(['='.repeat(14)])
+        csvData.push([])
+        csvData.push([
+          '順位',
+          '曜日',
+          '売上',
+          '売上比率',
+          '予約数',
+          '客単価',
+          '効率スコア',
+          '戦略提案',
+        ])
+
+        weekdayPerformance
+          .sort((a, b) => a.rank - b.rank)
+          .forEach((item) => {
+            const efficiencyScore = Math.round(
+              (item.totalAmount / Math.max(...weekdayPerformance.map((w) => w.totalAmount))) * 100
+            )
+            let strategy = ''
+
+            if (item.rank === 1) {
+              strategy = '成功パターン分析・他曜日展開'
+            } else if (item.rank <= 2) {
+              strategy = '更なる強化・特別メニュー'
+            } else if (item.rank >= weekdayPerformance.length - 1) {
+              strategy = '集中改善・キャンペーン実施'
+            } else {
+              strategy = '標準化・効率向上'
+            }
+
+            csvData.push([
+              `${item.rank}位`,
+              item.dayName,
+              `¥${item.totalAmount.toLocaleString()}`,
+              `${item.totalAmountPercentage.toFixed(1)}%`,
+              `${item.bookingCount}件`,
+              `¥${item.averageAmount.toLocaleString()}`,
+              `${efficiencyScore}点`,
+              strategy,
+            ])
+          })
+        csvData.push([])
+
+        // 曜日別改善提案
+        csvData.push(['曜日別改善アクションプラン'])
+        csvData.push(['-'.repeat(60)])
+        if (
+          weekdayAnalysis.bestItem?.dayName.includes('土') ||
+          weekdayAnalysis.bestItem?.dayName.includes('日')
+        ) {
+          csvData.push(['週末戦略', '週末の成功を平日に展開・週末特別メニュー強化'])
+        }
+        if (
+          weekdayAnalysis.worstItem?.dayName.includes('月') ||
+          weekdayAnalysis.worstItem?.dayName.includes('火')
+        ) {
+          csvData.push(['平日活性化', '月火限定キャンペーン・平日割引・ランチメニュー'])
+        }
+        csvData.push([])
+      }
+
+      // ============================================
+      // 【6】月別トレンド分析
+      // ============================================
+      if (monthlyData.length > 0) {
+        csvData.push(['月別トレンド分析'])
+        csvData.push(['='.repeat(14)])
+        csvData.push([])
+        csvData.push(['順位', '月', '売上', '予約数', '客単価', '前月比', 'トレンド', '季節戦略'])
+
+        monthlyData
+          .sort((a, b) => a.rank - b.rank)
+          .forEach((item) => {
+            let seasonStrategy = ''
+            const monthNum = item.monthName
+
+            if (monthNum.includes('12') || monthNum.includes('1')) {
+              seasonStrategy = '年末年始特別メニュー・忘新年会'
+            } else if (monthNum.includes('3') || monthNum.includes('4')) {
+              seasonStrategy = '春の新生活・歓送迎会'
+            } else if (monthNum.includes('7') || monthNum.includes('8')) {
+              seasonStrategy = '夏祭り・ビアガーデン'
+            } else if (monthNum.includes('10') || monthNum.includes('11')) {
+              seasonStrategy = 'ハロウィン・紅葉イベント'
+            } else {
+              seasonStrategy = '季節限定メニュー・イベント'
+            }
+
+            csvData.push([
+              `${item.rank}位`,
+              item.monthName,
+              `¥${item.totalAmount.toLocaleString()}`,
+              `${item.bookingCount}件`,
+              `¥${item.averageAmount.toLocaleString()}`,
+              item.growthRate !== undefined
+                ? `${item.growthRate >= 0 ? '+' : ''}${item.growthRate.toFixed(1)}%`
+                : '-',
+              item.growthRate !== undefined
+                ? item.growthRate >= 5
+                  ? '急成長'
+                  : item.growthRate >= 0
+                    ? '成長'
+                    : '要改善'
+                : '-',
+              seasonStrategy,
+            ])
+          })
+        csvData.push([])
+      }
+
+      // ============================================
+      // 【7】総合戦略提案
+      // ============================================
+      csvData.push(['総合戦略提案・アクションプラン'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      csvData.push(['優先度', 'アクション項目', '期待効果', '実行時期'])
+
+      // 優先度付きアクションプラン
+      if (periodComparison && periodComparison.growth.amount_percentage < 0) {
+        csvData.push(['緊急', '売上回復施策', '売上15%改善', '即座'])
+        csvData.push(['', '・顧客アンケート実施', '', ''])
+        csvData.push(['', '・価格・サービス見直し', '', ''])
+        csvData.push(['', '・競合分析', '', ''])
+      }
+
+      if (weekdayAnalysis.worstItem) {
+        csvData.push([
+          '重要',
+          `${weekdayAnalysis.worstItem.dayName}曜日強化`,
+          '週売上10%向上',
+          '2週間以内',
+        ])
+        csvData.push(['', '・限定メニュー・割引', '', ''])
+        csvData.push(['', '・スタッフ配置最適化', '', ''])
+      }
+
+      if (salesSummary.averageAmount < 6000) {
+        csvData.push(['推奨', '客単価向上施策', '客単価15%向上', '1ヶ月以内'])
+        csvData.push(['', '・アップセル・クロスセル', '', ''])
+        csvData.push(['', '・コース・セットメニュー', '', ''])
+      }
+
+      csvData.push(['継続', 'データ分析体制強化', '意思決定速度向上', '継続'])
+      csvData.push(['', '・週次レビュー定例化', '', ''])
+      csvData.push(['', '・KPI目標設定', '', ''])
+      csvData.push([])
+
+      // ============================================
+      // 【8】付録：詳細データ
+      // ============================================
+      csvData.push(['付録：詳細データ'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // 全日別データ
+      csvData.push(['【日別詳細データ】'])
+      csvData.push([
+        '日付',
+        '曜日',
+        '売上',
+        '予約数',
+        '客単価',
+        'ランク',
+        '平均差',
+        '予想売上',
+        '達成率',
+      ])
+      trendData.forEach((item) => {
+        const rank = trendData.filter((t) => t.value > item.value).length + 1
+        const diff = item.value - salesSummary.dailyAverage
+        const weekday = new Date(item.date).toLocaleDateString('ja-JP', { weekday: 'short' })
+        const expectedSales = salesSummary.dailyAverage
+        const achievementRate = ((item.value / expectedSales) * 100).toFixed(1)
+
+        // Get booking data for this specific date
+        const bookingCount = trendData.find((t) => t.date === item.date)?.bookingCount || 0
+        const avgAmount = trendData.find((t) => t.date === item.date)?.averageAmount || 0
+
+        csvData.push([
+          item.date,
+          weekday,
+          `¥${item.value.toLocaleString()}`,
+          `${bookingCount}件`,
+          `¥${avgAmount.toLocaleString()}`,
+          `${rank}/${trendData.length}位`,
+          `${diff >= 0 ? '+' : ''}¥${diff.toLocaleString()}`,
+          `¥${expectedSales.toLocaleString()}`,
+          `${achievementRate}%`,
+        ])
+      })
+      csvData.push([])
+
+      // レポート終了
+      csvData.push(['='.repeat(14)])
+      csvData.push(['レポート終了'])
+      csvData.push(['生成時刻', new Date().toLocaleString('ja-JP')])
+      csvData.push([
+        'データ期間',
+        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+      ])
+
+      // CSV出力
+      downloadCSVFile(csvData, fileName)
+      toast.success('売上分析レポートをダウンロードしました')
+    } catch (err) {
+      console.error('Export CSV error:', err)
+      showErrorToast(err)
+    } finally {
+      setIsExporting(false)
+    }
+  }, [
+    repository,
+    filters,
+    salesSummary,
+    trendData,
+    weekdayPerformance,
+    monthlyData,
+    periodComparison,
+    showErrorToast,
+    downloadCSVFile,
+    weekdayAnalysis,
+  ])
+
   // ボタンのテキストを決定
   const buttonText = useMemo(() => {
     if (isRefreshing) return '更新中...'
@@ -440,6 +904,29 @@ export default function DailyAnalyticsPage() {
 
         <div className="relative">
           {/* フィルター */}
+          <div className="flex items-end justify-end gap-4 mb-4">
+            <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4 mr-2" />
+              )}
+              データをCSVでダウンロード
+            </Button>
+            <Button
+              onClick={handleRefresh}
+              variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
+              size="sm"
+              disabled={isRefreshing || isInterval}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCwIcon className="h-4 w-4 mr-2" />
+              )}
+              {buttonText}
+            </Button>
+          </div>
           <AnalyticsFilters
             filters={filters}
             onFiltersChange={setFilters}
@@ -447,23 +934,6 @@ export default function DailyAnalyticsPage() {
             showStaffFilter={false}
             showMenuFilter={false}
           />
-          <div className="absolute top-2 right-2">
-            <div className="flex items-end">
-              <Button
-                onClick={handleRefresh}
-                variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
-                size="sm"
-                disabled={isRefreshing || isInterval}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCwIcon className="h-4 w-4 mr-2" />
-                )}
-                {buttonText}
-              </Button>
-            </div>
-          </div>
         </div>
 
         {/* サマリーカード */}
