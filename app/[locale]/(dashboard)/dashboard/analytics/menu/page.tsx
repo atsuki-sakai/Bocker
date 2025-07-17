@@ -2,10 +2,10 @@
 
 import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Loader2, RefreshCwIcon, DollarSign, Package } from 'lucide-react'
+import { Loader2, RefreshCwIcon, DollarSign, Package, FileDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, format } from 'date-fns'
 import { Award, BarChart3, HelpCircle, PieChart as PieChartIcon } from 'lucide-react'
 import type {
   SalesSummary,
@@ -114,6 +114,7 @@ export default function MenuAnalyticsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isInterval, setIsInterval] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const { showErrorToast } = useErrorHandler()
 
   // データ状態（エンタープライズレベル対応）
@@ -257,6 +258,419 @@ export default function MenuAnalyticsPage() {
     }
   }
 
+  const downloadCSVFile = useCallback((csvData: string[][], fileName: string) => {
+    const csvContent = csvData.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', fileName)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
+  }, [])
+
+  const handleExportCSV = useCallback(async () => {
+    if (!repository || !filters || !menuSummary || !menuRanking) return
+    setIsExporting(true)
+    try {
+      const dateRange = `${format(filters.dateRange.from, 'yyyy-MM-dd')}_${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+      const fileName = `メニュー分析レポート_${dateRange}.csv`
+
+      const csvData = []
+
+      // ============================================
+      // 【1】レポートヘッダー
+      // ============================================
+      csvData.push(['メニュー分析レポート'])
+      csvData.push(['生成日時', new Date().toLocaleString('ja-JP')])
+      csvData.push([
+        '分析期間',
+        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+      ])
+      csvData.push([])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // ============================================
+      // 【2】エグゼクティブサマリー
+      // ============================================
+      csvData.push(['エグゼクティブサマリー'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      const topMenu = performanceAnalysis?.topPerformers?.[0]
+      const avgMenuPerformance = performanceAnalysis?.averagePerformance?.averageAmount || 0
+      const activeMenus = menuSummary.activeMenuCount
+      const avgPrice = priceTierAnalysis?.insights?.averageMenuPrice || 0
+
+      csvData.push(['主要指標', '数値', '評価', '戦略提案'])
+      csvData.push([
+        '売上No.1メニュー',
+        topMenu ? `${topMenu.menu_name} (¥${topMenu.total_amount.toLocaleString()})` : 'データなし',
+        topMenu && topMenu.total_amount >= avgMenuPerformance * 2
+          ? '圧倒的強者'
+          : topMenu && topMenu.total_amount >= avgMenuPerformance * 1.5
+            ? '優秀'
+            : '標準',
+        topMenu ? 'この成功要因を他メニューに展開' : 'メニュー戦略見直し必要',
+      ])
+      csvData.push([
+        'アクティブメニュー数',
+        `${activeMenus}品目`,
+        activeMenus >= 20 ? '豊富' : activeMenus >= 10 ? '適正' : '少ない',
+        activeMenus < 10 ? 'メニュー拡充検討' : activeMenus > 30 ? 'メニュー整理検討' : '現状維持',
+      ])
+      csvData.push([
+        'メニュー平均売上',
+        `¥${avgMenuPerformance.toLocaleString()}`,
+        avgMenuPerformance >= 50000 ? '優秀' : avgMenuPerformance >= 20000 ? '良好' : '要改善',
+        avgMenuPerformance < 20000 ? '価格戦略・品質向上' : '更なる差別化',
+      ])
+      csvData.push([
+        '平均メニュー価格',
+        `¥${avgPrice.toLocaleString()}`,
+        avgPrice >= 5000 ? '高価格帯' : avgPrice >= 3000 ? '中価格帯' : '低価格帯',
+        '価格帯に応じた戦略実行',
+      ])
+      csvData.push([])
+
+      // ビジネス洞察
+      csvData.push(['重要な洞察'])
+      csvData.push(['-'.repeat(40)])
+
+      if (performanceAnalysis) {
+        const highPerformers = performanceAnalysis.performanceDistribution.high
+        const totalMenus =
+          highPerformers +
+          performanceAnalysis.performanceDistribution.medium +
+          performanceAnalysis.performanceDistribution.low
+        const highPerformerRate =
+          totalMenus > 0 ? Math.round((highPerformers / totalMenus) * 100) : 0
+
+        csvData.push([
+          '高パフォーマンス率',
+          `${highPerformerRate}% (${highPerformers}/${totalMenus}品目)`,
+        ])
+
+        if (highPerformerRate >= 30) {
+          csvData.push(['メニュー戦略', '優秀なポートフォリオ・更なる強化推進'])
+        } else if (highPerformerRate >= 15) {
+          csvData.push(['メニュー戦略', '平均的ポートフォリオ・選択と集中'])
+        } else {
+          csvData.push(['メニュー戦略', '要改善・大幅見直し必要'])
+        }
+      }
+
+      if (priceTierAnalysis && priceTierAnalysis.insights.mostProfitableTier) {
+        csvData.push(['最適価格帯', priceTierAnalysis.insights.mostProfitableTier])
+        if (
+          priceTierAnalysis.insights.mostProfitableTier !==
+          priceTierAnalysis.insights.mostPopularTier
+        ) {
+          csvData.push(['価格戦略', '人気価格帯から高収益価格帯への誘導施策'])
+        } else {
+          csvData.push(['価格戦略', '理想的な価格設定・現状維持'])
+        }
+      }
+      csvData.push([])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // ============================================
+      // 【3】メニューランキング詳細
+      // ============================================
+      csvData.push(['メニューランキング詳細'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+      csvData.push([
+        '順位',
+        'メニュー名',
+        '売上',
+        '売上比率',
+        '予約数',
+        '客単価',
+        'パフォーマンス評価',
+        '改善提案',
+      ])
+
+      menuRanking.forEach((menu, index) => {
+        const menuDetail = performanceAnalysis?.topPerformers?.find(
+          (performer) => performer.menu_name === menu.name
+        )
+        const bookings = menuDetail?.booking_count || 0
+        const avgAmount = bookings > 0 ? Math.round(menu.value / bookings) : 0
+
+        let performance = ''
+        let suggestion = ''
+
+        if (index < 3) {
+          performance = '優秀'
+          suggestion = '成功要因分析・他メニューへの展開'
+        } else if (index < Math.ceil(menuRanking.length * 0.3)) {
+          performance = '良好'
+          suggestion = 'さらなる強化・プロモーション'
+        } else if (index < Math.ceil(menuRanking.length * 0.7)) {
+          performance = '標準'
+          suggestion = '改善施策・差別化'
+        } else {
+          performance = '要改善'
+          suggestion = '抜本的見直し・廃止検討'
+        }
+
+        csvData.push([
+          `${index + 1}位`,
+          menu.name,
+          `¥${menu.value.toLocaleString()}`,
+          `${menu.percentage.toFixed(1)}%`,
+          `${bookings}件`,
+          `¥${avgAmount.toLocaleString()}`,
+          performance,
+          suggestion,
+        ])
+      })
+      csvData.push([])
+
+      // ============================================
+      // 【4】価格帯分析
+      // ============================================
+      if (priceTierAnalysis && priceTierAnalysis.priceTiers.length > 0) {
+        csvData.push(['価格帯分析'])
+        csvData.push(['='.repeat(14)])
+        csvData.push([])
+        csvData.push([
+          '価格帯',
+          '価格範囲',
+          'メニュー数',
+          '総売上',
+          '予約数',
+          '平均売上',
+          'ROI評価',
+          '戦略提案',
+        ])
+
+        priceTierAnalysis.priceTiers.forEach((tier) => {
+          const roi = tier.menuCount > 0 ? Math.round(tier.totalAmount / tier.menuCount) : 0
+          let roiEvaluation = ''
+          let strategy = ''
+
+          if (tier.tier === priceTierAnalysis.insights.mostProfitableTier) {
+            roiEvaluation = '最高収益'
+            strategy = 'この価格帯のメニュー拡充・強化'
+          } else if (tier.tier === priceTierAnalysis.insights.mostPopularTier) {
+            roiEvaluation = '最高人気'
+            strategy = 'アップセル・価格帯向上施策'
+          } else if (roi >= avgMenuPerformance) {
+            roiEvaluation = '平均以上'
+            strategy = '継続・微調整'
+          } else {
+            roiEvaluation = '要改善'
+            strategy = '価格見直し・品質向上'
+          }
+
+          csvData.push([
+            tier.tier,
+            tier.priceRange,
+            `${tier.menuCount}品目`,
+            `¥${tier.totalAmount.toLocaleString()}`,
+            `${tier.bookingCount}件`,
+            `¥${tier.averageAmount.toLocaleString()}`,
+            roiEvaluation,
+            strategy,
+          ])
+        })
+        csvData.push([])
+      }
+
+      // ============================================
+      // 【5】パフォーマンス分析
+      // ============================================
+      if (performanceAnalysis) {
+        csvData.push(['パフォーマンス分析'])
+        csvData.push(['='.repeat(14)])
+        csvData.push([])
+
+        csvData.push(['分析項目', '数値', '評価'])
+        csvData.push([
+          '平均以上メニュー数',
+          `${performanceAnalysis.performanceDistribution.high}品目`,
+          performanceAnalysis.performanceDistribution.high >= activeMenus * 0.3 ? '優秀' : '要改善',
+        ])
+        csvData.push([
+          '標準メニュー数',
+          `${performanceAnalysis.performanceDistribution.medium}品目`,
+          '改善余地あり',
+        ])
+        csvData.push([
+          '低パフォーマンス数',
+          `${performanceAnalysis.performanceDistribution.low}品目`,
+          performanceAnalysis.performanceDistribution.low <= activeMenus * 0.2
+            ? '許容範囲'
+            : '要対策',
+        ])
+        csvData.push([
+          'メニュー平均予約数',
+          `${performanceAnalysis.averagePerformance.averageBookings.toFixed(1)}件`,
+          performanceAnalysis.averagePerformance.averageBookings >= 5 ? '良好' : '要改善',
+        ])
+        csvData.push([])
+      }
+
+      // ============================================
+      // 【6】総合戦略提案・アクションプラン
+      // ============================================
+      csvData.push(['総合戦略提案・アクションプラン'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      csvData.push(['優先度', 'アクション項目', '期待効果', '実行時期', '具体的施策'])
+
+      // 優先度付きアクションプラン
+      if (
+        performanceAnalysis &&
+        performanceAnalysis.performanceDistribution.low > activeMenus * 0.3
+      ) {
+        csvData.push([
+          '緊急',
+          'メニュー大幅見直し',
+          '売上20%向上',
+          '即座',
+          '低パフォーマンスメニューの廃止・リニューアル',
+        ])
+      }
+
+      if (topMenu && topMenu.total_amount >= avgMenuPerformance * 2) {
+        csvData.push([
+          '重要',
+          '成功メニュー横展開',
+          '売上15%向上',
+          '1ヶ月以内',
+          `${topMenu.menu_name}の成功要因分析と他メニューへの適用`,
+        ])
+      }
+
+      if (
+        priceTierAnalysis &&
+        priceTierAnalysis.insights.mostProfitableTier !== priceTierAnalysis.insights.mostPopularTier
+      ) {
+        csvData.push([
+          '推奨',
+          '価格帯戦略実行',
+          '客単価10%向上',
+          '2ヶ月以内',
+          '人気メニューから高収益メニューへのアップセル施策',
+        ])
+      }
+
+      if (avgPrice < 3000) {
+        csvData.push([
+          '継続',
+          '価値向上施策',
+          '価格競争力強化',
+          '3ヶ月以内',
+          'メニュー品質向上・付加価値創出',
+        ])
+      }
+
+      csvData.push([
+        '継続',
+        'データ分析体制強化',
+        '意思決定精度向上',
+        '継続',
+        'メニュー別KPI設定・定期レビュー',
+      ])
+      csvData.push([])
+
+      // ============================================
+      // 【7】付録：詳細データ
+      // ============================================
+      csvData.push(['付録：詳細データ'])
+      csvData.push(['='.repeat(14)])
+      csvData.push([])
+
+      // 全メニューデータ
+      csvData.push(['【全メニュー詳細データ】'])
+      csvData.push([
+        '順位',
+        'メニュー名',
+        '売上',
+        '売上比率',
+        '予約数',
+        '客単価',
+        '改善度',
+        '推奨アクション',
+      ])
+
+      menuRanking.forEach((menu, index) => {
+        const menuDetail = performanceAnalysis?.topPerformers?.find(
+          (performer) => performer.menu_name === menu.name
+        )
+        const bookings = menuDetail?.booking_count || 0
+        const avgAmount = bookings > 0 ? Math.round(menu.value / bookings) : 0
+        const improvementPotential =
+          avgMenuPerformance > 0
+            ? Math.round(((avgMenuPerformance - menu.value) / avgMenuPerformance) * 100)
+            : 0
+
+        let action = ''
+        if (improvementPotential > 50) {
+          action = '抜本的見直し'
+        } else if (improvementPotential > 20) {
+          action = '改善施策実施'
+        } else if (improvementPotential > 0) {
+          action = '微調整'
+        } else {
+          action = '現状維持・強化'
+        }
+
+        csvData.push([
+          `${index + 1}位`,
+          menu.name,
+          `¥${menu.value.toLocaleString()}`,
+          `${menu.percentage.toFixed(1)}%`,
+          `${bookings}件`,
+          `¥${avgAmount.toLocaleString()}`,
+          `${improvementPotential}%`,
+          action,
+        ])
+      })
+      csvData.push([])
+
+      // レポート終了
+      csvData.push(['='.repeat(14)])
+      csvData.push(['レポート終了'])
+      csvData.push(['生成時刻', new Date().toLocaleString('ja-JP')])
+      csvData.push([
+        'データ期間',
+        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+      ])
+
+      // CSV出力
+      downloadCSVFile(csvData, fileName)
+      toast.success('メニュー分析レポートをダウンロードしました')
+    } catch (err) {
+      console.error('Export CSV error:', err)
+      showErrorToast(err)
+    } finally {
+      setIsExporting(false)
+    }
+  }, [
+    repository,
+    filters,
+    menuSummary,
+    menuRanking,
+    performanceAnalysis,
+    priceTierAnalysis,
+    showErrorToast,
+    downloadCSVFile,
+  ])
+
   const buttonText = useMemo(() => {
     if (isRefreshing) return '更新中...'
     if (isInterval) return '待機中'
@@ -393,6 +807,36 @@ export default function MenuAnalyticsPage() {
             <AlertDescription className="text-destructive">{error}</AlertDescription>
           </Alert>
         )}
+        <div className="flex justify-end gap-4">
+          <div className="flex items-end gap-2">
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              disabled={isExporting || loading || !menuSummary}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4 mr-2" />
+              )}
+              {isExporting ? 'エクスポート中...' : 'データをCSVでダウンロード'}
+            </Button>
+            <Button
+              onClick={handleRefresh}
+              variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
+              size="sm"
+              disabled={isRefreshing || isInterval}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCwIcon className="h-4 w-4 mr-2" />
+              )}
+              {buttonText}
+            </Button>
+          </div>
+        </div>
 
         {/* フィルター */}
         <div className="relative">
@@ -404,23 +848,6 @@ export default function MenuAnalyticsPage() {
             showMenuFilter={true}
             type="monthly"
           />
-          <div className="absolute top-2 right-2">
-            <div className="flex items-end">
-              <Button
-                onClick={handleRefresh}
-                variant={!isRefreshing && !isInterval ? 'default' : 'outline'}
-                size="sm"
-                disabled={isRefreshing || isInterval}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCwIcon className="h-4 w-4 mr-2" />
-                )}
-                {buttonText}
-              </Button>
-            </div>
-          </div>
         </div>
 
         {/* サマリーカード */}
