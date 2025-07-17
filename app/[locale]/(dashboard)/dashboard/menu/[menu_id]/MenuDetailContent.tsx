@@ -20,7 +20,7 @@ import {
   Info,
   Crosshair,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Doc } from '@/convex/_generated/dataModel'
@@ -250,345 +250,459 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* アクションボタン */}
-      <div className="flex items-center justify-end gap-3">
-        <Link href={`/dashboard/menu/${menu._id}/edit`}>
-          <Button variant="default" size="sm" className="group">
-            <Edit className="w-4 h-4 mr-2" /> {t('edit')}
-          </Button>
-        </Link>
+    <div className="min-h-screen pb-8">
+      <div className="space-y-3 md:space-y-6">
+        {/* メニュー基本情報ヘッダー - Uber風デザイン */}
+        <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+          <div className="bg-muted p-3 md:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-start md:items-center gap-4 w-full">
+                <div className="p-2 bg-primary rounded-full">
+                  <FileText className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="w-full">
+                  <h1 className="text-xl font-bold ">{menu.name}</h1>
+                  <p className="text-sm">
+                    {Array.isArray(menu.categories) && menu.categories.length > 0
+                      ? menu.categories.join(' • ')
+                      : t('fields.noCategory')}
+                  </p>
+                </div>
+              </div>
+              <div className="w-full flex justify-end gap-3">
+                <Link href={`/dashboard/menu/${menu._id}/edit`}>
+                  <Button variant="edit" size="sm" className="group">
+                    <Edit className="w-4 h-4 mr-2" /> {t('edit')}
+                  </Button>
+                </Link>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Trash className="w-4 h-4 mr-2" /> {t('delete')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsDeleteDialogOpen(true)}
-          className="text-destructive bg-destructive-foreground hover:text-destructive-foreground"
-        >
-          <Trash className="w-4 h-4 mr-2" /> {t('delete')}
-        </Button>
-      </div>
+        {/* メインコンテンツエリア */}
+        <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
+          <div className="flex flex-col lg:flex-row">
+            {/* メニュー画像セクション */}
+            <div className="lg:w-1/2 p-6">
+              {menu.images && menu.images.length > 0 ? (
+                <div className="space-y-4">
+                  <Carousel
+                    setApi={setMainCarouselApi}
+                    className="w-full max-w-lg mx-auto"
+                    opts={{
+                      loop: menu.images.length > 1,
+                      align: 'start',
+                    }}
+                  >
+                    <CarouselContent>
+                      {menu.images.map((image, index) => (
+                        <CarouselItem key={`main-${index}`}>
+                          <div className="relative w-full aspect-[4/3] bg-muted group rounded-xl overflow-hidden shadow-lg">
+                            <Image
+                              src={image.original_url || ''}
+                              alt={`${menu.name || t('image.alt')} ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 768px) 80vw, (max-width: 1200px) 50vw, 33vw"
+                              priority={index === currentMainImageIndex}
+                              loading={index === currentMainImageIndex ? 'eager' : 'lazy'}
+                            />
+                            {menu.images && menu.images.length > 1 && (
+                              <>
+                                <CarouselPrevious className="absolute left-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background backdrop-blur-sm" />
+                                <CarouselNext className="absolute right-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background backdrop-blur-sm" />
+                              </>
+                            )}
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
 
-      {/* ヘッダー情報 */}
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        {/* メニュー画像 */}
-        <div className="w-full max-w-sm mx-auto">
-          {menu.images && menu.images.length > 0 ? (
-            <div className="space-y-4">
-              <Carousel
-                setApi={setMainCarouselApi}
-                className="w-full max-w-2xl mx-auto"
-                opts={{
-                  loop: menu.images.length > 1,
-                  align: 'start',
-                }}
-              >
-                <CarouselContent>
-                  {menu.images.map((image, index) => (
-                    <CarouselItem key={`main-${index}`}>
-                      <div className="relative w-full aspect-[2/3] bg-muted group rounded-lg overflow-hidden">
-                        <Image
-                          src={image.original_url || ''}
-                          alt={`${menu.name || t('image.alt')} ${index + 1}`}
-                          className="w-full h-full object-contain"
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 80vw, (max-width: 1200px) 50vw, 33vw"
-                          priority={index === currentMainImageIndex}
-                          loading={index === currentMainImageIndex ? 'eager' : 'lazy'}
-                        />
-                        {menu.images && menu.images.length > 1 && (
-                          <>
-                            <CarouselPrevious className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background hover:bg-muted p-1 rounded-full text-muted-foreground" />
-                            <CarouselNext className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background hover:bg-muted p-1 rounded-full text-muted-foreground" />
-                          </>
-                        )}
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </Carousel>
-
-              {menu.images && menu.images[0].thumbnail_url && (
-                <div className="flex space-x-2 justify-center overflow-x-auto py-2">
-                  {menu.images.map((image, index) => (
-                    <button
-                      key={`thumb-${index}`}
-                      onClick={() => handleThumbnailClick(index)}
-                      className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 relative rounded-md border-2 overflow-hidden
-                                  ${
-                                    currentMainImageIndex === index
-                                      ? 'border-transparent ring-accent ring-2 ring-offset-1 sm:ring-offset-2'
-                                      : 'border-foreground opacity-70 hover:opacity-100'
-                                  } focus:outline-none transition-all duration-150 ease-in-out`}
-                      aria-label={t('image.show', { index: index + 1 })}
-                    >
-                      <Image
-                        src={image.thumbnail_url || ''}
-                        alt={`${t('image.thumbnail')} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        fill
-                        sizes="64px md:80px"
-                        loading="lazy"
-                      />
-                    </button>
-                  ))}
+                  {menu.images && menu.images[0].thumbnail_url && menu.images.length > 1 && (
+                    <div className="flex space-x-2 justify-center overflow-x-auto py-2">
+                      {menu.images.map((image, index) => (
+                        <button
+                          key={`thumb-${index}`}
+                          onClick={() => handleThumbnailClick(index)}
+                          className={`flex-shrink-0 w-16 h-16 relative rounded-lg border-2 overflow-hidden transition-all duration-200
+                                      ${
+                                        currentMainImageIndex === index
+                                          ? 'border-primary ring-primary ring-2 ring-offset-2 shadow-lg'
+                                          : 'border-border opacity-70 hover:opacity-100 hover:border-primary/50'
+                                      }`}
+                          aria-label={t('image.show', { index: index + 1 })}
+                        >
+                          <Image
+                            src={image.thumbnail_url || ''}
+                            alt={`${t('image.thumbnail')} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            fill
+                            sizes="64px"
+                            loading="lazy"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center w-full aspect-[4/3] bg-muted text-muted-foreground rounded-xl border border-border">
+                  <Info className="w-12 h-12 mb-3 opacity-30" />
+                  <span className="text-sm font-medium">{t('image.noImage')}</span>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex items-center justify-center w-full aspect-[4/3] sm:aspect-[3/4] bg-muted text-muted-foreground rounded-lg">
-              <Info className="w-8 h-8 mr-2 opacity-30" />
-              <span>{t('image.noImage')}</span>
-            </div>
-          )}
-        </div>
 
-        {/* メニュー情報 */}
-        <div className="w-full md:w-2/3">
-          <CardHeader className="pb-2">
-            {Array.isArray(menu.categories) && menu.categories.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {menu.categories.map((cat, idx) => (
-                  <Badge
-                    key={idx}
-                    variant={'default'}
-                    className="text-xs w-fit px-2 py-1 bg-neon-foreground text-neon"
-                  >
-                    <p>{cat}</p>
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <CardTitle className="text-2xl font-bold text-primary bg-clip-text py-1">
-              {menu.name}
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="basic">{t('tabs.basic')}</TabsTrigger>
-                <TabsTrigger value="details">{t('tabs.details')}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="basic" className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* 料金情報 */}
-                  <div className="flex items-start p-3 rounded-lg  border border-border">
-                    <PiggyBank className="w-5 h-5 mt-1 mr-3 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('fields.price')}
-                      </p>
-                      <div className="flex items-baseline">
-                        {formattedSalePrice ? (
-                          <div className="flex flex-col">
-                            <span className="text-lg font-bold text-primary">
-                              {formattedSalePrice}
-                            </span>
-                            <span className="text-sm text-muted-foreground line-through">
-                              {formattedPrice}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-lg font-bold text-primary">{formattedPrice}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 所要時間 */}
-                  <div className="flex items-start p-3 rounded-lg border border-border">
-                    <Clock className="w-5 h-5 mt-1 mr-3 text-primary" />
-                    <div className="flex flex-row gap-6">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {t('fields.totalDuration')}
-                        </p>
-                        <p className="text-lg font-medium text-primary">
-                          {menu.duration_min || 0}
-                          {t('fields.minutes')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 対象性別 */}
-                  <div className="flex items-start p-3 rounded-lg border border-border">
-                    <Users className="w-5 h-5 mt-1 mr-3 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('fields.target')}
-                      </p>
-
-                      <p className="text-base text-primary">
-                        {menu.target_gender && menu.target_gender !== 'unselected'
-                          ? convertGender(menu.target_gender as 'unselected' | 'male' | 'female')
-                          : t('labels.gender.all')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* ターゲット */}
-                  <div className="flex items-start p-3 rounded-lg border border-border">
-                    <Crosshair className="w-5 h-5 mt-1 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('fields.targetType')}
-                      </p>
-                      <p className="text-base text-primary">
-                        {getTargetTypeLabel(menu.target_type || '')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 支払い方法 */}
-                  <div className="flex items-start p-3 rounded-lg border border-border">
-                    <CreditCard className="w-5 h-5 mt-1 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        {t('fields.paymentMethod')}
-                      </p>
-                      <p className="text-base text-primary">
-                        {getPaymentMethodLabel(menu.payment_method || '')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="details" className="space-y-6">
-                {/* 説明文 */}
-                <div className="space-y-2">
-                  <h3 className="text-md font-medium text-muted-foreground flex items-center">
-                    <FileText className="w-4 h-4 mr-2 text-primary" />
-                    {t('fields.description')}
-                  </h3>
-                  <div className="bg-muted p-4 rounded-lg border border-border">
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={showFullDescription ? 'full' : 'short'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="text-primary leading-relaxed"
+            {/* メニュー詳細情報セクション */}
+            <div className="lg:w-1/2 p-6 border-l border-border">
+              <div className="space-y-6">
+                {/* カテゴリバッジ */}
+                {Array.isArray(menu.categories) && menu.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {menu.categories.map((cat, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="outline"
+                        className="px-3 py-1 text-xs font-medium bg-accent-2 text-accent-2-foreground border-accent-2"
                       >
-                        {shortenedDescription}
-                      </motion.p>
-                    </AnimatePresence>
-
-                    {menu.description && menu.description.length > 150 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 text-link-foreground "
-                        onClick={toggleDescription}
-                      >
-                        {showFullDescription ? (
-                          <>
-                            <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4 mr-1" /> {t('showMore')}
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {menu.warning_message && menu.warning_message.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-md font-medium text-warning-foreground flex items-center">
-                      <FileText className="w-4 h-4 mr-2 text-warning-foreground" />
-                      {t('fields.warningMessage')}
-                    </h3>
-                    <div className="bg-warning p-4 rounded-lg border border-border">
-                      <AnimatePresence mode="wait">
-                        <motion.p
-                          key={showFullWarningMessage ? 'full' : 'short'}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="text-warning-foreground leading-relaxed"
-                        >
-                          {shortenedWarningMessage}
-                        </motion.p>
-                      </AnimatePresence>
-
-                      {menu.warning_message && menu.warning_message.length > 150 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 text-link-foreground "
-                          onClick={toggleWarningMessage}
-                        >
-                          {showFullWarningMessage ? (
-                            <>
-                              <ChevronUp className="w-4 h-4 mr-1" /> {t('showLess')}
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="w-4 h-4 mr-1" /> {t('showMore')}
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
+                        {cat}
+                      </Badge>
+                    ))}
                   </div>
                 )}
 
-                {/* タグ */}
-                <div className="space-y-2">
-                  <h3 className="text-md text-muted-foreground flex items-center">
-                    <Tag className="w-4 h-4 mr-2 text-primary" />
-                    {t('fields.tags')}
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {menu.tags && menu.tags.length > 0 ? (
-                      menu.tags.map((tag, index) => <Badge key={index}>{tag}</Badge>)
-                    ) : (
-                      <p className="text-muted-foreground text-sm italic">{t('fields.noTags')}</p>
-                    )}
-                  </div>
-                </div>
+                <Tabs defaultValue="basic" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 h-12 bg-secondary border border-border rounded-xl">
+                    <TabsTrigger
+                      value="basic"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all duration-200 font-medium"
+                    >
+                      <Info className="w-4 h-4 mr-2" />
+                      {t('tabs.basic')}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="details"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg transition-all duration-200 font-medium"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      {t('tabs.details')}
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* システム情報 */}
-                <div className="space-y-2 pt-2 border-t border-border">
-                  <h3 className="text-md font-medium text-muted-foreground flex items-center">
-                    <Info className="w-4 h-4 mr-2 text-primary" />
-                    {t('fields.systemInfo')}
-                  </h3>
-                  <div className="text-sm text-muted-foreground">
-                    <p>
-                      {t('fields.createdAt')}:{' '}
-                      {new Date(menu._creationTime).toLocaleString('ja-JP')}
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
+                  <TabsContent value="basic" className="mt-6 space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* 料金情報 */}
+                      <div className="group relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-palette-1 to-palette-1 rounded-xl" />
+                        <div className="relative p-4 rounded-xl border border-palette-1 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-1/40">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 rounded-lg bg-palette-1">
+                              <PiggyBank className="w-4 h-4 text-palette-1-foreground" />
+                            </div>
+                            <p className="text-xs text-palette-1-foreground uppercase tracking-wide font-medium">
+                              {t('fields.price')}
+                            </p>
+                          </div>
+                          <div className="flex items-baseline">
+                            {formattedSalePrice ? (
+                              <div className="flex flex-col">
+                                <span className="text-xl font-bold text-palette-1-foreground">
+                                  {formattedSalePrice}
+                                </span>
+                                <span className="text-sm text-palette-1-foreground/70 line-through">
+                                  {formattedPrice}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xl font-bold text-palette-1-foreground">
+                                {formattedPrice}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 所要時間 */}
+                      <div className="group relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-palette-2 to-palette-2 rounded-xl" />
+                        <div className="relative p-4 rounded-xl border border-palette-2 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-2/40">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 rounded-lg bg-palette-2">
+                              <Clock className="w-4 h-4 text-palette-2-foreground" />
+                            </div>
+                            <p className="text-xs text-palette-2-foreground uppercase tracking-wide font-medium">
+                              {t('fields.totalDuration')}
+                            </p>
+                          </div>
+                          <p className="text-lg font-bold text-palette-2-foreground">
+                            {menu.duration_min || 0}
+                            {t('fields.minutes')}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 対象性別・ターゲット */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="group relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-palette-3 to-palette-3 rounded-xl" />
+                          <div className="relative p-4 rounded-xl border border-palette-3 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="p-2 rounded-lg bg-palette-3">
+                                <Users className="w-4 h-4 text-palette-3-foreground" />
+                              </div>
+                              <p className="text-xs text-palette-3-foreground uppercase tracking-wide font-medium">
+                                {t('fields.target')}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold text-palette-3-foreground">
+                              {menu.target_gender && menu.target_gender !== 'unselected'
+                                ? convertGender(
+                                    menu.target_gender as 'unselected' | 'male' | 'female'
+                                  )
+                                : t('labels.gender.all')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="group relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-r from-palette-4 to-palette-4 rounded-xl" />
+                          <div className="relative p-4 rounded-xl border border-palette-4 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-4/40">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="p-2 rounded-lg bg-palette-4">
+                                <Crosshair className="w-4 h-4 text-palette-4-foreground" />
+                              </div>
+                              <p className="text-xs text-palette-4-foreground uppercase tracking-wide font-medium">
+                                {t('fields.targetType')}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold text-palette-4-foreground">
+                              {getTargetTypeLabel(menu.target_type || '')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 支払い方法 */}
+                      <div className="group relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-palette-5 to-palette-5 rounded-xl" />
+                        <div className="relative p-4 rounded-xl border border-palette-5 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-5/40">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 rounded-lg bg-palette-5">
+                              <CreditCard className="w-4 h-4 text-palette-5-foreground" />
+                            </div>
+                            <p className="text-xs text-palette-5-foreground uppercase tracking-wide font-medium">
+                              {t('fields.paymentMethod')}
+                            </p>
+                          </div>
+                          <p className="text-sm font-semibold text-palette-5-foreground">
+                            {getPaymentMethodLabel(menu.payment_method || '')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="details" className="mt-6 space-y-6">
+                    {/* 説明文 */}
+                    {menu.description && (
+                      <div className="relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-secondary to-secondary rounded-xl" />
+                        <div className="relative p-6 rounded-xl border border-border bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-primary">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 rounded-lg bg-primary">
+                              <FileText className="w-4 h-4 text-primary-foreground" />
+                            </div>
+                            <h3 className="text-sm font-medium text-primary uppercase tracking-wide">
+                              {t('fields.description')}
+                            </h3>
+                          </div>
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={showFullDescription ? 'full' : 'short'}
+                              initial={{ opacity: 0, height: 'auto' }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="text-primary leading-relaxed whitespace-pre-wrap"
+                            >
+                              {shortenedDescription}
+                            </motion.div>
+                          </AnimatePresence>
+
+                          {menu.description && menu.description.length > 150 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="mt-4 text-primary hover:bg-primary/10 transition-all duration-200"
+                              onClick={toggleDescription}
+                            >
+                              {showFullDescription ? (
+                                <>
+                                  <ChevronUp className="w-4 h-4 mr-2" /> {t('showLess')}
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-4 h-4 mr-2" /> {t('showMore')}
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 警告メッセージ */}
+                    {menu.warning_message && menu.warning_message.length > 0 && (
+                      <div className="relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-warning to-warning rounded-xl" />
+                        <div className="relative p-6 rounded-xl border border-warning bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg group-hover:border-warning">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 rounded-lg bg-warning">
+                              <FileText className="w-4 h-4 text-warning-foreground" />
+                            </div>
+                            <h3 className="text-sm font-medium text-warning-foreground uppercase tracking-wide">
+                              {t('fields.warningMessage')}
+                            </h3>
+                          </div>
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={showFullWarningMessage ? 'full' : 'short'}
+                              initial={{ opacity: 0, height: 'auto' }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="text-warning-foreground leading-relaxed whitespace-pre-wrap font-medium"
+                            >
+                              {shortenedWarningMessage}
+                            </motion.div>
+                          </AnimatePresence>
+
+                          {menu.warning_message && menu.warning_message.length > 150 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="mt-4 text-warning-foreground hover:bg-warning-foreground/10 transition-all duration-200"
+                              onClick={toggleWarningMessage}
+                            >
+                              {showFullWarningMessage ? (
+                                <>
+                                  <ChevronUp className="w-4 h-4 mr-2" /> {t('showLess')}
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-4 h-4 mr-2" /> {t('showMore')}
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* タグ */}
+                    <div className="relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-palette-3/20 to-palette-3/30 rounded-xl" />
+                      <div className="relative p-6 rounded-xl border border-palette-3/20 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 rounded-lg bg-palette-3">
+                            <Tag className="w-4 h-4 text-palette-3-foreground" />
+                          </div>
+                          <h3 className="text-sm font-medium text-palette-3-foreground uppercase tracking-wide">
+                            {t('fields.tags')}
+                          </h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {menu.tags && menu.tags.length > 0 ? (
+                            menu.tags.map((tag, index) => (
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="px-3 py-1 text-xs font-medium bg-palette-3 text-palette-3-foreground border-palette-3"
+                              >
+                                {tag}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-muted-foreground text-sm italic">
+                              {t('fields.noTags')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* システム情報 */}
+                    <div className="relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-muted to-muted rounded-xl" />
+                      <div className="relative p-6 rounded-xl border border-border bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-primary/40">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 rounded-lg bg-muted">
+                            <Info className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <h3 className="text-sm font-medium text-primary uppercase tracking-wide">
+                            {t('fields.systemInfo')}
+                          </h3>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <p className="font-medium">
+                            {t('fields.createdAt')}:{' '}
+                            <span className="text-primary">
+                              {new Date(menu._creationTime).toLocaleString('ja-JP')}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      {/* 削除確認ダイアログ */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => setIsDeleteDialogOpen(open)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('confirmDeleteDialog.title')}</DialogTitle>
-            <DialogDescription>{t('confirmDeleteDialog.description')}</DialogDescription>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+        {/* 削除確認ダイアログ */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => setIsDeleteDialogOpen(open)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-destructive/10 rounded-full">
+                  <Trash className="w-6 h-6 text-destructive" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-semibold text-primary">
+                    {t('confirmDeleteDialog.title')}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-muted-foreground mt-1">
+                    {t('confirmDeleteDialog.description')}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            <DialogFooter className="flex gap-3 sm:gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="flex-1"
+              >
                 {t('confirmDeleteDialog.cancel')}
               </Button>
-              <Button variant="destructive" onClick={() => handleDeleteMenu()}>
+              <Button variant="destructive" onClick={() => handleDeleteMenu()} className="flex-1">
+                <Trash className="w-4 h-4 mr-2" />
                 {t('confirmDeleteDialog.delete')}
               </Button>
             </DialogFooter>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }
