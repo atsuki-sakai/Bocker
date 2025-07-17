@@ -1,21 +1,20 @@
 'use client'
 
 import Image from 'next/image'
-import { Link } from '@/i18n/navigation'
 import { api } from '@/convex/_generated/api'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import InviteManagement from './_components/InviteManagement'
 import { useQuery } from 'convex/react'
 import { CheckCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 export default function StaffList() {
   const t = useTranslations('staff')
   const { tenantId, orgId } = useTenantAndOrganization()
-
+  const router = useRouter()
   // 招待状態を含むスタッフ一覧を取得
   const staffsWithInvitation = useQuery(
     api.staff.invitation.query.getStaffWithInvitationStatus,
@@ -43,45 +42,49 @@ export default function StaffList() {
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden border border-border rounded-lg">
               <table className="min-w-full divide-y divide-border">
-                <thead className="bg-muted text-nowrap px-2">
+                <thead className="bg-neon-foreground text-nowrap px-2">
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
                     >
                       {t('list.status')}
                     </th>
 
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
                     >
                       {t('list.image')}
                     </th>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
                     >
                       {t('list.name')}
                     </th>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-muted-foreground sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
                     >
                       {t('list.description')}
                     </th>
-                    <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">{t('list.details')}</span>
-                    </th>
-                    <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">{t('list.edit')}</span>
+                    <th
+                      scope="col"
+                      className="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-neon sm:pl-6"
+                    >
+                      {t('list.connectClerk')}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-background text-nowrap">
                   {staffsWithInvitation && staffsWithInvitation.length > 0 ? (
                     staffsWithInvitation.map((staff, index: number) => (
-                      <tr key={index}>
+                      <tr
+                        key={index}
+                        className="cursor-pointer hover:bg-secondary"
+                        onClick={() => router.push(`/dashboard/staff/${staff._id}`)}
+                      >
                         <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                           {staff.is_active ? (
                             <Badge
@@ -105,7 +108,7 @@ export default function StaffList() {
                                 alt={staff.name ?? ''}
                                 layout="fill"
                                 objectFit="cover"
-                                className="object-cover rounded-md"
+                                className="object-cover rounded-md shadow-md"
                               />
                               {staff.connect_clerk ? (
                                 <div className="bg-accent-2-foreground text-accent-2 border-accent-2 p-1 rounded-full absolute -top-2 -right-2">
@@ -124,6 +127,7 @@ export default function StaffList() {
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {staff.name ?? t('list.notSet')}
                         </td>
+
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {staff.description && staff.description.length > 20 ? (
                             <div className="line-clamp-2">{staff.description.slice(0, 20)}...</div>
@@ -131,26 +135,16 @@ export default function StaffList() {
                             <div className="text-muted-foreground">{staff.description}</div>
                           )}
                         </td>
-
-                        <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                          <Link
-                            href={`/dashboard/staff/${staff._id}`}
-                            className="text-purple-600 hover:text-purple-900"
-                          >
-                            <Button variant="ghost" size="sm">
-                              <span>{t('list.details')}</span>
-                            </Button>
-                          </Link>
-                        </td>
-                        <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                          <Link
-                            href={`/dashboard/staff/${staff._id}/edit`}
-                            className="text-link-foreground hover:text-link-hover"
-                          >
-                            <Button variant="ghost" size="sm">
-                              <span>{t('list.edit')}</span>
-                            </Button>
-                          </Link>
+                        <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
+                          {staff.connect_clerk && staff.clerk_user_id ? (
+                            <Badge className="bg-accent-2-foreground text-accent-2">
+                              {t('list.clerkStatus.connect')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-muted  text-muted-foreground">
+                              {t('list.clerkStatus.notSet')}
+                            </Badge>
+                          )}
                         </td>
                       </tr>
                     ))
