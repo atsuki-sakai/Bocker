@@ -1,20 +1,12 @@
 'use client'
 
-import { Link } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { Mail, Phone, Calendar, ChevronDown, Search, RefreshCw, Trash2 } from 'lucide-react'
+import { Mail, Phone, Calendar, ChevronDown, Search, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
 import { useDebounce } from 'use-debounce'
 import {
   Table,
@@ -24,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
@@ -45,11 +38,10 @@ export default function CustomerList() {
   const t = useTranslations('customers')
   const tCommon = useTranslations('common')
   const locale = useLocale() as SupportedLocale
+  const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [debouncedSearchTerm] = useDebounce(searchTerm, 1000)
-  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false)
-  const [selectedCustomerUid, setSelectedCustomerUid] = useState<string | null>(null)
   // 通常リスト用と検索結果用で状態を分離
   const [allCustomers, setAllCustomers] = useState<CustomerWithDetails[]>([]) // 通常リスト
   const [searchResults, setSearchResults] = useState<CustomerWithDetails[]>([]) // 検索結果
@@ -265,34 +257,6 @@ export default function CustomerList() {
     }
   }
 
-  // 削除モーダルを表示
-  const handleShowDeleteModal = (e: React.MouseEvent<HTMLButtonElement>, customerUid: string) => {
-    e.preventDefault()
-    setSelectedCustomerUid(customerUid)
-    setShowDeleteModal(true)
-  }
-
-  // 顧客削除処理
-  const handleDeleteCustomer = async (customerUid: string) => {
-    try {
-      await customerRepo.deleteWithRelatedData(customerUid)
-      toast.success(t('customerDeleted'))
-      setShowDeleteModal(false)
-      setSelectedCustomerUid(null)
-      // 適切なリストを再取得
-      if (isSearchMode) {
-        searchCustomers(debouncedSearchTerm, 1, false)
-        setCurrentSearchPage(1)
-      } else {
-        fetchAllCustomers(1, false)
-        setCurrentAllPage(1)
-      }
-    } catch (error) {
-      console.error('Failed to delete customer:', error)
-      toast.error(t('deleteError'))
-    }
-  }
-
   // 予約日の書式変換
   const formatReservationDate = useCallback(
     (timestamp: number | null | undefined): string => {
@@ -347,15 +311,15 @@ export default function CustomerList() {
       <div className="rounded-md border overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted text-muted-foreground">
-              <TableHead className="px-4 text-nowrap w-fit">{t('customerNameLineUser')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">{t('contact')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">{t('visitCount')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">{t('lastVisit')}</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit">{t('tags')}</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+            <TableRow className="bg-neon-foreground">
+              <TableHead className="px-4 text-nowrap w-fit text-neon">
+                {t('customerNameLineUser')}
+              </TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">{t('contact')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">{t('visitCount')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">{t('birthday')}</TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">{t('lastVisit')}</TableHead>
+              <TableHead className="px-2 text-nowrap w-fit text-neon">{t('tags')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -367,7 +331,11 @@ export default function CustomerList() {
               </TableRow>
             ) : (
               displayCustomers.map((customerData) => (
-                <TableRow key={customerData.customer.uid} className="hover:bg-transparent">
+                <TableRow
+                  key={customerData.customer.uid}
+                  className="hover:bg-secondary cursor-pointer"
+                  onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
+                >
                   <TableCell className="font-medium px-4">
                     <div className="flex items-center text-sm text-muted-foreground gap-4 text-nowrap">
                       <span>
@@ -409,9 +377,16 @@ export default function CustomerList() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge>
-                      {customerData.customer.total_reservation_count ?? 0} {t('times')}
-                    </Badge>
+                    {customerData.customer.total_reservation_count ?? 0} {t('times')}
+                  </TableCell>
+                  <TableCell className="px-4">
+                    <div className="flex items-center gap-4">
+                      <span className="text-nowrap">
+                        {customerData.customerDetail?.birthday
+                          ? format(customerData.customerDetail?.birthday, 'yyyy年MM月dd日')
+                          : t('notRegistered')}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center gap-4">
@@ -438,37 +413,6 @@ export default function CustomerList() {
                       <span className="text-muted-foreground text-sm">{t('noTags')}</span>
                     )}
                   </TableCell>
-                  <TableCell className="px-4">
-                    <Button
-                      className="text-xs bg-link text-link-foreground hover:opacity-80 transition-opacity duration-300"
-                      variant="ghost"
-                    >
-                      <Link href={`/dashboard/customer/${customerData.customer.uid}`}>
-                        {t('details')}
-                      </Link>
-                    </Button>
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <Button
-                      variant="ghost"
-                      className="text-xs bg-neon-foreground text-neon hover:opacity-80 transition-opacity duration-300"
-                    >
-                      <Link href={`/dashboard/customer/${customerData.customer.uid}/edit`}>
-                        {tCommon('edit')}
-                      </Link>
-                    </Button>
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <Button
-                      variant="ghost"
-                      onClick={(e) => {
-                        handleShowDeleteModal(e, customerData.customer.uid)
-                      }}
-                      className="text-xs hover:opacity-50 transition-opacity duration-300 bg-destructive-foreground text-destructive"
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -487,28 +431,6 @@ export default function CustomerList() {
             )}
           </Button>
         </div>
-      )}
-
-      {showDeleteModal && selectedCustomerUid && (
-        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('confirmDelete')}</DialogTitle>
-              <DialogDescription>{t('deleteWarning')}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
-                {tCommon('cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleDeleteCustomer(selectedCustomerUid)}
-              >
-                {tCommon('delete')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       )}
     </div>
   )
