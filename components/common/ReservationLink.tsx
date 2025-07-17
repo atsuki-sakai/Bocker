@@ -30,6 +30,7 @@ export default function ReservationLink() {
   const t = useTranslations('reservationLink')
   const { tenantId, orgId, subscription } = useTenantAndOrganization()
   const [selectedTrackingType, setSelectedTrackingType] = useState<TrackingCode>('web')
+
   const apiConfig = useQuery(
     api.organization.api_config.query.findByTenantAndOrg,
     tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
@@ -98,7 +99,7 @@ export default function ReservationLink() {
             </CardContent>
           </Card>
 
-          <Accordion type="single" collapsible>
+          <Accordion type="single" collapsible className="space-y-4">
             <AccordionItem value="item-1">
               <AccordionTrigger>
                 <p className="text-sm font-medium">{t('aboutReservationLink')}</p>

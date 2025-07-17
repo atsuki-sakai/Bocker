@@ -297,6 +297,7 @@
     "staffAnalytics": "スタッフ別 - 売り上げ",
     "menuAnalytics": "メニュー別 - 売り上げ",
     "staffSchedule": "スタッフ予定表",
+    "staffWorkTime": "スタッフ勤務管理",
     "staff": "スタッフ管理",
     "menu": "メニュー管理",
     "customers": "顧客管理",
@@ -740,7 +741,7 @@
     "lastVisit": "最終来店日",
     "totalSpent": "総来店金額",
     "averageSpent": "平均来店金額",
-    "tags": "Tags",
+    "tags": "タグ",
     "searchPlaceholder": "名前、メールアドレス、電話番号で検索",
     "noCustomers": "顧客が見つかりません",
     "customerCreated": "顧客を作成しました",
@@ -830,6 +831,7 @@
     "noReservationHistory": "予約履歴がありません",
     "customerNotFound": "顧客が見つかりません",
     "basicInfo": "基本情報",
+    "delete": "削除する",
     "additionalInfo": "追加情報",
     "usageInfo": "利用情報",
     "ageValue": "{age} 歳",
@@ -997,6 +999,11 @@
       "status": "ステータス",
       "image": "画像",
       "name": "名前",
+      "connectClerk": "認証スタッフ",
+      "clerkStatus": {
+        "notSet": "未認証",
+        "connect": "認証済み"
+      },
       "description": "説明",
       "details": "詳細",
       "edit": "編集",
@@ -3118,10 +3125,58 @@
       "title": "オプション追加",
       "description": "新しいオプションを追加します"
     },
+    "detail": {
+      "list": {
+        "title": "オプション一覧"
+      },
+      "title": "オプション詳細",
+      "edit": "編集",
+      "delete": "削除",
+      "confirmDelete": "このオプションを削除してもよろしいですか？",
+      "tabs": {
+        "basic": "基本情報",
+        "details": "詳細"
+      },
+      "fields": {
+        "price": "料金",
+        "totalDuration": "スタッフ稼働時間",
+        "orderLimit": "最大注文数",
+        "stock": "在庫数",
+        "description": "説明",
+        "tags": "タグ",
+        "systemInfo": "システム情報",
+        "createdAt": "作成日時",
+        "noTags": "タグはありません",
+        "minutes": "分",
+        "pieces": "個",
+        "noCategory": "カテゴリなし"
+      },
+      "image": {
+        "noImage": "画像がありません",
+        "alt": "オプション画像",
+        "thumbnail": "サムネイル",
+        "show": "画像 {index} を表示"
+      },
+      "confirmDeleteDialog": {
+        "title": "オプションを削除しますか？",
+        "description": "この操作は元に戻すことができません。",
+        "cancel": "キャンセル",
+        "delete": "削除する"
+      },
+      "messages": {
+        "notFound": "オプションが見つかりません",
+        "deleteSuccess": "オプションを削除しました",
+        "imageDeleteError": "画像の削除に失敗しました: {status} {statusText} - {error}",
+        "optionNotFound": "オプションが見つかりません"
+      },
+      "showMore": "もっと見る",
+      "showLess": "省略表示"
+    },
     "edit": {
       "title": "オプション編集",
       "success": "オプションを更新しました",
-      "error": "オプションの更新に失敗しました"
+      "error": "オプションの更新に失敗しました",
+      "updating": "更新中..."
     },
     "validation": {
       "nameRequired": "オプション名は必須です",

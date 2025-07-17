@@ -85,8 +85,12 @@ body {
     --success-foreground: oklch(0.98 0.020 142.55);
     
     /* Info colors */
-    --info: oklch(0.65 0.150 231.99);
-    --info-foreground: oklch(0.98 0.020 231.99)
+    --info: oklch(0.91 0.0407 222.28);
+    --info-foreground: oklch(0.52 0.0986 225.71);
+
+    /* Edit colors */
+    --edit: oklch(0.96 0.0273 309.22);
+    --edit-foreground: oklch(0.39 0.2075 295.06);
    
   }
   
@@ -165,8 +169,13 @@ body {
     --success-foreground: oklch(0.15 0.040 142.55);
     
     /* Info colors */
-    --info: oklch(0.45 0.180 231.99);
-    --info-foreground: oklch(0.15 0.040 231.99);
+    --info: oklch(0.27 0.0179 234.66);
+    --info-foreground: oklch(0.74 0.1383 248.58);
+
+    /* Edit colors */
+    --edit: oklch(0.28 0.0654 322.27);
+    --edit-foreground: oklch(0.67 0.2538 313.81);
+
     
   }
   

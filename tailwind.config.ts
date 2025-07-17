@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from 'tailwindcss-animate';
 
 export default {
   darkMode: ['class'],
@@ -81,6 +82,10 @@ export default {
         info: {
           DEFAULT: 'var(--info)',
           foreground: 'var(--info-foreground)',
+        },
+        edit: {
+          DEFAULT: 'var(--edit)',
+          foreground: 'var(--edit-foreground)',
         },
         success: {
           DEFAULT: 'var(--success)',

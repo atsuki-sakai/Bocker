@@ -633,6 +633,7 @@
     "menuAnalytics": "Menu Analytics",
     "reservationTimeline": "Reservation Timeline",
     "staffSchedule": "Staff Schedule",
+    "staffWorkTime": "Staff Work Time",
     "reservationCollection": "Reservation List",
     "staff": "Staff Management",
     "menu": "Menu Management",
@@ -1195,6 +1196,7 @@
     "noReservationHistory": "No reservation history",
     "customerNotFound": "Customer not found",
     "basicInfo": "Basic Information",
+    "delete": "Delete",
     "additionalInfo": "Additional Information",
     "usageInfo": "Usage Information",
     "ageValue": "{age} years old",
@@ -1551,10 +1553,58 @@
       "title": "Add Option",
       "description": "Add a new option"
     },
+    "detail": {
+      "list": {
+        "title": "Option List"
+      },
+      "title": "Option Details",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Are you sure you want to delete this option?",
+      "tabs": {
+        "basic": "Basic Information",
+        "details": "Details"
+      },
+      "fields": {
+        "price": "Price",
+        "totalDuration": "Staff Working Time",
+        "orderLimit": "Max Order Quantity",
+        "stock": "Stock Quantity",
+        "description": "Description",
+        "tags": "Tags",
+        "systemInfo": "System Information",
+        "createdAt": "Created Date",
+        "noTags": "No tags",
+        "minutes": "minutes",
+        "pieces": "pieces",
+        "noCategory": "No category"
+      },
+      "image": {
+        "noImage": "No image available",
+        "alt": "Option image",
+        "thumbnail": "Thumbnail",
+        "show": "Show image {index}"
+      },
+      "confirmDeleteDialog": {
+        "title": "Delete Option?",
+        "description": "This action cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete"
+      },
+      "messages": {
+        "notFound": "Option not found",
+        "deleteSuccess": "Option deleted successfully",
+        "imageDeleteError": "Failed to delete image: {status} {statusText} - {error}",
+        "optionNotFound": "Option not found"
+      },
+      "showMore": "Show more",
+      "showLess": "Show less"
+    },
     "edit": {
       "title": "Edit Option",
       "success": "Option updated successfully",
-      "error": "Failed to update option"
+      "error": "Failed to update option",
+      "updating": "Updating..."
     },
     "validation": {
       "nameRequired": "Option name is required",
@@ -1702,6 +1752,11 @@
       "status": "Status",
       "image": "Image",
       "name": "Name",
+      "connectClerk": "Connect Clerk",
+      "clerkStatus": {
+        "notSet": "Not Set",
+        "connect": "Connected"
+      },
       "description": "Description",
       "details": "Details",
       "edit": "Edit",

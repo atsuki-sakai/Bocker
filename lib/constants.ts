@@ -219,6 +219,7 @@ import {
   Settings as SettingsIcon,
   CreditCard as CreditCardIcon,
   ChartBar as ChartBarIcon,
+  Clock as ClockIcon,
   type LucideIcon
 } from 'lucide-react';
 import type { Role, SubscriptionPlanName } from '@/convex/types';
@@ -460,6 +461,13 @@ export const NAV_GROUPS: NavGroup[] = [
         name: 'staff',
         href: `/dashboard/staff`,
         icon: UsersIcon,
+        minRole: 'owner',
+        minPlan: 'LITE',
+      },
+      {
+        name: 'staffWorkTime',
+        href: `/dashboard/staff/schedule`,
+        icon: ClockIcon,
         minRole: 'owner',
         minPlan: 'LITE',
       },

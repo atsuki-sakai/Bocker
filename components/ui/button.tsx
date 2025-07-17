@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-button text-button-foreground shadow hover:opacity-80',
-        destructive:
-          'bg-destructive-foreground text-destructive shadow-sm hover:bg-destructive hover:text-destructive-foreground',
-        outline:
-          'border border-border bg-background shadow-sm hover:bg-muted hover:text-muted-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-        ghost: 'hover:bg-muted hover:text-muted-foreground px-4',
-        link: 'text-primary underline-offset-4 hover:underline',
+        edit: 'bg-edit text-edit-foreground shadow hover:opacity-80',
+        info: 'bg-info text-info-foreground shadow hover:opacity-80',
+        destructive: 'bg-destructive-foreground text-destructive shadow-sm hover:opacity-80',
+        outline: 'border border-border bg-background shadow-sm hover:opacity-80',
+        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:opacity-80',
+        ghost: 'hover:bg-muted hover:text-muted-foreground px-4 hover:opacity-80',
+        link: 'text-primary underline-offset-4 hover:underline hover:opacity-80',
         selected: 'bg-accent text-accent-foreground shadow-sm hover:opacity-80',
       },
       size: {

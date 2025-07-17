@@ -1,3 +1,4 @@
+
 import { AnalyticsRepository } from './AnalyticsRepository';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import type { SupabaseService } from '@/services/supabase/SupabaseService';
@@ -116,7 +117,9 @@ export class DailySalesRepository extends AnalyticsRepository {
         return {
           date: format(date, 'M/d', { locale: ja }),
           value: dayData?.total_amount || 0,
-          label: this.formatCurrency(dayData?.total_amount || 0)
+          label: this.formatCurrency(dayData?.total_amount || 0),
+          bookingCount: dayData?.booking_count || 0,
+          averageAmount: dayData?.average_amount || 0
         };
       });
     } catch (error) {

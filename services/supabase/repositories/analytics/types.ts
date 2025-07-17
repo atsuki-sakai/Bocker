@@ -127,6 +127,8 @@ export interface ChartDataPoint {
   value: number;
   label?: string;
   color?: string;
+  bookingCount?: number;
+  averageAmount?: number;
 }
 
 export interface PieChartDataPoint {
