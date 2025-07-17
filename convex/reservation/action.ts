@@ -1,13 +1,13 @@
 "use node"
 
-import { internalAction } from '@/convex/_generated/server';
+import { internalAction, action } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { RowType, SupabaseService } from '@/services/supabase/SupabaseService';
 import { createClient } from '@supabase/supabase-js';
 import { getEnv } from '@/lib/env-config'
 import { internal } from '@/convex/_generated/api';
 import { Doc, Id} from '@/convex/_generated/dataModel';
-import { ReservationMenu, ReservationOption, ReservationStatus, PaymentMethod } from '@/convex/types';
+import { ReservationMenu, ReservationOption, ReservationStatus, PaymentMethod, reservationStatusType } from '@/convex/types';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
 import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
@@ -16,6 +16,7 @@ import { cancelForCompletedReservation } from './reservation.helpers';
 import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon';
 import { fetchMutation } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
+import { validateStringLength, validateDateStrFormat } from '@/convex/utils/validations';
 
 /**
  * 予約IDに紐づくポイントタスクを削除する
@@ -1120,6 +1121,63 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
     throw new Error(`Sales aggregation failed: ${errorMessage}`);
   }
 }
+
+/**
+ * 予約データエクスポート用アクション
+ * 大量データを効率的に取得するためのアクション関数
+ */
+export const exportReservations = action({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    start_date: v.string(),
+    end_date: v.string(),
+    status_filter: v.optional(reservationStatusType),
+  },
+  handler: async (ctx, args) => {
+    // バリデーション
+    validateStringLength(args.org_id, 'org_id');
+    validateDateStrFormat(args.start_date, 'start_date');
+    validateDateStrFormat(args.end_date, 'end_date');
+    
+    // 期間制限チェック（最大3ヶ月）
+    const startDate = new Date(args.start_date);
+    const endDate = new Date(args.end_date);
+    const diffInMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                        (endDate.getMonth() - startDate.getMonth());
+    
+    if (diffInMonths > 3) {
+      throw new Error('Period cannot exceed 3 months');
+    }
+    
+    // 全件データを取得
+    const allReservations = [];
+    let hasMore = true;
+    let cursor: string | null = null;
+    
+    while (hasMore) {
+      const result: {
+        reservations: Doc<'reservation'>[];
+        hasMore: boolean;
+        nextCursor: string | null;
+      } = await ctx.runQuery(api.reservation.query.listOrganizationAllStatusForExport, {
+        tenant_id: args.tenant_id,
+        org_id: args.org_id,
+        start_date: args.start_date,
+        end_date: args.end_date,
+        status_filter: args.status_filter,
+        cursor: cursor || undefined,
+        limit: 1000, // 大きなバッチサイズで効率的に取得
+      });
+      
+      allReservations.push(...result.reservations);
+      hasMore = result.hasMore;
+      cursor = result.nextCursor || null;
+    }
+    
+    return allReservations;
+  },
+})
 
 
 

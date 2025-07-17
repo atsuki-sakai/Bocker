@@ -1739,12 +1739,14 @@ export const getReservationFormData = query({
                     .first()
                 )
               )
+
               
               return availableStaffList.map((staff, index) => ({
                 _id: staff._id,
                 name: staff.name,
                 images: staff.images,
                 extra_charge: staffConfigs[index]?.extra_charge || 0,
+                priority: staffConfigs[index]?.priority || 0,
               }))
             })()
           : []
@@ -2166,6 +2168,82 @@ export const getReservationCountsByDateRange = query({
       .sort((a, b) => a.date.localeCompare(b.date))
     
     return result
+  },
+})
+
+/**
+ * 組織の予約データを全件取得（CSV出力用）
+ * - 期間絞り込み対応
+ * - ページネーション無しで大量データを効率的に取得
+ * - 最大3ヶ月間の制限はAPIエンドポイント側で実施
+ */
+export const listOrganizationAllStatusForExport = query({
+  args: {
+    tenant_id: v.id('tenant'),
+    org_id: v.id('organization'),
+    start_date: v.string(),
+    end_date: v.string(),
+    status_filter: v.optional(reservationStatusType),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    validateStringLength(args.org_id, 'org_id');
+    validateDateStrFormat(args.start_date, 'start_date');
+    validateDateStrFormat(args.end_date, 'end_date');
+
+    const limit = args.limit || 1000;
+
+    let reservationQuery = ctx.db
+      .query('reservation')
+      .withIndex('by_tenant_org_date_status_archive', (q) =>
+        q
+          .eq('tenant_id', args.tenant_id)
+          .eq('org_id', args.org_id)
+          .gte('date', args.start_date)
+          .lte('date', args.end_date)
+      )
+      .filter((q) => q.eq(q.field('is_archive'), false));
+
+    // ステータスフィルター
+    if (args.status_filter) {
+      reservationQuery = reservationQuery.filter((q) =>
+        q.eq(q.field('status'), args.status_filter)
+      );
+    }
+
+    // カーソルベースのページネーション
+    if (args.cursor) {
+      const [cursorDate, cursorId] = args.cursor.split('|');
+      reservationQuery = reservationQuery.filter((q) =>
+        q.or(
+          q.gt(q.field('date'), cursorDate),
+          q.and(
+            q.eq(q.field('date'), cursorDate),
+            q.gt(q.field('_id'), cursorId)
+          )
+        )
+      );
+    }
+
+    const reservations = await reservationQuery
+      .order('asc')
+      .take(limit + 1); // +1で次のページがあるかチェック
+
+    const hasMore = reservations.length > limit;
+    const resultReservations = hasMore ? reservations.slice(0, limit) : reservations;
+
+    let nextCursor = null;
+    if (hasMore && resultReservations.length > 0) {
+      const lastReservation = resultReservations[resultReservations.length - 1];
+      nextCursor = `${lastReservation.date}|${lastReservation._id}`;
+    }
+
+    return {
+      reservations: resultReservations,
+      hasMore,
+      nextCursor,
+    };
   },
 })
 

@@ -1,7 +1,6 @@
 import { query } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { validateRequired, validateDateStrFormat } from '@/convex/utils/validations';
-import { paginationOptsValidator } from 'convex/server';
 import { exceptionScheduleType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
 
@@ -63,24 +62,18 @@ export const getByOrgAndDate = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    date: v.string(),
     type: exceptionScheduleType,
-    paginationOpts: paginationOptsValidator
   },
   handler: async (ctx, args) => {
     checkAuth(ctx);
     validateRequired(args.org_id, 'org_id');
-    validateDateStrFormat(args.date, 'date');
     return await ctx.db
       .query('exception_schedule')
-      .withIndex('by_tenant_org_date_type_archive', (q) =>
+      .withIndex('by_tenant_org_archive', (q) =>
         q
           .eq('tenant_id', args.tenant_id)
           .eq('org_id', args.org_id)
-          .eq('date', args.date)
-          .eq('type', args.type)
           .eq('is_archive', false)
-      )
-      .paginate(args.paginationOpts);
+      ).collect();
   },
 });
