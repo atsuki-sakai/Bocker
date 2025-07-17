@@ -1,6 +1,6 @@
 'use client'
 
-import { Link } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Mail, Phone, Calendar, ChevronDown, Search, RefreshCw } from 'lucide-react'
@@ -37,6 +37,7 @@ export default function CustomerSearchForm() {
   const tCommon = useTranslations('common')
   const tCarte = useTranslations('dashboard.carte')
   const locale = useLocale() as SupportedLocale
+  const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [debouncedSearchTerm] = useDebounce(searchTerm, 1000)
@@ -309,15 +310,22 @@ export default function CustomerSearchForm() {
       <div className="rounded-md border overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted text-muted-foreground">
-              <TableHead className="px-4 text-nowrap w-fit">
+            <TableRow className="bg-neon-foreground">
+              <TableHead className="px-4 text-nowrap w-fit text-neon">
                 {tCarte('table.customerName')}
               </TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">{tCarte('table.contact')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">{tCarte('table.visitCount')}</TableHead>
-              <TableHead className="px-4 text-nowrap w-fit">{tCarte('table.lastVisit')}</TableHead>
-              <TableHead className="px-2 text-nowrap w-fit">{tCarte('table.tags')}</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">
+                {tCarte('table.contact')}
+              </TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">
+                {tCarte('table.visitCount')}
+              </TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">
+                {tCarte('table.lastVisit')}
+              </TableHead>
+              <TableHead className="px-4 text-nowrap w-fit text-neon">
+                {tCarte('table.tags')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -329,7 +337,11 @@ export default function CustomerSearchForm() {
               </TableRow>
             ) : (
               displayCustomers.map((customerData) => (
-                <TableRow key={customerData.customer.uid} className="hover:bg-transparent">
+                <TableRow
+                  key={customerData.customer.uid}
+                  className="hover:bg-secondary cursor-pointer"
+                  onClick={() => router.push(`/dashboard/carte/${customerData.customer.uid}`)}
+                >
                   <TableCell className="font-medium px-4">
                     <div className="flex items-center text-sm text-muted-foreground gap-4 text-nowrap">
                       <span>
@@ -373,11 +385,9 @@ export default function CustomerSearchForm() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge>
-                      {tCarte('visitCountBadge', {
-                        count: customerData.customer.total_reservation_count ?? 0,
-                      })}
-                    </Badge>
+                    {tCarte('visitCountBadge', {
+                      count: customerData.customer.total_reservation_count ?? 0,
+                    })}
                   </TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center gap-4">
@@ -401,13 +411,6 @@ export default function CustomerSearchForm() {
                         {tCarte('unregistered')}
                       </span>
                     )}
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <Button size="sm">
-                      <Link href={`/dashboard/carte/${customerData.customer.uid}`}>
-                        {tCarte('viewDetails')}
-                      </Link>
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))
