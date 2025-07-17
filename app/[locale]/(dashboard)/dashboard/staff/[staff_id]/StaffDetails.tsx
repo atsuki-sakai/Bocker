@@ -427,6 +427,7 @@ export default function StaffDetails() {
                 <Link href={`/dashboard/staff/${staff_id}/edit`}>
                   <Button
                     size="sm"
+                    variant="edit"
                     className="gap-2 hover:bg-primary/10 transition-all duration-200"
                   >
                     <FileEdit className="h-4 w-4" />
@@ -435,7 +436,7 @@ export default function StaffDetails() {
                 </Link>
                 <Link href={`/dashboard/staff/schedule?staffId=${staff_id}`}>
                   <Button
-                    variant="outline"
+                    variant="info"
                     size="sm"
                     className="gap-2 transition-all duration-200 shadow-sm"
                   >
