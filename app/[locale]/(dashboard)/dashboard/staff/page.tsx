@@ -18,10 +18,6 @@ function StaffPage() {
         text: t('addStaff'),
         link: '/dashboard/staff/add',
       }}
-      subBtn={{
-        text: t('workScheduleManagement'),
-        link: '/dashboard/staff/schedule',
-      }}
     >
       <StaffList />
     </DashboardSection>
