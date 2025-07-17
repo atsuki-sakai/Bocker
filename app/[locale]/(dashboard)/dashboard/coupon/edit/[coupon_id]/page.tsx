@@ -149,7 +149,7 @@ function CouponPreview({
   return (
     <div className="w-full">
       <Card className="shadow-md overflow-hidden">
-        <CardHeader className="pb-2 bg-muted text-primary text-xl">
+        <CardHeader className="pb-2 bg-neon-foreground text-neon text-xl">
           <CardTitle className="flex items-center gap-2">
             <Tag size={18} />
             {data.name || t('couponName')}
