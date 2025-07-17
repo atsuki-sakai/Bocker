@@ -10,9 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import Image from 'next/image'
-import Link from 'next/link'
+import { Link } from '@/i18n/navigation'
 import { Card, CardContent } from '@/components/ui/card'
-import { Clock, CreditCard, Eye, Pencil } from 'lucide-react'
+import { Clock, CreditCard } from 'lucide-react'
 import {
   Command,
   CommandEmpty,
@@ -137,9 +137,9 @@ export const MenuList = memo(() => {
     return (
       <div className="space-y-4">
         {menusToDisplay.map((menu: Doc<'menu'>) => (
-          <div key={menu._id} className="p-4 border-b border-border">
-            <div className="flex items-start gap-4 w-full">
-              <div className="flex-1 min-w-0 space-y-2">
+          <Link key={menu._id} href={`/dashboard/menu/${menu._id}`}>
+            <div className="p-4 border-b border-border hover:bg-secondary cursor-pointer">
+              <div className="flex flex-col sm:flex-row items-start gap-4 w-full">
                 <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
                   {menu.images && menu.images.length > 0 && menu.images[0]?.thumbnail_url ? (
                     <Image
@@ -158,84 +158,68 @@ export const MenuList = memo(() => {
                     </div>
                   )}
                 </div>
-                <div className=" space-y-2 w-full">
-                  <div className="flex flex-wrap gap-1">
-                    {menu.categories?.map((category) => (
-                      <Badge key={category} variant="outline" className="text-xs px-2 py-0.5">
-                        {category}
-                      </Badge>
-                    ))}
+                <div className="space-y-1 w-full flex flex-col sm:flex-row items-end">
+                  <div className="w-full">
+                    <div className="flex flex-wrap gap-1">
+                      {menu.categories?.map((category) => (
+                        <Badge key={category} variant="outline" className="text-xs px-2 py-0.5">
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+                    <h3 className="font-semibold text-lg truncate text-foreground">{menu.name}</h3>
                   </div>
-                  <h3 className="font-semibold text-lg truncate text-foreground">{menu.name}</h3>
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                    <div className="flex items-center font-medium">
-                      {menu.sale_price ? (
-                        <div className="flex items-center gap-2">
-                          <span className="line-through text-muted-foreground">
-                            ¥{menu.unit_price}
-                          </span>
-                          <span className="font-bold text-primary text-base">
-                            ¥{menu.sale_price}
+                  <div className="flex flex-col items-start md:items-end md:justify-end w-full gap-2">
+                    <div className="flex flex-wrap justify-start md:justify-end w-full gap-x-6 gap-y-2 h-full text-sm">
+                      <div className="flex items-center font-medium">
+                        {menu.sale_price ? (
+                          <div className="flex items-center gap-2">
+                            <span className="line-through text-muted-foreground">
+                              ¥{menu.unit_price}
+                            </span>
+                            <span className="font-bold text-primary text-base">
+                              ¥{menu.sale_price}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-semibold text-base">¥{menu.unit_price}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center text-muted-foreground">
+                        <Clock className="h-4 w-4 mr-1.5" />
+                        <span>{menu.duration_min}分</span>
+                      </div>
+                      {menu.payment_method && (
+                        <div className="flex items-center text-muted-foreground">
+                          <CreditCard className="h-4 w-4 mr-1.5" />
+                          <span className="text-xs">
+                            {menu.payment_method === 'all'
+                              ? 'オンライン・店頭'
+                              : menu.payment_method === 'credit_card'
+                                ? 'オンライン決済'
+                                : '店頭決済'}
                           </span>
                         </div>
-                      ) : (
-                        <span className="font-semibold text-base">¥{menu.unit_price}</span>
                       )}
                     </div>
-                    <div className="flex items-center text-muted-foreground">
-                      <Clock className="h-4 w-4 mr-1.5" />
-                      <span>{menu.duration_min}分</span>
-                    </div>
-                    {menu.payment_method && (
-                      <div className="flex items-center text-muted-foreground">
-                        <CreditCard className="h-4 w-4 mr-1.5" />
-                        <span className="text-xs">
-                          {menu.payment_method === 'all'
-                            ? 'オンライン・店頭'
-                            : menu.payment_method === 'credit_card'
-                              ? 'オンライン決済'
-                              : '店頭決済'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {menu.tags &&
-                      menu.tags.length > 0 &&
-                      menu.tags.map((tag: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className="px-2 py-1 bg-primary text-primary-foreground rounded-md"
-                        >
-                          <p className="text-xs font-semibold text-center">{tag}</p>
-                        </div>
-                      ))}
+                    <div className="flex  w-fit gap-2">
+                      {menu.tags &&
+                        menu.tags.length > 0 &&
+                        menu.tags.map((tag: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="md:ml-3 px-2 py-1 bg-primary text-primary-foreground rounded-md"
+                          >
+                            <p className="text-xs font-semibold text-center text-nowrap">{tag}</p>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Link href={`/dashboard/menu/${menu._id}`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 bg-link text-link-foreground hover:opacity-80"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href={`/dashboard/menu/${menu._id}/edit`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 bg-neon text-neon-foreground hover:opacity-80"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     )
