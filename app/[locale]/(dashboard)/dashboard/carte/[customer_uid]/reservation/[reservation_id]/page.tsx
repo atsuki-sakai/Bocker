@@ -67,25 +67,6 @@ type CarteData = {
   carteDetail: RowType<'carte_detail'> | null
 }
 
-// 肌質の選択肢マップ
-const SKIN_TYPE_MAP: Record<string, string> = {
-  normal: '普通肌',
-  dry: '乾燥肌',
-  oily: '脂性肌',
-  combination: '混合肌',
-  sensitive: '敏感肌',
-}
-
-// 髪質の選択肢マップ
-const HAIR_TYPE_MAP: Record<string, string> = {
-  straight: 'ストレート',
-  wavy: 'ウェーブ',
-  curly: 'カーリー',
-  coily: 'コイリー',
-  fine: '細い',
-  thick: '太い',
-}
-
 export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPageProps) {
   const locale = useLocale() as SupportedLocale
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -446,23 +427,23 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
       backLink={`/dashboard/carte/${customerUid}`}
       backLinkTitle="カルテに戻る"
     >
-      <div className="space-y-3 md:space-y-6">
+      <div className="space-y-3">
         {/* ヘッダー情報 */}
         <Card>
-          <CardHeader>
+          <CardHeader className="py-5 ">
             <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              {finalCustomerName} 様の施術カルテ
+              <User className="w-4 h-4" />
+              {finalCustomerName} 様
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-link p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <CalendarDays className="w-4 h-4" />
-                  <span className="text-sm">施術日時</span>
+                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">施術日時</span>
                 </div>
-                <p className="font-medium">
+                <p className="font-bold text-link-foreground underline">
                   {formatDate(
                     carteData.carteDetail?.service_start_time ||
                       carteData.carteDetail?.created_at ||
@@ -470,12 +451,14 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   )}
                 </p>
               </div>
-              <div>
+              <div className="bg-neon-foreground p-3 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">担当スタッフ</span>
+                  <span className="text-sm text-muted-foreground">担当スタッフ</span>
                 </div>
-                <p className="font-medium">{carteData.carteDetail?.staff_name || '-'}</p>
+                <p className="font-bold text-neon underline">
+                  {carteData.carteDetail?.staff_name || '-'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -489,16 +472,16 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               ? ['treatment', 'notes']
               : ['photos', 'treatment', 'notes']
           }
-          className="space-y-4"
+          className="space-y-3"
         >
           {/* 施術後写真 */}
           <AccordionItem
             value="photos"
-            className={`border rounded-lg px-6 ${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
+            className={`border rounded-lg  py-3 ${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
           >
-            <AccordionTrigger className="hover:no-underline">
+            <AccordionTrigger className="hover:no-underline py-3 px-4">
               <div className="flex items-center gap-2">
-                <Camera className="w-5 h-5" />
+                <Camera className="w-4 h-4" />
                 <span className="font-semibold">施術後の写真</span>
                 {subscription?.plan_name === 'LITE' && (
                   <span className="text-xs text-muted-foreground">
@@ -507,29 +490,34 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                 )}
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4">
+            <AccordionContent className="space-y-3 pt-1 ">
               {/* 既存の画像管理 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-4">
+              <div className="space-y-3">
                 <div className="w-full">
                   {existingImages.length > 0 ? (
-                    <div className="w-full max-w-[400px] mx-auto">
-                      <div className="grid grid-cols-4 gap-4 my-3">
+                    <div className="w-full">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        登録済みの写真 ({existingImages.length}枚)
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {existingImages.map((image, index) => (
                           <div
                             key={index}
-                            className="relative aspect-[2/3] bg-muted group rounded-lg overflow-hidden"
+                            className="relative aspect-[3/4] bg-muted group rounded-lg overflow-hidden border border-border"
                           >
                             <Image
                               src={image.thumbnail_url}
-                              alt="施術後写真"
-                              width={150}
-                              height={150}
-                              className="w-full h-full object-contain"
+                              alt={`施術後写真 ${index + 1}`}
+                              width={200}
+                              height={250}
+                              className="w-full h-full object-cover"
                             />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg"
                               onClick={() => {
                                 const newImages = existingImages.filter((_, i) => i !== index)
                                 setExistingImages(newImages)
@@ -540,28 +528,42 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                           </div>
                         ))}
                       </div>
-                      <div className="flex items-center justify-center gap-2 mt-6">
-                        <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+                      <div className="flex items-center justify-center gap-2 mt-3">
+                        <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)}>
+                          <ImageIcon className="w-4 h-4 mr-1" />
                           写真を拡大表示する
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="flex items-center gap-2">
-                        <ImageIcon size={18} className="text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground font-bold">
-                          施術後の写真が登録されていません。
-                        </p>
+                    <div className="bg-muted border-2 border-dashed border-muted-foreground rounded-lg p-4 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="p-2 bg-muted rounded-full">
+                          <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">
+                            施術後の写真が登録されていません
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            下記から写真を追加してください
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
                 {/* 画像アップロード */}
-                <div>
-                  <div className="text-sm font-medium flex items-center gap-2 mb-2">
-                    <ImageIcon size={18} className="text-muted-foreground" />
-                    写真を追加（最大4枚）
+                <div className="bg-card border border-border rounded-lg p-3">
+                  <div className="mb-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-1 mb-1">
+                      <ImageIcon className="w-4 h-4" />
+                      新しい写真を追加
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      最大4枚までアップロード可能 ・ 現在:{' '}
+                      {existingImages.length + currentFiles.length}/4枚
+                    </p>
                   </div>
                   <MultiImageDrop
                     currentFiles={currentFiles}
@@ -573,38 +575,44 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                     hasSelected={existingImages.length}
                   />
                   {existingImages.length + currentFiles.length > 4 && (
-                    <p className="text-xs text-destructive mt-2">
-                      写真は合計4枚までアップロード可能です
-                    </p>
+                    <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-xs text-destructive font-medium">
+                        ⚠️ 写真は合計4枚までアップロード可能です
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
             </AccordionContent>
           </AccordionItem>
           {/* 施術内容 */}
-          <AccordionItem value="treatment" className="border rounded-lg px-6">
-            <AccordionTrigger className="hover:no-underline">
+          <AccordionItem value="treatment" className="border rounded-lg py-2">
+            <AccordionTrigger className="hover:no-underline py-3 px-4">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
+                <FileText className="w-4 h-4" />
                 <span className="font-semibold">施術内容</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent>
+            <AccordionContent className="space-y-3 pt-1">
               {/* メニュー詳細 */}
               {carteData.carteDetail?.menu_details && (
                 <div>
-                  <div className="mt-2 space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    施術メニュー
+                  </h4>
+                  <div className="space-y-2">
                     {(carteData.carteDetail.menu_details as ReservationMenu[]).map(
                       (menu, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-3 bg-background rounded-lg"
+                          className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/10"
                         >
                           <div className="flex items-center gap-2">
-                            <Badge>{menu.name}</Badge>
+                            <Badge className="text-balance">{menu.name}</Badge>
                             <span className="text-sm text-muted-foreground">x{menu.quantity}</span>
                           </div>
-                          <span className="font-medium text-accent-2">
+                          <span className="font-semibold text-primary">
                             {formatPrice(menu.price * menu.quantity)}
                           </span>
                         </div>
@@ -619,21 +627,24 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                 Array.isArray(carteData.carteDetail.option_details) &&
                 (carteData.carteDetail.option_details as ReservationOption[]).length > 0 && (
                   <div>
-                    <Label className="text-sm font-medium">オプション</Label>
-                    <div className="mt-2 space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      オプションサービス
+                    </h4>
+                    <div className="space-y-2">
                       {(carteData.carteDetail.option_details as ReservationOption[]).map(
                         (option, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                            className="flex items-center justify-between p-3 bg-accent/10 rounded-lg border border-accent/20"
                           >
                             <div className="flex items-center gap-2">
-                              <Badge>{option.name}</Badge>
-                              <span className="text-sm text-muted-foreground">
+                              <Badge variant="outline">{option.name}</Badge>
+                              <span className="text-sm text-muted-foreground font-medium">
                                 x{option.quantity}
                               </span>
                             </div>
-                            <span className="font-medium text-accent-2">
+                            <span className="font-semibold text-accent">
                               {formatPrice(option.price * option.quantity)}
                             </span>
                           </div>
@@ -646,30 +657,41 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
           </AccordionItem>
 
           {/* 顧客要望・メモ */}
-          <AccordionItem value="notes" className="border rounded-lg px-6">
-            <AccordionTrigger className="hover:no-underline">
+          <AccordionItem value="notes" className="border rounded-lg py-2">
+            <AccordionTrigger className="hover:no-underline py-3 px-4">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
+                <FileText className="w-4 h-4" />
                 <span className="font-semibold">顧客要望・メモ</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4">
-              <div>
+            <AccordionContent className="space-y-4 pt-1">
+              <div className="bg-secondary border border-secondary rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="customer-requests">お客様のご要望</Label>
+                  <div>
+                    <Label
+                      htmlFor="customer-requests"
+                      className="text-sm font-semibold text-primary"
+                    >
+                      お客様のご要望
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      サービス提供前に伺ったリクエストを記録
+                    </p>
+                  </div>
                   <div
                     className={`${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
                   >
                     {subscription?.plan_name === 'LITE' && (
-                      <span className="text-xs text-muted-foreground mr-2">
-                        (PROプランからご利用できます)
+                      <span className="text-xs text-muted-foreground mr-2 bg-muted px-2 py-1 rounded">
+                        PROプラン専用
                       </span>
                     )}
                     <VoiceInputButton
                       onResult={(transcript) => {
-                        // 既存のテキストに音声認識結果を追加
-                        const newText = notes ? `${notes}\n${transcript}` : transcript
-                        setNotes(newText)
+                        const newText = customerRequests
+                          ? `${customerRequests}\n${transcript}`
+                          : transcript
+                        setCustomerRequests(newText)
                       }}
                       disabled={isSaving || isUploading}
                     />
@@ -679,25 +701,31 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   id="customer-requests"
                   value={customerRequests}
                   onChange={(e) => setCustomerRequests(e.target.value)}
-                  placeholder="お客様からのご要望を記録してください"
-                  className="mt-2 text-primary"
+                  placeholder="お客様からのご要望を詳細に記録してください..."
+                  className="min-h-[100px] bg-background border border-border text-foreground resize-none"
                   rows={6}
                 />
               </div>
-              <div>
+              <div className="bg-secondary border border-secondary rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="staff-notes">スタッフメモ</Label>
+                  <div>
+                    <Label htmlFor="staff-notes" className="text-sm font-semibold text-accent">
+                      スタッフメモ
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      施術中の気づきや次回への申し送りを記録
+                    </p>
+                  </div>
                   <div
                     className={`${subscription?.plan_name === 'LITE' ? 'pointer-events-none opacity-50' : ''}`}
                   >
                     {subscription?.plan_name === 'LITE' && (
-                      <span className="text-xs text-muted-foreground mr-2">
-                        (PROプランからご利用できます)
+                      <span className="text-xs text-muted-foreground mr-2 bg-muted px-2 py-1 rounded">
+                        PROプラン専用
                       </span>
                     )}
                     <VoiceInputButton
                       onResult={(transcript) => {
-                        // 既存のテキストに音声認識結果を追加
                         const newText = notes ? `${notes}\n${transcript}` : transcript
                         setNotes(newText)
                       }}
@@ -709,107 +737,76 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   id="staff-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="施術に関するメモを記録してください"
-                  className="mt-2 text-primary"
+                  placeholder="施術の仕上がり、髪質・肌質の特徴、次回の提案等を記録..."
+                  className="min-h-[120px] bg-background border border-border text-foreground resize-none"
                   rows={8}
                 />
               </div>
             </AccordionContent>
           </AccordionItem>
-
-          {/* カルテ基本情報 */}
-          {carteData.carte && (
-            <AccordionItem value="basic-info" className="border rounded-lg px-6">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  <span className="font-semibold">カルテ基本情報</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-background p-2 rounded-lg">
-                    <Label className="text-sm font-medium">肌質</Label>
-                    <p className="mt-1 p-2 rounded text-sm">
-                      {carteData.carte.skin_type
-                        ? SKIN_TYPE_MAP[carteData.carte.skin_type] || carteData.carte.skin_type
-                        : '未登録'}
-                    </p>
-                  </div>
-                  <div className="bg-background p-2 rounded-lg">
-                    <Label className="text-sm font-medium">髪質</Label>
-                    <p className="mt-1 p-2 rounded text-sm">
-                      {carteData.carte.hair_type
-                        ? HAIR_TYPE_MAP[carteData.carte.hair_type] || carteData.carte.hair_type
-                        : '未登録'}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2 bg-background p-2 rounded-lg">
-                    <Label className="text-sm font-medium">アレルギー歴</Label>
-                    <p className="mt-1 p-2 rounded text-sm whitespace-pre-wrap">
-                      {carteData.carte.allergy_history || 'なし'}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2 bg-background p-2 rounded-lg">
-                    <Label className="text-sm font-medium">病歴</Label>
-                    <p className="mt-1 p-2 rounded text-sm whitespace-pre-wrap">
-                      {carteData.carte.medical_history || 'なし'}
-                    </p>
-                  </div>
-                  <div className="bg-background p-2 rounded-lg">
-                    <Label className="text-sm font-medium">累計購入金額（LTV）</Label>
-                    <p className="mt-1 p-2 rounded text-lg font-bold text-accent-2">
-                      {formatPrice(carteData.carte.ltv_price)}
-                    </p>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
         </Accordion>
 
         {/* 保存ボタン */}
-        <div className="flex justify-end space-x-4">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/carte/${customerUid}`}>
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              戻る
-            </Link>
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving || isUploading || !hasChanges}>
-            {isSaving || isUploading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                保存中...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                保存する
-              </>
-            )}
-          </Button>
+        <div className="bg-card p-4 rounded-lg border border-border">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div
+                className={`w-3 h-3 rounded-full ${hasChanges ? 'bg-warning-foreground animate-pulse' : 'bg-success'}`}
+              ></div>
+              {hasChanges ? '未保存の変更があります' : '保存済み'}
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none" asChild>
+                <Link href={`/dashboard/carte/${customerUid}`}>
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  戻る
+                </Link>
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || isUploading || !hasChanges}
+                size="sm"
+                className={`flex-1 sm:flex-none ${hasChanges ? 'bg-primary hover:bg-primary/90' : ''}`}
+              >
+                {isSaving || isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    保存中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    保存する
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>施術後の完成写真</DialogTitle>
+          <DialogContent className="max-w-4xl w-full h-[80vh] max-h-[800px]">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-primary" />
+                施術後の完成写真
+                <span className="text-sm text-muted-foreground">({existingImages.length}枚)</span>
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="flex flex-col h-full space-y-6">
               {existingImages.length > 0 && (
                 <>
                   <Carousel
                     setApi={setCarouselApi}
-                    className="w-full max-w-xl mx-auto"
+                    className="w-full flex-1"
                     opts={{
                       loop: existingImages.length > 1,
-                      align: 'start',
+                      align: 'center',
                     }}
                   >
                     <CarouselContent>
                       {existingImages.map((image, index) => (
                         <CarouselItem key={`main-${index}`}>
-                          <div className="relative  aspect-[2/3] max-h-[500px] bg-muted group rounded-lg overflow-hidden mx-auto">
+                          <div className="relative aspect-[3/4] max-h-[60vh] bg-muted group rounded-xl overflow-hidden mx-auto border-2 border-border shadow-lg">
                             <Image
                               src={image.original_url}
                               alt={`施術後写真 ${index + 1}`}
@@ -832,29 +829,36 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   </Carousel>
 
                   {existingImages.length > 1 && (
-                    <div className="flex space-x-2 justify-center overflow-x-auto py-2">
-                      {existingImages.map((image, index) => (
-                        <button
-                          key={`thumb-${index}`}
-                          onClick={() => handleThumbnailClick(index)}
-                          className={`flex-shrink-0 w-16 h-16 relative rounded-md border-2 overflow-hidden
-                                      ${
-                                        currentImageIndex === index
-                                          ? 'border-transparent ring-accent ring-2 ring-offset-1'
-                                          : 'border-foreground opacity-70 hover:opacity-100'
-                                      } focus:outline-none transition-all duration-150 ease-in-out`}
-                          aria-label={`写真 ${index + 1} を表示`}
-                        >
-                          <Image
-                            src={image.thumbnail_url}
-                            alt={`サムネイル ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            fill
-                            sizes="64px"
-                            loading="lazy"
-                          />
-                        </button>
-                      ))}
+                    <div className="bg-muted/30 p-4 rounded-xl border border-border">
+                      <div className="flex space-x-3 justify-center overflow-x-auto">
+                        {existingImages.map((image, index) => (
+                          <button
+                            key={`thumb-${index}`}
+                            onClick={() => handleThumbnailClick(index)}
+                            className={`flex-shrink-0 w-20 h-20 relative rounded-xl border-2 overflow-hidden transition-all duration-200 hover:scale-105
+                                        ${
+                                          currentImageIndex === index
+                                            ? 'border-primary ring-2 ring-primary/20 ring-offset-2 shadow-lg'
+                                            : 'border-border opacity-70 hover:opacity-100 hover:border-primary/50'
+                                        } focus:outline-none`}
+                            aria-label={`写真 ${index + 1} を表示`}
+                          >
+                            <Image
+                              src={image.thumbnail_url}
+                              alt={`サムネイル ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              fill
+                              sizes="80px"
+                              loading="lazy"
+                            />
+                            {currentImageIndex === index && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <div className="w-3 h-3 bg-primary rounded-full"></div>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>
