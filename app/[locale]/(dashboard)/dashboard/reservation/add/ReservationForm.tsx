@@ -166,7 +166,7 @@ const schemaReservation = z
   )
 
 import { Input } from '@/components/ui/input'
-import { useQuery, usePaginatedQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { InsertType } from '@/services/supabase/SupabaseService'
 import {
@@ -322,7 +322,9 @@ export default function ReservationForm() {
   // カテゴリーフィルター用のstate
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   // 性別とタイプの絞り込み用state
-  const [selectedGender, setSelectedGender] = useState<'male' | 'female' | 'unselected' | null>(null)
+  const [selectedGender, setSelectedGender] = useState<'male' | 'female' | 'unselected' | null>(
+    null
+  )
   const [selectedType, setSelectedType] = useState<'all' | 'first_time' | 'repeat' | null>(null)
   // メニュー選択の上限（数量合計）
   const MAX_MENU_ITEMS = 10
@@ -350,18 +352,20 @@ export default function ReservationForm() {
   // フィルタリングされたメニューを計算
   const filteredMenus = useMemo(() => {
     if (!initialFormData?.menus) return []
-    
+
     return initialFormData.menus.filter((menu) => {
       // カテゴリフィルター
-      const categoryMatch = selectedCategories.length === 0 || 
-        (menu.categories && menu.categories.some((category) => selectedCategories.includes(category as MenuCategory)))
-      
+      const categoryMatch =
+        selectedCategories.length === 0 ||
+        (menu.categories &&
+          menu.categories.some((category) => selectedCategories.includes(category as MenuCategory)))
+
       // 性別フィルター
       const genderMatch = !selectedGender || menu.target_gender === selectedGender
-      
+
       // タイプフィルター
       const typeMatch = !selectedType || menu.target_type === selectedType
-      
+
       return categoryMatch && genderMatch && typeMatch
     })
   }, [initialFormData?.menus, selectedCategories, selectedGender, selectedType])
@@ -377,6 +381,8 @@ export default function ReservationForm() {
         }
       : 'skip'
   )
+
+  console.log('staffFormData', staffFormData)
 
   // データの統合（メニュー・オプションは初期データから、スタッフは選択後のデータから）
   const reservationConfig = initialFormData?.reservationConfig
@@ -407,19 +413,15 @@ export default function ReservationForm() {
     : []
 
   // 休業日情報（TODO: 統合データ取得に含める）
-  const orgExceptionSchedules = usePaginatedQuery(
+  const orgExceptionSchedules = useQuery(
     api.organization.exception_schedule.query.getByOrgAndDate,
     tenantId && orgId
       ? {
           tenant_id: tenantId,
           org_id: orgId,
           type: 'holiday',
-          date: format(new Date(), 'yyyy-MM-dd'),
         }
-      : 'skip',
-    {
-      initialNumItems: 100,
-    }
+      : 'skip'
   )
 
   const {
@@ -906,12 +908,12 @@ export default function ReservationForm() {
   if (!tenantId || !orgId) return <Loading />
 
   return (
-    <div className="">
+    <div>
       {/* プログレスバー */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-8 ">
+        <div className="flex items-center justify-center mb-4">
           {stepConfig.map((step, index) => (
-            <div key={step.id} className="flex items-center justify-center w-full">
+            <div key={step.id} className="flex items-center justify-center w-fit">
               <div key={step.id} className="flex items-center w-full">
                 <div className="flex flex-col md:flex-row items-center">
                   <div
@@ -928,7 +930,7 @@ export default function ReservationForm() {
                   </div>
                   <span
                     className={cn(
-                      'text-xs md:text-sm font-medium text-center text-balance',
+                      'text-xs md:text-sm font-medium text-center text-balance md:text-nowrap',
                       currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
                     )}
                   >
@@ -956,14 +958,11 @@ export default function ReservationForm() {
           }
         }}
       >
-        <div className="min-h-[500px]">
+        <div className="min-h-[500px] max-w-3xl mx-auto">
           {/* ステップ1: メニュー選択 */}
           {currentStep === STEPS.MENU && (
-            <div className="space-y-6">
-              <div className="bg-background rounded-2xl shadow-sm border border-border p-6">
-                <h2 className="text-2xl font-bold mb-2">{t('reservationMenus')}</h2>
-                <p className="text-muted-foreground mb-6 text-sm">{t('menuSelectionLimit')}</p>
-
+            <div className="space-y-3 md:space-y-6">
+              <div className="bg-background rounded-2xl shadow-sm border border-border p-3 md:p-6">
                 {/* フィルタリングセクション */}
                 <div className="mb-6">
                   <Accordion type="single" collapsible className="w-full">
@@ -1334,56 +1333,58 @@ export default function ReservationForm() {
                     </div>
 
                     {/* スタッフリスト */}
-                    {availableStaff.map((staff) => (
-                      <div
-                        key={staff._id}
-                        onClick={() => {
-                          setSelectedStaffId(staff._id)
-                          setValue('staff_id', staff._id)
-                        }}
-                        className={cn(
-                          'p-4 rounded-xl border-2 transition-all cursor-pointer',
-                          selectedStaffId === staff._id
-                            ? 'border-accent-2 bg-accent-2-foreground'
-                            : 'border-border hover:border-accent-2'
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            {staff.images?.[0]?.original_url ? (
-                              <Image
-                                src={staff.images[0].original_url}
-                                alt={staff.name}
-                                className="w-16 h-16 rounded-full object-cover"
-                                width={64}
-                                height={64}
-                              />
-                            ) : (
-                              <Avatar className="w-16 h-16">
-                                <AvatarFallback className="text-lg">
-                                  {staff.name.slice(0, 1)}
-                                </AvatarFallback>
-                              </Avatar>
-                            )}
-                            <div>
-                              <h3 className="font-semibold text-lg">{staff.name}</h3>
-                              {staff.extra_charge && staff.extra_charge > 0 ? (
-                                <p className="text-sm font-medium text-muted-foreground">
-                                  指名料 ￥{staff.extra_charge.toLocaleString()}
-                                </p>
-                              ) : (
-                                <p className="text-sm font-medium text-muted-foreground">
-                                  指名料 無料
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {selectedStaffId === staff._id && (
-                            <Check className="w-6 h-6 text-accent-2" />
+                    {availableStaff
+                      .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+                      .map((staff) => (
+                        <div
+                          key={staff._id}
+                          onClick={() => {
+                            setSelectedStaffId(staff._id)
+                            setValue('staff_id', staff._id)
+                          }}
+                          className={cn(
+                            'p-4 rounded-xl border-2 transition-all cursor-pointer',
+                            selectedStaffId === staff._id
+                              ? 'border-accent-2 bg-accent-2-foreground'
+                              : 'border-border hover:border-accent-2'
                           )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {staff.images?.[0]?.original_url ? (
+                                <Image
+                                  src={staff.images[0].original_url}
+                                  alt={staff.name}
+                                  className="w-16 h-16 rounded-full object-cover"
+                                  width={64}
+                                  height={64}
+                                />
+                              ) : (
+                                <Avatar className="w-16 h-16">
+                                  <AvatarFallback className="text-lg">
+                                    {staff.name.slice(0, 1)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              <div>
+                                <h3 className="font-semibold text-lg">{staff.name}</h3>
+                                {staff.extra_charge && staff.extra_charge > 0 ? (
+                                  <p className="text-sm font-medium text-muted-foreground">
+                                    指名料 ￥{staff.extra_charge.toLocaleString()}
+                                  </p>
+                                ) : (
+                                  <p className="text-sm font-medium text-muted-foreground">
+                                    指名料 無料
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {selectedStaffId === staff._id && (
+                              <Check className="w-6 h-6 text-accent-2" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 ) : (
                   <div className="text-center p-8">
@@ -1407,7 +1408,7 @@ export default function ReservationForm() {
                     fromDate={new Date()}
                     toDate={toDate}
                     disabled={[
-                      ...(orgExceptionSchedules.results.map((day) => new Date(day.date)) ?? []),
+                      ...(orgExceptionSchedules?.map((day) => new Date(day.date)) ?? []),
                       (date: Date) => {
                         const dayKey = getDayOfWeek(date)
                         const orgWeekSchedule = orgWeekSchedules?.find(
@@ -1677,7 +1678,7 @@ export default function ReservationForm() {
         </div>
 
         {/* ナビゲーションボタン */}
-        <div className="flex justify-between items-center mt-8 pb-24">
+        <div className="flex justify-between items-center mt-8 pb-24 max-w-3xl mx-auto">
           <Button
             type="button"
             variant="outline"
