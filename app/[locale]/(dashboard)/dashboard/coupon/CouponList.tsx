@@ -1,6 +1,6 @@
 'use client'
 
-import { Link } from '@/i18n/navigation'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { usePaginatedQuery, useMutation } from 'convex/react'
@@ -23,6 +23,7 @@ import {
 export default function CouponList() {
   const t = useTranslations('coupon')
   const tCommon = useTranslations('common')
+  const router = useRouter()
   const { tenantId, orgId } = useTenantAndOrganization()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null)
@@ -68,36 +69,32 @@ export default function CouponList() {
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden border border-border rounded-lg">
               <table className="min-w-full divide-y divide-border">
-                <thead className="bg-muted text-nowrap px-2">
+                <thead className="bg-neon-foreground text-nowrap px-2">
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-primary sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-neon sm:pl-6"
                     >
                       {t('status')}
                     </th>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-primary sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-neon sm:pl-6"
                     >
                       {t('couponName')}
                     </th>
 
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-primary"
+                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-neon"
                     >
                       {t('discountType')}
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-primary"
+                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-neon"
                     >
                       {t('discountValue')}
-                    </th>
-
-                    <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
-                      <span className="sr-only">{tCommon('edit')}</span>
                     </th>
                     <th scope="col" className="relative py-3.5 pr-4 pl-3 sm:pr-6">
                       <span className="sr-only">{tCommon('delete')}</span>
@@ -107,7 +104,11 @@ export default function CouponList() {
                 <tbody className="divide-y divide-border bg-background text-nowrap">
                   {results.length > 0 ? (
                     results?.map((coupon: Doc<'coupon'>, index: number) => (
-                      <tr key={`${coupon._id.slice(0, 4)}-${index}`}>
+                      <tr
+                        key={`${coupon._id.slice(0, 4)}-${index}`}
+                        className="cursor-pointer hover:bg-secondary"
+                        onClick={() => router.push(`/dashboard/coupon/edit/${coupon._id}`)}
+                      >
                         <td
                           className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-muted-foreground sm:pl-6 `}
                         >
@@ -130,19 +131,6 @@ export default function CouponList() {
                           {coupon.discount_type === 'percentage'
                             ? `${coupon.percentage_discount_value}%`
                             : `${tCommon('currencySymbol')}${coupon.fixed_discount_value?.toLocaleString()}`}
-                        </td>
-
-                        <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
-                          <Link href={`/dashboard/coupon/edit/${coupon._id}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-neon bg-neon-foreground hover:opacity-80"
-                            >
-                              {tCommon('edit')}
-                              <span className="sr-only">, {coupon.name}</span>
-                            </Button>
-                          </Link>
                         </td>
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Button
