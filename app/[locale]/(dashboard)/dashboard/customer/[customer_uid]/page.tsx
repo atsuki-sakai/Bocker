@@ -4,6 +4,15 @@ import { DashboardSection, withManagerAccess } from '@/components/common' // Ass
 import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common' // Assuming this is your loading component
 import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip' // For displaying full IDs on hover
 import { ScrollArea } from '@/components/ui/scroll-area' // For potentially long notes
 import {
@@ -54,9 +63,11 @@ type PointTransaction = RowType<'point_transaction'>
 // Define the CustomerDetailPage component
 function CustomerDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
   const customerUid = params.customer_uid as string
   const t = useTranslations('customers')
+  const tCommon = useTranslations('common')
   const locale = useLocale() as SupportedLocale
 
   // 状態管理
@@ -65,6 +76,8 @@ function CustomerDetailPage() {
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false)
   const [showTransactions, setShowTransactions] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false)
+  const [selectedCustomerUid, setSelectedCustomerUid] = useState<string | null>(null)
   const customerRepo = useMemo(() => new CustomerRepository(), [])
   const pointTransactionRepo = useMemo(() => new PointTransactionRepository(), [])
 
@@ -117,6 +130,27 @@ function CustomerDetailPage() {
       toast.error(t('fetchTransactionError'))
     } finally {
       setIsLoadingTransactions(false)
+    }
+  }
+
+  // 削除モーダルを表示
+  const handleShowDeleteModal = (e: React.MouseEvent<HTMLButtonElement>, customerUid: string) => {
+    e.preventDefault()
+    setSelectedCustomerUid(customerUid)
+    setShowDeleteModal(true)
+  }
+
+  // 顧客削除処理
+  const handleDeleteCustomer = async (customerUid: string) => {
+    try {
+      await customerRepo.deleteWithRelatedData(customerUid)
+      toast.success(t('customerDeleted'))
+      setShowDeleteModal(false)
+      setSelectedCustomerUid(null)
+      router.push('/dashboard/customer')
+    } catch (error) {
+      console.error('Failed to delete customer:', error)
+      toast.error(t('deleteError'))
     }
   }
 
@@ -189,20 +223,32 @@ function CustomerDetailPage() {
           <div className="bg-card rounded-2xl shadow-md border border-border overflow-hidden">
             <div className="p-4 md:p-8">
               <div className="flex items-center gap-3 mb-4 md:mb-6">
-                <div className="p-2 rounded-lg bg-primary">
-                  <User className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <h2 className="text-xl font-bold text-primary">{t('basicInfo')}</h2>
-                {completeCustomer.customer.line_user_name && (
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className="border-accent-2 text-accent-2 bg-accent-2-foreground px-3 py-1 text-sm font-medium"
-                    >
-                      LINE: {completeCustomer.customer.line_user_name}
-                    </Badge>
+                <div className="flex items-center gap-3 justify-start w-full">
+                  <div className="p-2 rounded-lg bg-primary">
+                    <User className="h-5 w-5 text-primary-foreground" />
                   </div>
-                )}
+                  <h2 className="text-xl font-bold text-primary">{t('basicInfo')}</h2>
+                  {completeCustomer.customer.line_user_name && (
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="border-accent-2 text-accent-2 bg-accent-2-foreground px-3 py-1 text-sm font-medium"
+                      >
+                        LINE: {completeCustomer.customer.line_user_name}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-end w-fit gap-2">
+                  <Button
+                    onClick={(e) => handleShowDeleteModal(e, customerUid)}
+                    variant="destructive"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    {t('delete')}
+                  </Button>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
@@ -577,6 +623,27 @@ function CustomerDetailPage() {
           </div>
         </div>
       </div>
+      {showDeleteModal && selectedCustomerUid && (
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('confirmDelete')}</DialogTitle>
+              <DialogDescription>{t('deleteWarning')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+                {tCommon('cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteCustomer(selectedCustomerUid)}
+              >
+                {tCommon('delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </DashboardSection>
   )
 }
