@@ -67,6 +67,7 @@ export default function ReservationList() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedStaff, setSelectedStaff] = useState<string>('all')
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('all')
   const [isCsvCalendarOpen, setIsCsvCalendarOpen] = useState(false)
   // CSVエクスポート用のstate
   const [csvStartDate, setCsvStartDate] = useState('')
@@ -146,7 +147,7 @@ export default function ReservationList() {
   }
 
   // 組織レベルの予約データを取得
-  const { reservations, isLoading, loadMore, totalCount, hasMore } = useOrganizationReservations({
+  const { reservations, isLoading, loadMore, hasMore } = useOrganizationReservations({
     tenantId: tenantId || '',
     orgId: orgId || '',
     status: selectedStatus,
@@ -166,13 +167,59 @@ export default function ReservationList() {
     return uniqueStaff
   }, [reservations])
 
-  // スタッフフィルターを適用した予約リスト
+  // 顧客リストを予約データから抽出
+  const customerList = useMemo(() => {
+    // 顧客IDでグループ化して最適な名前を選択
+    const customerMap = new Map<string, string>()
+
+    reservations.forEach((r) => {
+      if (!r.customerUid || !r.customerName) return
+
+      const currentName = customerMap.get(r.customerUid)
+
+      // まだ名前が設定されていない場合は設定
+      if (!currentName) {
+        customerMap.set(r.customerUid, r.customerName)
+        return
+      }
+
+      // 現在の名前がEmailでない場合は変更しない
+      const isCurrentEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentName)
+      if (!isCurrentEmail) return
+
+      // 新しい名前がEmailでない場合は置き換える
+      const isNewEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.customerName)
+      if (!isNewEmail) {
+        customerMap.set(r.customerUid, currentName + ' / ' + r.customerName)
+      }
+    })
+
+    const uniqueCustomers = Array.from(customerMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+
+    console.log('[ReservationList] Unique customers:', uniqueCustomers)
+    return uniqueCustomers
+  }, [reservations])
+
+  console.log('[ReservationList] Customer list:', customerList)
+
+  // スタッフと顧客フィルターを適用した予約リスト
   const filteredReservations = useMemo(() => {
-    if (selectedStaff === 'all') {
-      return reservations
+    let filtered = reservations
+
+    // スタッフフィルター
+    if (selectedStaff !== 'all') {
+      filtered = filtered.filter((r) => r.staffId === selectedStaff)
     }
-    return reservations.filter((r) => r.staffId === selectedStaff)
-  }, [reservations, selectedStaff])
+
+    // 顧客フィルター
+    if (selectedCustomer !== 'all') {
+      filtered = filtered.filter((r) => r.customerUid === selectedCustomer)
+    }
+
+    return filtered
+  }, [reservations, selectedStaff, selectedCustomer])
 
   // 予約行データをフォーマット
   const formatReservationDate = (timestamp: number): string => {
@@ -204,7 +251,8 @@ export default function ReservationList() {
         <div className="flex w-fit gap-2 items-end">
           <CardTitle className="text-sm font-medium">予約数</CardTitle>
           <div className="text-2xl font-bold text-accent-2 flex items-end gap-2">
-            {totalCount} <small className="text-sm text-muted-foreground">件</small>
+            {filteredReservations.length}{' '}
+            <small className="text-sm text-muted-foreground">件</small>
           </div>
         </div>
 
@@ -447,6 +495,22 @@ export default function ReservationList() {
                   {staffList.map((staff) => (
                     <SelectItem key={staff.id || 'free'} value={staff.id || 'free'}>
                       {staff.name || '指名フリー'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full md:w-48">
+              <label className="text-sm font-medium mb-2 block">顧客名</label>
+              <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="顧客を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">すべて</SelectItem>
+                  {customerList.map((customer) => (
+                    <SelectItem key={customer.id || 'none'} value={customer.id || 'none'}>
+                      {customer.name || '名前なし'}
                     </SelectItem>
                   ))}
                 </SelectContent>
