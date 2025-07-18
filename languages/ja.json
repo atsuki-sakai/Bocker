@@ -3606,5 +3606,76 @@
       "reservationRules": "予約ルール:",
       "reservationDetailsButton": "予約詳細・キャンセルはこちら"
     }
+  },
+  "seo": {
+    "meta": {
+      "title": "Bocker（ブッカー）- 美容サロン向け次世代予約管理システム",
+      "description": "美容サロン・ヘアサロンの予約管理をデジタル化。リアルタイム予約、顧客管理、LINE連携、決済システムを統合した次世代SaaSプラットフォーム。30日間無料トライアル。月額6,000円から。",
+      "keywords": "美容サロン,ヘアサロン,予約管理システム,SaaS,DX,デジタル化,LINE予約,オンライン予約,Bocker,ブッカー,サロン経営,顧客管理,レジシステム,クレジットカード決済,ポイント管理,スタッフ管理,売上分析,予約システム,サロン運営,美容業界,クラウドサービス,リアルタイム予約"
+    },
+    "structuredData": {
+      "organization": {
+        "name": "Bocker（ブッカー）",
+        "alternateName": "Bocker",
+        "description": "美容サロン・ヘアサロンの予約管理をデジタル化する次世代SaaSプラットフォーム",
+        "industry": "Software as a Service (SaaS)",
+        "contactType": "カスタマーサービス"
+      },
+      "softwareApplication": {
+        "name": "Bocker（ブッカー）",
+        "description": "美容サロン・ヘアサロンの予約管理、顧客管理、LINE連携、決済システムを統合した次世代SaaSプラットフォーム",
+        "applicationCategory": "ビジネスアプリケーション",
+        "operatingSystem": "ウェブベース",
+        "offers": {
+          "lite": {
+            "name": "Liteプラン",
+            "description": "基本機能・3名まで",
+            "category": "月額サブスクリプション"
+          },
+          "pro": {
+            "name": "Proプラン",
+            "description": "高度機能・8名まで",
+            "category": "月額サブスクリプション"
+          }
+        }
+      },
+      "website": {
+        "name": "Bocker（ブッカー）",
+        "description": "美容サロン向け次世代予約管理システム"
+      },
+      "service": {
+        "name": "美容サロン予約管理システム",
+        "description": "美容サロン・ヘアサロンの予約管理をデジタル化し、業務効率を向上させるクラウドサービス",
+        "serviceType": "SaaS",
+        "category": "予約管理システム",
+        "audience": "美容サロン・ヘアサロン経営者"
+      },
+      "faq": {
+        "questions": {
+          "whatIsBocker": {
+            "question": "Bockerとは何ですか？",
+            "answer": "Bockerは美容サロン・ヘアサロン向けの予約管理システムです。リアルタイム予約、顧客管理、LINE連携、決済システムを統合した次世代SaaSプラットフォームです。"
+          },
+          "pricing": {
+            "question": "料金はいくらですか？",
+            "answer": "Liteプランが月額6,000円（年額50,000円）、Proプランが月額10,000円（年額100,000円）です。30日間の無料トライアルもご用意しています。"
+          },
+          "features": {
+            "question": "どのような機能がありますか？",
+            "answer": "リアルタイム予約管理、顧客管理、スタッフ管理、メニュー管理、クーポン・ポイントシステム、LINE連携、決済システム、分析レポート機能などを提供しています。"
+          },
+          "support": {
+            "question": "サポートはありますか？",
+            "answer": "はい、メールでのサポートを提供しています。また、詳細なドキュメントやFAQもご用意しています。"
+          }
+        }
+      }
+    },
+    "ogp": {
+      "title": "Bocker（ブッカー）- 美容サロン向け次世代予約管理システム",
+      "description": "美容サロン・ヘアサロンの予約管理をデジタル化。リアルタイム予約、顧客管理、LINE連携を統合した次世代SaaSプラットフォーム。30日間無料トライアル。",
+      "siteName": "Bocker",
+      "imageAlt": "Bocker - 美容サロン向け次世代予約管理システム"
+    }
   }
 }

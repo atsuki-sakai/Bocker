@@ -3727,5 +3727,76 @@
       "reservationRules": "Reservation Rules:",
       "reservationDetailsButton": "View Details / Cancel"
     }
+  },
+  "seo": {
+    "meta": {
+      "title": "Bocker - Next-Generation Reservation Management System for Beauty Salons",
+      "description": "Digitize your beauty salon management with real-time reservations, customer management, LINE integration, and payment systems. Next-generation SaaS platform for hair salons. 30-day free trial. Starting from $60/month.",
+      "keywords": "beauty salon,hair salon,reservation management system,SaaS,digital transformation,LINE booking,online reservation,Bocker,salon management,customer management,POS system,credit card payment,point management,staff management,sales analytics,booking system,salon operations,beauty industry,cloud service,real-time booking"
+    },
+    "structuredData": {
+      "organization": {
+        "name": "Bocker",
+        "alternateName": "Bocker",
+        "description": "Next-generation SaaS platform for digitizing beauty salon and hair salon reservation management",
+        "industry": "Software as a Service (SaaS)",
+        "contactType": "customer service"
+      },
+      "softwareApplication": {
+        "name": "Bocker",
+        "description": "Next-generation SaaS platform integrating reservation management, customer management, LINE integration, and payment systems for beauty salons and hair salons",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web-based",
+        "offers": {
+          "lite": {
+            "name": "Lite Plan",
+            "description": "Basic features for up to 3 staff members",
+            "category": "monthly subscription"
+          },
+          "pro": {
+            "name": "Pro Plan",
+            "description": "Advanced features for up to 8 staff members",
+            "category": "monthly subscription"
+          }
+        }
+      },
+      "website": {
+        "name": "Bocker",
+        "description": "Next-generation reservation management system for beauty salons"
+      },
+      "service": {
+        "name": "Beauty Salon Reservation Management System",
+        "description": "Cloud service that digitizes beauty salon and hair salon reservation management to improve operational efficiency",
+        "serviceType": "SaaS",
+        "category": "reservation management system",
+        "audience": "beauty salon and hair salon owners"
+      },
+      "faq": {
+        "questions": {
+          "whatIsBocker": {
+            "question": "What is Bocker?",
+            "answer": "Bocker is a reservation management system for beauty salons and hair salons. It's a next-generation SaaS platform that integrates real-time reservations, customer management, LINE integration, and payment systems."
+          },
+          "pricing": {
+            "question": "What are the pricing plans?",
+            "answer": "The Lite plan is $60/month ($500/year), and the Pro plan is $100/month ($1000/year). We also offer a 30-day free trial."
+          },
+          "features": {
+            "question": "What features are available?",
+            "answer": "We provide real-time reservation management, customer management, staff management, menu management, coupon and point systems, LINE integration, payment systems, and analytics reporting features."
+          },
+          "support": {
+            "question": "Is support available?",
+            "answer": "Yes, we provide email support. We also have detailed documentation and FAQs available."
+          }
+        }
+      }
+    },
+    "ogp": {
+      "title": "Bocker - Next-Generation Reservation Management System for Beauty Salons",
+      "description": "Digitize your beauty salon management with real-time reservations, customer management, and LINE integration. Next-generation SaaS platform. 30-day free trial.",
+      "siteName": "Bocker",
+      "imageAlt": "Bocker - Next-Generation Reservation Management System for Beauty Salons"
+    }
   }
 }
