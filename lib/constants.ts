@@ -337,7 +337,7 @@ export const NAV_ITEMS: NavItem[] = [
     name: 'analytics',
     href: `/dashboard/analytics`,
     icon: ChartBarIcon,
-    minRole: 'staff',
+    minRole: 'manager',
     minPlan: 'LITE',
   },
 ]
