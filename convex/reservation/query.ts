@@ -2239,8 +2239,23 @@ export const listOrganizationAllStatusForExport = query({
       nextCursor = `${lastReservation.date}|${lastReservation._id}`;
     }
 
+    const reservationIds = reservations.map(r => r._id);
+
+    // 例: 複数のreservation_idでreservation_detailを取得
+    const detailsList = await Promise.all(
+      reservationIds.map(id =>
+        ctx.db
+          .query('reservation_detail')
+          .withIndex('by_reservation_archive', q => q.eq('reservation_id', id))
+          .collect()
+      )
+    );
+    // 結果をフラット化
+    const details = detailsList.flat();
+
     return {
-      reservations: resultReservations,
+      reservations: reservations,
+      details: details,
       hasMore,
       nextCursor,
     };

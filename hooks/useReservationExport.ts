@@ -1,68 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import { ReservationRepository } from '@/services/supabase/repositories';
 import { toast } from 'sonner';
 import type { IntegratedReservation } from './useOrganizationReservations';
-import type { ReservationMenu, ReservationOption, ReservationStatus } from '@/convex/types';
-
-// Helper functions to parse JSONB data from Supabase
-function parseReservationMenus(menus: unknown): ReservationMenu[] | undefined {
-  if (!menus || !Array.isArray(menus)) return undefined;
-  
-  return menus.map((menu) => {
-    if (typeof menu !== 'object' || menu === null) {
-      throw new Error('Invalid menu format');
-    }
-    
-    const menuObj = menu as Record<string, unknown>;
-    
-    if (
-      typeof menuObj.id !== 'string' ||
-      typeof menuObj.name !== 'string' ||
-      typeof menuObj.price !== 'number' ||
-      typeof menuObj.quantity !== 'number'
-    ) {
-      throw new Error('Invalid menu structure');
-    }
-    
-    return {
-      id: menuObj.id as Id<'menu'>,
-      name: menuObj.name,
-      price: menuObj.price,
-      quantity: menuObj.quantity,
-    } satisfies ReservationMenu;
-  });
-}
-
-function parseReservationOptions(options: unknown): ReservationOption[] | undefined {
-  if (!options || !Array.isArray(options)) return undefined;
-  
-  return options.map((option) => {
-    if (typeof option !== 'object' || option === null) {
-      throw new Error('Invalid option format');
-    }
-    
-    const optionObj = option as Record<string, unknown>;
-    
-    if (
-      typeof optionObj.id !== 'string' ||
-      typeof optionObj.name !== 'string' ||
-      typeof optionObj.price !== 'number' ||
-      typeof optionObj.quantity !== 'number'
-    ) {
-      throw new Error('Invalid option structure');
-    }
-    
-    return {
-      id: optionObj.id as Id<'option'>,
-      name: optionObj.name,
-      price: optionObj.price,
-      quantity: optionObj.quantity,
-    } satisfies ReservationOption;
-  });
-}
+import type { ReservationStatus, ReservationMenu, ReservationOption } from '@/convex/types';
+import type { RowType } from '@/services/supabase/SupabaseService';
 
 type UseReservationExportOptions = {
   tenantId: string;
@@ -117,7 +61,7 @@ export function useReservationExport({
     return start >= maxPeriod && end <= maxEndDate && start <= end;
   })();
   
-  // ConvexとSupabaseから全件データを取得
+  // ConvexとSupabaseから全件データを取得 
   const fetchAllReservations = useCallback(async (): Promise<IntegratedReservation[]> => {
     if (!tenantId || !orgId || !startDate || !endDate) {
       throw new Error('必要なパラメータが不足しています');
@@ -138,10 +82,12 @@ export function useReservationExport({
         end_date: endDate,
         status_filter: status === 'all' ? undefined : status as ReservationStatus,
       });
-      
+
+      console.log('[useReservationExport] Convex data:', convexData)
+
+
       // Convexデータを統合型に変換
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const convertedConvexData: IntegratedReservation[] = convexData.map((res: any) => ({
+      const convertedConvexData: IntegratedReservation[] = convexData.reservations.map((res: Doc<'reservation'>, index: number) => ({
         id: res._id,
         source: 'convex' as const,
         tenantId: res.tenant_id,
@@ -157,27 +103,46 @@ export function useReservationExport({
         startTimeUnix: res.start_time_unix,
         endTimeUnix: res.end_time_unix,
         createdAt: new Date(res._creationTime),
-        convexData: res,
+        detail: convexData.details[index] ? {
+          // Json型から適切な型にキャスト
+          menus: Array.isArray(convexData.details[index].menus) 
+            ? (convexData.details[index].menus as ReservationMenu[])
+            : [],
+          options: Array.isArray(convexData.details[index].options) 
+            ? (convexData.details[index].options as ReservationOption[])
+            : [],
+          totalPrice: typeof convexData.details[index].total_price === 'number' 
+            ? convexData.details[index].total_price 
+            : undefined,
+          paymentMethod: convexData.details[index].payment_method,
+          couponId: convexData.details[index].coupon_id || undefined,
+          couponDiscount: typeof convexData.details[index].coupon_discount === 'number' 
+            ? convexData.details[index].coupon_discount 
+            : undefined,
+          usePoints: typeof convexData.details[index].use_points === 'number' 
+            ? convexData.details[index].use_points 
+            : undefined,
+          notes: convexData.details[index].notes || undefined,
+        } : undefined,
       }));
       
       allReservations.push(...convertedConvexData);
       
-      // Supabaseから全件取得
-      const { data: supabaseData } = await reservationRepo.findByOrganizationWithDetails(
+      // Supabaseから最適化されたメソッドで全件取得
+      const { data: supabaseData } = await reservationRepo.exportAllReservationsOptimized(
         tenantId,
         orgId,
         {
-          page: 1,
-          pageSize: 10000, // 大きな値で全件取得
           status: status === 'all' ? undefined : status,
           startDate,
           endDate,
+          batchSize: 10000, // 大量データ対応
         }
       );
-      
-      // Supabaseデータを統合型に変換
+
+      // Supabaseデータを統合型に変換（最適化版レスポンス対応）
       const convertedSupabaseData: IntegratedReservation[] = supabaseData
-        .filter((item) => {
+        .filter((item: { reservation: RowType<'reservation'>; detail: RowType<'reservation_detail'> | null }) => {
           if (status === 'all') return true;
           if (status === 'confirmed' || status === 'pending') return false;
           return item.reservation.status === status;
@@ -199,20 +164,29 @@ export function useReservationExport({
           endTimeUnix: Number(item.reservation.end_time_unix),
           createdAt: new Date(item.reservation.created_at),
           detail: item.detail ? {
-            menus: item.detail.menus ? parseReservationMenus(item.detail.menus) : undefined,
-            options: item.detail.options ? parseReservationOptions(item.detail.options) : undefined,
-            totalPrice: item.detail.total_price || undefined,
+            // Json型から適切な型にキャスト
+            menus: Array.isArray(item.detail.menus) 
+              ? (item.detail.menus as ReservationMenu[])
+              : [],
+            options: Array.isArray(item.detail.options) 
+              ? (item.detail.options as ReservationOption[])
+              : [],
+            totalPrice: typeof item.detail.total_price === 'number' 
+              ? item.detail.total_price 
+              : undefined,
             paymentMethod: item.detail.payment_method,
             couponId: item.detail.coupon_id || undefined,
-            couponDiscount: item.detail.coupon_discount || undefined,
-            usePoints: item.detail.use_points || undefined,
+            couponDiscount: typeof item.detail.coupon_discount === 'number' 
+              ? item.detail.coupon_discount 
+              : undefined,
+            usePoints: typeof item.detail.use_points === 'number' 
+              ? item.detail.use_points 
+              : undefined,
             notes: item.detail.notes || undefined,
           } : undefined,
-          supabaseData: item,
         }));
       
       allReservations.push(...convertedSupabaseData);
-      
       // 重複除去
       const uniqueReservations = allReservations.reduce((acc, reservation) => {
         const isDuplicate = acc.some(existing => {
@@ -231,6 +205,8 @@ export function useReservationExport({
         
         return acc;
       }, [] as IntegratedReservation[]);
+
+      console.log('[useReservationExport] Unique reservations:', uniqueReservations)
       
       // 日時でソート
       return uniqueReservations.sort((a, b) => {
@@ -266,6 +242,8 @@ export function useReservationExport({
       '備考',
       '作成日時',
     ];
+
+    console.log('[useReservationExport] Reservations:', reservations)
     
     const csvContent = [
       headers.join(','),
@@ -334,6 +312,8 @@ export function useReservationExport({
         toast.warning('指定期間に予約データがありません');
         return;
       }
+
+      console.log('[useReservationExport] Reservations:', reservations)
       
       generateCsv(reservations);
       toast.success(`${reservations.length}件の予約データをCSVで出力しました`);

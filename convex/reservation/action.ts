@@ -1152,12 +1152,14 @@ export const exportReservations = action({
     
     // 全件データを取得
     const allReservations = [];
+    const allDetails = [];
     let hasMore = true;
     let cursor: string | null = null;
-    
+
     while (hasMore) {
       const result: {
         reservations: Doc<'reservation'>[];
+        details: Doc<'reservation_detail'>[];
         hasMore: boolean;
         nextCursor: string | null;
       } = await ctx.runQuery(api.reservation.query.listOrganizationAllStatusForExport, {
@@ -1171,11 +1173,17 @@ export const exportReservations = action({
       });
       
       allReservations.push(...result.reservations);
+      allDetails.push(...result.details);
       hasMore = result.hasMore;
       cursor = result.nextCursor || null;
     }
     
-    return allReservations;
+    return {
+      reservations: allReservations,
+      details: allDetails,
+      hasMore: hasMore,
+      nextCursor: cursor,
+    };
   },
 })
 
