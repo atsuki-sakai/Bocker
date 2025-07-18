@@ -9,15 +9,30 @@ import ClientLayout from './ClientLayout'
 // import { Analytics } from '@vercel/analytics/next'
 import type { Languages } from '@/lib/constants'
 
-export const metadata: Metadata = {
-  title: 'Bocker - 予約管理システム',
-  description:
-    'Bockerはサロンの予約管理、顧客管理、サロン運営を一元管理し運用業務の効率化を目的としたシステムです。',
-  manifest: '/manifest.json',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-icon.png',
-  },
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Languages }>
+}): Promise<Metadata> {
+  await params // localeは現在使用していないが、将来的に多言語対応で使用予定
+  
+  return {
+    title: {
+      template: '%s | Bocker',
+      default: 'Bocker - 予約管理システム',
+    },
+    description:
+      'Bockerはサロンの予約管理、顧客管理、サロン運営を一元管理し運用業務の効率化を目的としたシステムです。',
+    manifest: '/manifest.json',
+    icons: {
+      icon: '/favicon.ico',
+      apple: '/apple-icon.png',
+    },
+    other: {
+      'theme-color': '#ffffff',
+      'color-scheme': 'light dark',
+    },
+  }
 }
 
 type Props = {
