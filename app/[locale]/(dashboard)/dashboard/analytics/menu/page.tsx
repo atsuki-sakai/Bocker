@@ -1,6 +1,7 @@
 'use client'
 
 import { toast } from 'sonner'
+import { withOwnerAccess } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { Loader2, RefreshCwIcon, DollarSign, Package, FileDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -123,7 +124,7 @@ const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => {
 /**
  * メニュー別売上分析ページ - エンタープライズレベル
  */
-export default function MenuAnalyticsPage() {
+function MenuAnalyticsPage() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
 
   // 状態管理
@@ -1266,3 +1267,5 @@ export default function MenuAnalyticsPage() {
     </DashboardSection>
   )
 }
+
+export default withOwnerAccess(MenuAnalyticsPage)

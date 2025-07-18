@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { withOwnerAccess } from '@/components/common'
 import { RefreshCwIcon, Loader2 } from 'lucide-react'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { subDays, format } from 'date-fns'
@@ -134,7 +135,7 @@ type MonthlyAnalysisSummary = {
 /**
  * 日別売上分析ページ
  */
-export default function DailyAnalyticsPage() {
+function DailyAnalyticsPage() {
   const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
 
   // 状態管理
@@ -1834,3 +1835,5 @@ export default function DailyAnalyticsPage() {
     </DashboardSection>
   )
 }
+
+export default withOwnerAccess(DailyAnalyticsPage)
