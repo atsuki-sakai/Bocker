@@ -13,33 +13,12 @@ import { useTranslations } from 'next-intl'
 function InviteSignUpContent() {
   const t = useTranslations('auth.staffInvite')
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-muted py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <SignUp
         // サインイン画面への切り替えURL
         signInUrl="/sign-in"
         // サインアップ後のリダイレクト先
         fallbackRedirectUrl="/dashboard"
-        // 外観設定 - 既存のサインアップページと統一
-        appearance={{
-          elements: {
-            // フォームの外観調整
-            formButtonPrimary: 'bg-primary hover:bg-primary text-sm normal-case transition-colors',
-            card: 'shadow-none border-0 bg-background',
-            headerTitle: 'text-xl font-semibold text-primary',
-            headerSubtitle: 'text-sm text-muted-foreground',
-            socialButtonsBlockButton:
-              'text-sm normal-case border border-border hover:bg-muted transition-colors',
-            formFieldInput:
-              'border border-border focus:ring-2 focus:ring-primary focus:border-primary transition-colors',
-            formFieldLabel: 'text-sm font-medium text-primary',
-            identityPreviewText: 'text-sm text-muted-foreground',
-            identityPreviewEditButton: 'text-primary hover:text-primary',
-            formFieldSuccessText: 'text-accent-2',
-            formFieldErrorText: 'text-destructive',
-            footerActionText: 'text-muted-foreground',
-            footerActionLink: 'text-primary hover:text-primary',
-          },
-        }}
       />
       {/* 注意事項カード */}
       <motion.div

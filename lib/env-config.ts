@@ -196,15 +196,20 @@ class EnvConfigManager {
   isDevelopment(): boolean {
     return this.config.NODE_ENV === 'development';
   }
+
+  isLocal(): boolean {
+    return this.config.NODE_ENV === 'local';
+  }
   
   isProduction(): boolean {
     return this.config.NODE_ENV === 'production';
   }
   
   getAppUrl(): string {
-    return this.isDevelopment() 
-      ? this.get('NEXT_PUBLIC_DEVELOP_URL')
-      : this.get('NEXT_PUBLIC_DEPLOY_URL');
+    if (this.isLocal()) {
+      return this.get('NEXT_PUBLIC_DEVELOP_URL')
+    }
+    return this.get('NEXT_PUBLIC_DEPLOY_URL');
   }
   
   validateRequired(): void {
