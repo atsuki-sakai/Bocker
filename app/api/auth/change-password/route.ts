@@ -8,7 +8,7 @@ import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { LOGIN_SESSION_KEY } from '@/services/line/constants';
 import { PasswordChangedEmail } from '@/components/emails/PasswordChangedEmail';
 import { getEnv } from '@/lib/env-config';
-import { ActiveCustomerType } from '@/convex/types';
+import type { SessionPayload } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -18,15 +18,6 @@ const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8).max(100),
 });
-
-// セッションペイロードの型
-interface SessionPayload {
-  customerUid: string;
-  email: string;
-  tenantId: string;
-  orgId: string;
-  target_type?: ActiveCustomerType | null | undefined;
-}
 
 const resend = new Resend(getEnv('RESEND_API_KEY'));
 const APP_JWT_SECRET = getEnv('APP_JWT_SECRET');
@@ -68,6 +59,13 @@ export async function POST(request: NextRequest) {
     // リポジトリを初期化
     const customerRepo = new CustomerRepository();
 
+    if (!sessionPayload.email) {
+      console.error('[API /api/auth/change-password] Email is required');
+      return NextResponse.json(
+        { error: 'メールアドレスが必要です' },
+        { status: 400 }
+      );
+    }
     // 顧客を検索
     const customer = await customerRepo.findByTenantAndOrgAndCustomerEmail(
       sessionPayload.tenantId,

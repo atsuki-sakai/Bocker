@@ -73,11 +73,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 顧客名を優先順位に従って決定
+    const customerName = 
+      customer.last_name && customer.first_name
+        ? `${customer.last_name} ${customer.first_name}` // 姓と名が両方ある場合
+        : customer.email ?? // 次にメールアドレス
+        customer.line_user_name ?? // 次にLINEユーザー名
+        '不明'; // いずれもない場合
+
     // JWTペイロードを作成
     const payload: SessionPayload = {
       customerUid: customer.uid,
       email: customer.email || '',
+      customerName: customerName,
       tenantId: validatedData.tenantId as Id<"tenant">,
+      lineUserId: customer.line_id || undefined,
+      lineUserName: customer.line_user_name || undefined,
       orgId: validatedData.orgId as Id<"organization">,
       target_type: customer.customer_type as SessionPayload['target_type'],
     };
@@ -177,7 +188,7 @@ export async function GET(request: NextRequest) {
             tenant_id: requestedTenantId,
             org_id: requestedOrgId,
             line_id: currentSession.lineUserId,
-            line_user_name: currentSession.name,
+            line_user_name: currentSession.lineUserName,
             email: currentSession.email,
             customer_type: 'first_time'
           },
@@ -234,8 +245,9 @@ export async function GET(request: NextRequest) {
       tenantId: requestedTenantId as Id<"tenant">,
       orgId: requestedOrgId as Id<"organization">,
       email: customer.email || undefined,
+      customerName: customer.last_name + ' ' + customer.first_name,
       lineUserId: customer.line_id || undefined,
-      name: customer.line_user_name || undefined,
+      lineUserName: customer.line_user_name || undefined,
       target_type: customer.customer_type as ActiveCustomerType
     };
 

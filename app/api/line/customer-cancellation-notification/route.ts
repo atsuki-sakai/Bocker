@@ -55,10 +55,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 顧客向けキャンセル通知Flexメッセージを作成
-    let customerName = [customerData.customer.first_name, customerData.customer.last_name]
+    let customerName = [customerData.customer.last_name, customerData.customer.first_name]
       .filter(Boolean)
       .join(' ') || '不明'
-    customerName = customerName === "不明" ? customerData.customer.email || customerData.customer.line_user_name || "お客様" : customerName
+    customerName = customerName === "不明" ? customerData.customer.email || customerData.customer.line_user_name || "お客様" : customerName;
 
     const customerCancellationMessages = createCustomerCancellationNotification({
       organization: organizationComplete.organization,

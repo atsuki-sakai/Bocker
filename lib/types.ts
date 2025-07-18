@@ -9,8 +9,9 @@ export type SessionPayload = {
   tenantId: Id<'tenant'>;
   orgId: Id<'organization'>;
   email?: string;
+  customerName?: string;
   lineUserId?: string;
-  name?: string;
+  lineUserName?: string;
   target_type: ActiveCustomerType;
 };
 

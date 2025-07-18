@@ -43,7 +43,7 @@ import {
   Loader2,
   Ticket,
 } from 'lucide-react'
-import type { StaffDisplay } from '@/lib/types'
+import type { StaffDisplay, SessionPayload } from '@/lib/types'
 
 // 自動割り当てされたスタッフ用の型
 type AutoAssignedStaff = StaffDisplay & {
@@ -80,18 +80,6 @@ const dayOrder: Record<string, number> = {
   friday: 5,
   saturday: 6,
   sunday: 7, // 日曜日を最後にする場合は 7, 最初にする場合は 0
-}
-
-// 統一されたセッション型 - LINE/Email両方のログインに対応
-type SessionPayload = {
-  customerUid: string
-  tenantId: Id<'tenant'>
-  orgId: Id<'organization'>
-  email?: string
-  // LINE特有のフィールドはオプショナル
-  lineUserId?: string
-  name?: string
-  target_type?: ActiveCustomerType
 }
 
 // 予約ステップの定義
@@ -473,9 +461,11 @@ export default function CalendarPage() {
         org_id: organizationComplete.organization._id as Id<'organization'>,
         customer_uid: sessionCustomer.customerUid,
         ...staffData,
-        customer_name: sessionCustomer.email
-          ? sessionCustomer.email
-          : (sessionCustomer.name ?? '不明'),
+        customer_name:
+          sessionCustomer.customerName ??
+          sessionCustomer.email ??
+          sessionCustomer.lineUserName ??
+          '不明',
         status: 'pending' as ReservationStatus,
         date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
@@ -764,15 +754,18 @@ export default function CalendarPage() {
         console.log(`ポイント利用予定: ${usePoints}ポイント (action側で減算実行)`)
       }
 
+      const customerName =
+        sessionCustomer.customerName ??
+        sessionCustomer.email ??
+        sessionCustomer.lineUserName ??
+        '不明'
       // 予約データを準備 (handleConfirmReservation内ではstatusをまだ設定しない)
       const reservationBaseData = {
         org_id: organizationComplete.organization._id as Id<'organization'>,
         tenant_id: sessionCustomer.tenantId,
         customer_uid: sessionCustomer.customerUid,
         ...staffData,
-        customer_name: sessionCustomer.email
-          ? sessionCustomer.email
-          : (sessionCustomer.name ?? '不明'),
+        customer_name: customerName,
         status: 'confirmed' as ReservationStatus,
         date: selectedDate ? formatDateToYYYYMMDD(selectedDate) : '',
         start_time_unix: reservationStartDateTime.getTime(),
@@ -833,7 +826,7 @@ export default function CalendarPage() {
           const flexMessages = reservationFlexMessageTemplate(
             organizationComplete.organization, // 1. organization
             organizationComplete.config, // 2. orgConfig
-            sessionCustomer.name ?? '不明', // 3. customerName
+            customerName, // 3. customerName
             organizationComplete.organization._id as Id<'organization'>, // 4. orgId
             sessionCustomer.customerUid, // 5. customerUid
             selectedStaffCompleted.staff === 'free' ? null : selectedStaffCompleted.staff, // 6. selectedStaff (null for free nomination)
@@ -936,7 +929,11 @@ export default function CalendarPage() {
                 : selectedStaffCompleted.staff.extra_charge || 0
 
             const emailTemplateProps = {
-              customerName: sessionCustomer.name || customerData?.customer?.first_name || 'お客様',
+              customerName:
+                sessionCustomer.customerName ??
+                sessionCustomer.email ??
+                sessionCustomer.lineUserName ??
+                'お客様',
               customerEmail: sessionCustomer.email,
               orgName: organizationComplete.organization.org_name,
               orgPhone: organizationComplete.config?.phone,
@@ -1771,10 +1768,10 @@ export default function CalendarPage() {
             </SheetContent>
           </Sheet>
 
-          {sessionCustomer?.name ? (
+          {sessionCustomer?.customerName ? (
             <p className="text-sm flex items-center gap-2 mt-1">
               <CheckCheck className="w-5 h-5 text-accent-2 rounded-full p-1" />
-              <span className="font-light">{sessionCustomer?.name} 様</span>
+              <span className="font-light">{sessionCustomer?.customerName} 様</span>
             </p>
           ) : (
             sessionCustomer?.email && (
