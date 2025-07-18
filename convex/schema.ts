@@ -749,8 +749,8 @@ const reservation = defineTable({
     'by_tenant_org_staff_date_status_archive',
     ['tenant_id', 'org_id','staff_id','date','status','is_archive']
   )
-  // ⑥ ステータス＋開始時刻 バッチ処理用
-  .index('status_start_time_archive', ['status','start_time_unix'])
+  // ⑥ リマインダー送信済みフラグ＋日付＋ステータス＋開始時刻＋終了時刻 バッチ処理用
+  .index('reminder_sent_date_status_start_time_end_time_archive', ['reminder_sent','date','status','start_time_unix','end_time_unix', 'is_archive'])
   // ⑦ 期限切れpending予約の効率的な検索用
   .index('by_status_pending_expiry_archive', ['status', 'pending_expiry', 'is_archive']);
 /**

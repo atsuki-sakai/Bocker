@@ -11,6 +11,8 @@
  *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
  * ---------------------------------------------------------------
  */
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import { paginationOptsValidator } from 'convex/server';
 import { reservationStatusType } from '@/convex/types';
 import { checkAuth } from '@/convex/utils/auth';
@@ -65,29 +67,23 @@ export const getReservationsForReminder = internalQuery({
     startTimeTo: v.number(),   // 開始時刻の上限（Unix timestamp）
   },
   handler: async (ctx, args) => {
+
+    const date = format(new Date(args.startTimeFrom), 'yyyy-MM-dd', { locale: ja });
     // 予約受付済みで、指定時間範囲内に開始される予約を取得
     const reservations = await ctx.db
       .query('reservation')
-      .withIndex('status_start_time_archive', (q) =>
-        q.eq('status', 'confirmed')
-      )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('is_archive'), false),
-          q.gte(q.field('start_time_unix'), args.startTimeFrom),
-          q.lte(q.field('start_time_unix'), args.startTimeTo),
-          // リマインダー未送信のものだけを対象
-          q.or(
-            q.eq(q.field('reminder_sent'), false),
-            q.eq(q.field('reminder_sent'), undefined)
-          )
-        )
-      )
-      .collect();
+      .withIndex('reminder_sent_date_status_start_time_end_time_archive', (q) =>
+        q.eq('reminder_sent', false)
+        .eq('date', date)
+        .eq('status', 'confirmed')
+        .gte('start_time_unix', args.startTimeFrom)
+        .lte('start_time_unix', args.startTimeTo)
+      ).collect();
     
     // 詳細情報を付加して返却
     const reservationsWithDetails = await Promise.all(
       reservations.map(async (reservation) => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
         const detail = await ctx.db
           .query('reservation_detail')
           .withIndex('by_reservation_archive', (q) =>
@@ -1478,36 +1474,36 @@ export const calculateIntegratedAvailableTimes = query({
  * - 取得・ページネーションのみでバリデーションは行わない
  * データ取得専用でバリデーションはmutationで担保
  */
-export const syncReservationToSupabase = query({
-  args: {
-    // paginate が期待するカーソルの型に変更
-    cursor: v.optional(v.string()),
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, { cursor, limit = 5000 }) => {
+// export const syncReservationToSupabase = query({
+//   args: {
+//     // paginate が期待するカーソルの型に変更
+//     cursor: v.optional(v.string()),
+//     limit: v.optional(v.number()),
+//   },
+//   handler: async (ctx, { cursor, limit = 5000 }) => {
     
-    const queryBuilder = ctx.db.query("reservation").withIndex("status_start_time_archive", q => 
-      q
-      .eq("status", "completed")
-      .lt("start_time_unix", new Date().getTime())
-    );
-    // ページネーションを適用
-    // cursor が null または undefined の場合、最初のページから取得
-    const page = await queryBuilder.paginate({
-      numItems: limit,
-      cursor: cursor ?? null, // cursor が undefined の場合は null を渡す
-    });
-    const reservations = page.page;
+//     const queryBuilder = ctx.db.query("reservation").withIndex("status_start_time_archive", q => 
+//       q
+//       .eq("status", "completed")
+//       .lt("start_time_unix", new Date().getTime())
+//     );
+//     // ページネーションを適用
+//     // cursor が null または undefined の場合、最初のページから取得
+//     const page = await queryBuilder.paginate({
+//       numItems: limit,
+//       cursor: cursor ?? null, // cursor が undefined の場合は null を渡す
+//     });
+//     const reservations = page.page;
 
-    // 次カーソル
-    const nextCursor = page.isDone ? null : page.continueCursor;
+//     // 次カーソル
+//     const nextCursor = page.isDone ? null : page.continueCursor;
 
-    // 完了判定
-    const isDone = page.isDone;
+//     // 完了判定
+//     const isDone = page.isDone;
 
-    return { reservations, nextCursor, isDone };
-  },
-});
+//     return { reservations, nextCursor, isDone };
+//   },
+// });
 
 
 /**

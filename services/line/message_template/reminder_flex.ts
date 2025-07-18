@@ -36,8 +36,8 @@ export const createReminderFlexMessage = ({
 
   // 日付と時刻をフォーマット
   const dateStr = format(startDate, 'yyyy年MM月dd日', { locale: ja })
-  const startTimeStr = format(startDate, 'HH:mm')
-  const endTimeStr = format(endDate, 'HH:mm')
+  const startTimeStr = format(startDate, 'HH:mm', { locale: ja })
+  const endTimeStr = format(endDate, 'HH:mm', { locale: ja })
   
   // 施術時間の計算
   const totalMinutes = differenceInMinutes(endDate, startDate)

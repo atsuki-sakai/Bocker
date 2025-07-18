@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useOrganizationReservations } from '@/hooks/useOrganizationReservations'
@@ -42,6 +42,7 @@ import { useRouter } from '@/i18n/navigation'
 import { cn } from '@/lib/utils'
 import { Shuffle, Loader2 } from 'lucide-react'
 import { Loading } from '@/components/common'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 // 予約ステータスの表示設定
 const statusConfig = {
@@ -65,6 +66,7 @@ export default function ReservationList() {
   const locale = useLocale()
   const router = useRouter()
   const { tenantId, orgId } = useTenantAndOrganization()
+  const { showErrorToast } = useErrorHandler()
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedStaff, setSelectedStaff] = useState<string>('all')
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all')
@@ -73,6 +75,11 @@ export default function ReservationList() {
   const [csvStartDate, setCsvStartDate] = useState('')
   const [csvEndDate, setCsvEndDate] = useState('')
   const [csvStatus, setCsvStatus] = useState('all')
+  const [openCsvDialog, setOpenCsvDialog] = useState(false)
+
+  // データ更新の状態管理
+  const [isInterval, setIsInterval] = useState(false)
+  const [intervalTime, setIntervalTime] = useState(10)
 
   // CSVエクスポートフック
   const { exportToCsv, isExporting, isValidPeriod, maxDate, minDate } = useReservationExport({
@@ -233,6 +240,33 @@ export default function ReservationList() {
     return `${startTime}-${endTime}`
   }
 
+  // インターバル時間（ミリ秒）
+  const REFRESH_INTERVAL = 10000 // 20秒
+
+  // データ更新とインターバル制御
+  const handleExportToCsv = useCallback(async () => {
+    if (isExporting || isInterval) return
+
+    try {
+      await exportToCsv()
+    } catch (err) {
+      console.error('Refresh error:', err)
+      showErrorToast(err)
+    } finally {
+      // インターバル開始
+      setIsInterval(true)
+      setOpenCsvDialog(false)
+      setIntervalTime(REFRESH_INTERVAL / 1000)
+      const interval = setInterval(() => {
+        setIntervalTime((prev) => prev - 1)
+      }, 1000)
+      setTimeout(() => {
+        setIsInterval(false)
+        clearInterval(interval)
+      }, REFRESH_INTERVAL)
+    }
+  }, [exportToCsv, isExporting, isInterval, showErrorToast])
+
   // ローディング表示
   if (isLoading && reservations.length === 0) {
     return (
@@ -257,7 +291,7 @@ export default function ReservationList() {
         </div>
 
         {/* CSVエクスポートボタン */}
-        <Dialog>
+        <Dialog open={openCsvDialog} onOpenChange={setOpenCsvDialog}>
           <DialogTrigger asChild>
             <Button variant="outline" className="gap-2 mt-2">
               <DownloadIcon className="h-4 w-4" />
@@ -285,6 +319,7 @@ export default function ReservationList() {
                           'w-full justify-start text-left font-normal',
                           !csvStartDate && !csvEndDate && 'text-muted-foreground'
                         )}
+                        onClick={() => setIsCsvCalendarOpen(true)}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {csvStartDate && csvEndDate ? (
@@ -385,14 +420,17 @@ export default function ReservationList() {
               )}
 
               <Button
-                onClick={exportToCsv}
-                disabled={!isValidPeriod || isExporting || !csvStartDate || !csvEndDate}
+                onClick={handleExportToCsv}
+                disabled={
+                  !isValidPeriod || isExporting || !csvStartDate || !csvEndDate || isInterval
+                }
                 className="w-full"
               >
-                {isExporting ? (
+                {isExporting || isInterval ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    処理中...
+                    インターバル中 残り{intervalTime === 0 ? REFRESH_INTERVAL / 1000 : intervalTime}
+                    秒
                   </>
                 ) : (
                   <>

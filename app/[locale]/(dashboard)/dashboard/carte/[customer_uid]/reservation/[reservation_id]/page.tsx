@@ -492,15 +492,15 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
             </AccordionTrigger>
             <AccordionContent className="space-y-3 pt-1 ">
               {/* 既存の画像管理 */}
-              <div className="space-y-3">
-                <div className="w-full">
+              <div className="space-y-3 md:grid md:grid-cols-2">
+                <div className="w-full mb-12 md:mb-0">
                   {existingImages.length > 0 ? (
                     <div className="w-full">
                       <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                         <ImageIcon className="w-4 h-4" />
                         登録済みの写真 ({existingImages.length}枚)
                       </h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-4 gap-2 md:gap-4 max-w-[400px] mx-auto py-4">
                         {existingImages.map((image, index) => (
                           <div
                             key={index}
@@ -509,8 +509,8 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                             <Image
                               src={image.thumbnail_url}
                               alt={`施術後写真 ${index + 1}`}
-                              width={200}
-                              height={250}
+                              width={150}
+                              height={150}
                               className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
@@ -528,8 +528,8 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                           </div>
                         ))}
                       </div>
-                      <div className="flex items-center justify-center gap-2 mt-3">
-                        <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(true)}>
+                      <div className="flex items-center justify-center gap-2 mt-5">
+                        <Button onClick={() => setIsDialogOpen(true)}>
                           <ImageIcon className="w-4 h-4 mr-1" />
                           写真を拡大表示する
                         </Button>
@@ -784,7 +784,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
           </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl w-full h-[80vh] max-h-[800px]">
+          <DialogContent className="max-w-4xl w-full">
             <DialogHeader className="pb-4">
               <DialogTitle className="text-xl flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-primary" />
@@ -829,17 +829,17 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                   </Carousel>
 
                   {existingImages.length > 1 && (
-                    <div className="bg-muted/30 p-4 rounded-xl border border-border">
-                      <div className="flex space-x-3 justify-center overflow-x-auto">
+                    <div>
+                      <div className="flex gap-2 justify-center overflow-x-auto py-2">
                         {existingImages.map((image, index) => (
                           <button
                             key={`thumb-${index}`}
                             onClick={() => handleThumbnailClick(index)}
-                            className={`flex-shrink-0 w-20 h-20 relative rounded-xl border-2 overflow-hidden transition-all duration-200 hover:scale-105
+                            className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 relative rounded-xl border-2 overflow-hidden transition-all duration-200 hover:scale-105
                                         ${
                                           currentImageIndex === index
-                                            ? 'border-primary ring-2 ring-primary/20 ring-offset-2 shadow-lg'
-                                            : 'border-border opacity-70 hover:opacity-100 hover:border-primary/50'
+                                            ? 'border-success ring-2 ring-success ring-offset-2 shadow-lg'
+                                            : 'border-border opacity-70 hover:opacity-100 hover:border-muted-foreground'
                                         } focus:outline-none`}
                             aria-label={`写真 ${index + 1} を表示`}
                           >
@@ -852,8 +852,8 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                               loading="lazy"
                             />
                             {currentImageIndex === index && (
-                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                <div className="w-3 h-3 bg-primary rounded-full"></div>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-3 h-3 bg-success rounded-full"></div>
                               </div>
                             )}
                           </button>

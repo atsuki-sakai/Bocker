@@ -1,10 +1,18 @@
-"use client";
+'use client'
 
 import { Button } from '@/components/ui/button'
 import { RefreshCwIcon, Loader2 } from 'lucide-react'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { subDays, format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import {
   Calendar,
   TrendingUp,
@@ -40,14 +48,26 @@ import type {
 import { Badge } from '@/components/ui/badge'
 
 // 初期フィルター設定（過去30日間、未来の日付は除外）
-const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => ({
-  dateRange: {
-    from: subDays(new Date(), 29),
-    to: subDays(new Date(), 1), // 昨日までに変更
-  },
-  tenantId,
-  orgId,
-})
+const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => {
+  // 日付の妥当性をチェック
+  const now = new Date()
+  const from = subDays(now, 29)
+  const to = subDays(now, 1) // 昨日までに変更
+
+  // 日付が有効かチェック
+  if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+    throw new Error('初期日付の生成に失敗しました')
+  }
+
+  return {
+    dateRange: {
+      from,
+      to,
+    },
+    tenantId,
+    orgId,
+  }
+}
 
 // 曜日別パフォーマンス分析用の型定義
 type WeekdayPerformance = {
@@ -124,6 +144,7 @@ export default function DailyAnalyticsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isInterval, setIsInterval] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [openCsvDialog, setOpenCsvDialog] = useState(false)
   const { showErrorToast } = useErrorHandler()
 
   // データ状態
@@ -274,9 +295,14 @@ export default function DailyAnalyticsPage() {
   // 初期フィルター設定
   useEffect(() => {
     if (tenantId && orgId && !filters) {
-      setFilters(getInitialFilters(tenantId, orgId))
+      try {
+        setFilters(getInitialFilters(tenantId, orgId))
+      } catch (err) {
+        console.error('初期フィルター設定エラー:', err)
+        showErrorToast(err instanceof Error ? err : new Error('フィルターの初期化に失敗しました'))
+      }
     }
-  }, [tenantId, orgId, filters])
+  }, [tenantId, orgId, filters, showErrorToast])
 
   // データ取得
   const fetchData = useCallback(async () => {
@@ -314,10 +340,10 @@ export default function DailyAnalyticsPage() {
   console.log('monthlyData', monthlyData)
   console.log('periodComparison', periodComparison)
 
-  // インターバル時間（ミリ秒）
+  // 待機時間（ミリ秒）
   const REFRESH_INTERVAL = 5000 // 5秒
 
-  // データ更新とインターバル制御
+  // データ更新と待機制御
   const handleRefresh = useCallback(async () => {
     if (isRefreshing || isInterval) return
 
@@ -330,7 +356,7 @@ export default function DailyAnalyticsPage() {
       showErrorToast(err)
     } finally {
       setIsRefreshing(false)
-      // インターバル開始
+      // 待機開始
       setIsInterval(true)
       setTimeout(() => {
         setIsInterval(false)
@@ -358,9 +384,17 @@ export default function DailyAnalyticsPage() {
 
   const handleExportCSV = useCallback(async () => {
     if (!repository || !filters || !salesSummary || !trendData) return
+
+    // 日付範囲の妥当性チェック
+    const { from, to } = filters.dateRange
+    if (!from || !to || !(from instanceof Date) || !(to instanceof Date)) {
+      showErrorToast(new Error('日付範囲が正しく設定されていません'))
+      return
+    }
+
     setIsExporting(true)
     try {
-      const dateRange = `${format(filters.dateRange.from, 'yyyy-MM-dd')}_${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+      const dateRange = `${format(from, 'yyyy-MM-dd')}_${format(to, 'yyyy-MM-dd')}`
       const fileName = `売上分析レポート_${dateRange}.csv`
 
       // Get detailed daily sales data including booking counts
@@ -375,7 +409,7 @@ export default function DailyAnalyticsPage() {
       csvData.push(['生成日時', new Date().toLocaleString('ja-JP')])
       csvData.push([
         '分析期間',
-        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+        `${format(from, 'yyyy年MM月dd日')} 〜 ${format(to, 'yyyy年MM月dd日')}`,
       ])
       csvData.push([])
       csvData.push(['='.repeat(14)])
@@ -775,7 +809,7 @@ export default function DailyAnalyticsPage() {
       csvData.push(['生成時刻', new Date().toLocaleString('ja-JP')])
       csvData.push([
         'データ期間',
-        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+        `${format(from, 'yyyy年MM月dd日')} 〜 ${format(to, 'yyyy年MM月dd日')}`,
       ])
 
       // CSV出力
@@ -786,6 +820,7 @@ export default function DailyAnalyticsPage() {
       showErrorToast(err)
     } finally {
       setIsExporting(false)
+      setOpenCsvDialog(false)
     }
   }, [
     repository,
@@ -894,7 +929,30 @@ export default function DailyAnalyticsPage() {
 
   return (
     <DashboardSection title="日別売上分析" backLink="/dashboard" backLinkTitle="ダッシュボード">
-      <div className="space-y-6">
+      <div className="relative space-y-6">
+        <Dialog open={openCsvDialog} onOpenChange={setOpenCsvDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>売り上げデータをダウンロード</DialogTitle>
+            </DialogHeader>
+            <DialogDescription>
+              指定期間内の売り上げデータをCSVでダウンロードします。
+            </DialogDescription>
+            <DialogFooter className="gap-4 mt-4">
+              <Button onClick={handleExportCSV} size="sm" disabled={isExporting}>
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                ダウンロード
+              </Button>
+              <Button variant="outline" onClick={() => setOpenCsvDialog(false)}>
+                閉じる
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         {/* エラー表示 */}
         {error && (
           <Alert className="border-destructive">
@@ -905,13 +963,18 @@ export default function DailyAnalyticsPage() {
         <div className="relative">
           {/* フィルター */}
           <div className="flex items-end justify-end gap-4 mb-4">
-            <Button onClick={handleExportCSV} variant="outline" size="sm" disabled={isExporting}>
+            <Button
+              onClick={() => setOpenCsvDialog(true)}
+              variant="outline"
+              size="sm"
+              disabled={isExporting}
+            >
               {isExporting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <FileDown className="h-4 w-4 mr-2" />
               )}
-              データをCSVでダウンロード
+              売り上げデータをダウンロード
             </Button>
             <Button
               onClick={handleRefresh}
@@ -922,7 +985,7 @@ export default function DailyAnalyticsPage() {
               {isRefreshing ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <RefreshCwIcon className="h-4 w-4 mr-2" />
+                <RefreshCwIcon className={`h-4 w-4 mr-2 ${isInterval ? 'animate-spin' : ''}`} />
               )}
               {buttonText}
             </Button>
@@ -1263,7 +1326,7 @@ export default function DailyAnalyticsPage() {
                 <div className="p-4">
                   <div className="space-y-2">
                     <p className="text-2xl font-bold">
-                      ¥{weekdayAnalysis.totalAverage.toLocaleString()}
+                      ¥{Number(weekdayAnalysis.totalAverage.toFixed(0)).toLocaleString()}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       予約数平均:{' '}

@@ -17,6 +17,8 @@ import { CouponTransactionRepository } from '@/services/supabase/repositories/co
 import { fetchMutation } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { validateStringLength, validateDateStrFormat } from '@/convex/utils/validations';
+import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 
 /**
  * 予約IDに紐づくポイントタスクを削除する
@@ -75,43 +77,16 @@ export const sendHourlyReminders = internalAction({
       const nowUTC = Date.now();
       
       // 日本時間での現在時刻を取得（正確なタイムゾーン処理）
-      const nowJST = new Date(nowUTC).toLocaleString('ja-JP', {
-        timeZone: 'Asia/Tokyo',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
+      const nowJST = format(new Date(nowUTC), 'yyyy-MM-dd HH:mm:ss', { locale: ja });
       
       // 3-4時間後の時間帯を計算（UTC時間で）
       const threeHoursLaterUTC = nowUTC + (3 * 60 * 60 * 1000);
       const fourHoursLaterUTC = nowUTC + (4 * 60 * 60 * 1000);
       
       // 日本時間での表示用
-      const threeHoursLaterJST = new Date(threeHoursLaterUTC).toLocaleString('ja-JP', {
-        timeZone: 'Asia/Tokyo',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
+      const threeHoursLaterJST = format(new Date(threeHoursLaterUTC), 'yyyy-MM-dd HH:mm:ss', { locale: ja });
       
-      const fourHoursLaterJST = new Date(fourHoursLaterUTC).toLocaleString('ja-JP', {
-        timeZone: 'Asia/Tokyo',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
+      const fourHoursLaterJST = format(new Date(fourHoursLaterUTC), 'yyyy-MM-dd HH:mm:ss', { locale: ja });
       
       console.log(`リマインダー送信処理開始（JST）: ${nowJST}`);
       console.log(`対象時間帯（JST）: ${threeHoursLaterJST} - ${fourHoursLaterJST}`);

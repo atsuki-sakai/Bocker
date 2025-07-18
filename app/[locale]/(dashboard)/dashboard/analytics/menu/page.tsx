@@ -7,6 +7,14 @@ import { Button } from '@/components/ui/button'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 import { Award, BarChart3, HelpCircle, PieChart as PieChartIcon } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import type {
   SalesSummary,
   RankingData,
@@ -79,11 +87,21 @@ const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => {
   const jstOffset = 9 * 60 * 60 * 1000 // 9時間をミリ秒に変換
   const nowJST = new Date(now.getTime() + jstOffset)
 
+  // 日付が有効かチェック
+  if (isNaN(nowJST.getTime())) {
+    throw new Error('日本時間の取得に失敗しました')
+  }
+
   // 日本時間での現在月の1日を取得
   const currentMonthStart = startOfMonth(nowJST)
 
   // 日本時間での該当月の最終日を取得
   const currentMonthEnd = endOfMonth(nowJST)
+
+  // 日付が有効かチェック
+  if (isNaN(currentMonthStart.getTime()) || isNaN(currentMonthEnd.getTime())) {
+    throw new Error('月次日付範囲の生成に失敗しました')
+  }
 
   console.log('[Menu Analytics] Initial date range setup:', {
     nowJST: nowJST.toISOString(),
@@ -115,6 +133,7 @@ export default function MenuAnalyticsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isInterval, setIsInterval] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [openCsvDialog, setOpenCsvDialog] = useState(false)
   const { showErrorToast } = useErrorHandler()
 
   // データ状態（エンタープライズレベル対応）
@@ -134,9 +153,14 @@ export default function MenuAnalyticsPage() {
   // 初期フィルター設定
   useEffect(() => {
     if (tenantId && orgId && !filters) {
-      setFilters(getInitialFilters(tenantId, orgId))
+      try {
+        setFilters(getInitialFilters(tenantId, orgId))
+      } catch (err) {
+        console.error('初期フィルター設定エラー:', err)
+        showErrorToast(err instanceof Error ? err : new Error('フィルターの初期化に失敗しました'))
+      }
     }
-  }, [tenantId, orgId, filters])
+  }, [tenantId, orgId, filters, showErrorToast])
 
   // エンタープライズレベルのデータ取得（3,000店舗対応）
   const fetchData = useCallback(async () => {
@@ -278,9 +302,17 @@ export default function MenuAnalyticsPage() {
 
   const handleExportCSV = useCallback(async () => {
     if (!repository || !filters || !menuSummary || !menuRanking) return
+
+    // 日付範囲の妥当性チェック
+    const { from, to } = filters.dateRange
+    if (!from || !to || !(from instanceof Date) || !(to instanceof Date)) {
+      showErrorToast(new Error('日付範囲が正しく設定されていません'))
+      return
+    }
+
     setIsExporting(true)
     try {
-      const dateRange = `${format(filters.dateRange.from, 'yyyy-MM-dd')}_${format(filters.dateRange.to, 'yyyy-MM-dd')}`
+      const dateRange = `${format(from, 'yyyy-MM-dd')}_${format(to, 'yyyy-MM-dd')}`
       const fileName = `メニュー分析レポート_${dateRange}.csv`
 
       const csvData = []
@@ -292,7 +324,7 @@ export default function MenuAnalyticsPage() {
       csvData.push(['生成日時', new Date().toLocaleString('ja-JP')])
       csvData.push([
         '分析期間',
-        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+        `${format(from, 'yyyy年MM月dd日')} 〜 ${format(to, 'yyyy年MM月dd日')}`,
       ])
       csvData.push([])
       csvData.push(['='.repeat(14)])
@@ -648,7 +680,7 @@ export default function MenuAnalyticsPage() {
       csvData.push(['生成時刻', new Date().toLocaleString('ja-JP')])
       csvData.push([
         'データ期間',
-        `${format(filters.dateRange.from, 'yyyy年MM月dd日')} 〜 ${format(filters.dateRange.to, 'yyyy年MM月dd日')}`,
+        `${format(from, 'yyyy年MM月dd日')} 〜 ${format(to, 'yyyy年MM月dd日')}`,
       ])
 
       // CSV出力
@@ -659,6 +691,7 @@ export default function MenuAnalyticsPage() {
       showErrorToast(err)
     } finally {
       setIsExporting(false)
+      setOpenCsvDialog(false)
     }
   }, [
     repository,
@@ -800,7 +833,30 @@ export default function MenuAnalyticsPage() {
       backLink="/dashboard"
       backLinkTitle="ダッシュボード"
     >
-      <div className="space-y-6">
+      <div className="relative space-y-6">
+        <Dialog open={openCsvDialog} onOpenChange={setOpenCsvDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>メニュー売上データをダウンロード</DialogTitle>
+            </DialogHeader>
+            <DialogDescription>
+              指定期間内のメニュー売上データをCSVでダウンロードします。
+            </DialogDescription>
+            <DialogFooter className="gap-4 mt-4">
+              <Button onClick={handleExportCSV} size="sm" disabled={isExporting}>
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                ダウンロード
+              </Button>
+              <Button variant="outline" onClick={() => setOpenCsvDialog(false)}>
+                閉じる
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         {/* エラー表示 */}
         {error && (
           <Alert className="border-destructive">
@@ -810,7 +866,7 @@ export default function MenuAnalyticsPage() {
         <div className="flex justify-end gap-4">
           <div className="flex items-end gap-2">
             <Button
-              onClick={handleExportCSV}
+              onClick={() => setOpenCsvDialog(true)}
               variant="outline"
               size="sm"
               disabled={isExporting || loading || !menuSummary}
@@ -820,7 +876,7 @@ export default function MenuAnalyticsPage() {
               ) : (
                 <FileDown className="h-4 w-4 mr-2" />
               )}
-              {isExporting ? 'エクスポート中...' : 'データをCSVでダウンロード'}
+              {isExporting ? 'エクスポート中...' : '売上データをダウンロード'}
             </Button>
             <Button
               onClick={handleRefresh}
@@ -831,7 +887,7 @@ export default function MenuAnalyticsPage() {
               {isRefreshing ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <RefreshCwIcon className="h-4 w-4 mr-2" />
+                <RefreshCwIcon className={`h-4 w-4 mr-2 ${isInterval ? 'animate-spin' : ''}`} />
               )}
               {buttonText}
             </Button>

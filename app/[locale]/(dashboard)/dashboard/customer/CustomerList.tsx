@@ -89,6 +89,10 @@ export default function CustomerList() {
   const [hasMoreAll, setHasMoreAll] = useState(true) // 通常リスト用
   const [hasMoreSearch, setHasMoreSearch] = useState(true) // 検索結果用
 
+  // データ更新の状態管理
+  const [isInterval, setIsInterval] = useState(false)
+  const [intervalTime, setIntervalTime] = useState(10)
+
   // CustomerRepositoryのインスタンスをメモ化
   const customerRepo = useMemo(() => new CustomerRepository(), [])
   const customerExportRepo = useMemo(() => new CustomerExportRepository(), [])
@@ -339,6 +343,8 @@ export default function CustomerList() {
     [displayCustomers]
   )
 
+  const REFRESH_INTERVAL = 10000 // 10秒
+
   // CSVエクスポート処理
   const handleExportCsv = useCallback(async () => {
     if (!tenantId || !orgId) {
@@ -406,6 +412,16 @@ export default function CustomerList() {
     } finally {
       setIsExporting(false)
       setExportProgress(null)
+      // インターバル開始
+      setIsInterval(true)
+      setIntervalTime(REFRESH_INTERVAL / 1000)
+      const interval = setInterval(() => {
+        setIntervalTime((prev) => prev - 1)
+      }, 1000)
+      setTimeout(() => {
+        setIsInterval(false)
+        clearInterval(interval)
+      }, REFRESH_INTERVAL)
     }
   }, [tenantId, orgId, exportType, selectedCustomers, customerExportRepo])
 
@@ -512,7 +528,9 @@ export default function CustomerList() {
                 <Button
                   onClick={handleExportCsv}
                   disabled={
-                    isExporting || (exportType === 'selected' && selectedCustomers.size === 0)
+                    isExporting ||
+                    (exportType === 'selected' && selectedCustomers.size === 0) ||
+                    isInterval
                   }
                   className="gap-2"
                 >
@@ -521,10 +539,15 @@ export default function CustomerList() {
                       <Loader2 className="h-4 w-4 animate-spin" />
                       エクスポート中...
                     </>
+                  ) : isInterval ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      インターバル中 残り{intervalTime}秒
+                    </>
                   ) : (
                     <>
-                      <Download className="h-4 w-4" />
-                      エクスポート
+                      <Download className="h-4 w-4 mr-2" />
+                      顧客データをCSVでダウンロード
                     </>
                   )}
                 </Button>
@@ -684,7 +707,9 @@ export default function CustomerList() {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-sm">{t('noTags')}</span>
+                      <span className="text-muted-foreground text-sm text-nowrap">
+                        {t('noTags')}
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>

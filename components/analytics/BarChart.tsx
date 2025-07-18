@@ -181,8 +181,8 @@ export function BarChart({
                     width={120}
                     tickFormatter={(value: string) => {
                       // 長いメニュー名を省略
-                      if (value.length > 12) {
-                        return value.substring(0, 12) + '...'
+                      if (value.length > 9) {
+                        return value.substring(0, 9) + '...'
                       }
                       return value
                     }}
