@@ -18,7 +18,7 @@ import {
 import { toast } from 'sonner'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { Mail, RefreshCw, Trash2, Clock, AlertCircle, Users, UserPlus } from 'lucide-react'
+import { Mail, Trash2, Clock, AlertCircle, Users, UserPlus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -103,43 +103,6 @@ export default function InviteManagement() {
 
   const isLoading = pendingStaff === undefined
 
-  // 招待を再送する関数
-  const resendInvitation = async (invitation: StaffInvitation) => {
-    setIsProcessing(true)
-    try {
-      const response = await fetch('/api/clerk/staff/invitations/resend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          staff_id: invitation.staff_id,
-          invitation_id: invitation.invitation_id,
-          org_id: orgId,
-          email: invitation.email,
-          role: invitation.metadata?.role,
-        }),
-      })
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json()
-          throw new Error(data.error || '招待の再送に失敗しました')
-        } else {
-          throw new Error('招待の再送に失敗しました')
-        }
-      }
-
-      toast.success(`${invitation.email} に招待メールを再送しました`)
-    } catch (error) {
-      console.error('Failed to resend invitation:', error)
-      showErrorToast(error)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
   // 招待をキャンセルする関数
   const cancelInvitation = async (invitation: StaffInvitation) => {
     setIsProcessing(true)
@@ -193,16 +156,20 @@ export default function InviteManagement() {
     <>
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            スタッフ招待管理
-            {invitations.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {invitations.length}件
-              </Badge>
-            )}
-          </CardTitle>
-          {/* Convexは自動更新されるため、更新ボタンは不要 */}
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              スタッフ招待管理
+              {invitations.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {invitations.length}件
+                </Badge>
+              )}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              招待を削除後、新しい招待を作成してメールを再送できます
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -273,16 +240,6 @@ export default function InviteManagement() {
                       </div>
                       <div className="flex items-center justify-end gap-2 w-full mt-4">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => resendInvitation(invitation)}
-                          disabled={isProcessing}
-                          className="flex items-center gap-1 bg-link text-link-foreground hover:text-link-foreground"
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          {invitation.invitation_id ? '再送' : '送信'}
-                        </Button>
-                        <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
@@ -312,6 +269,7 @@ export default function InviteManagement() {
             <DialogTitle>スタッフ招待を削除しますか？</DialogTitle>
             <DialogDescription>
               {selectedInvitation?.name} ({selectedInvitation?.email}) の招待を削除します。
+              削除後、必要に応じて新しい招待を作成してください。
               この操作は元に戻すことができません。
             </DialogDescription>
           </DialogHeader>
