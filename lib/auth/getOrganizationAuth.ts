@@ -2,7 +2,9 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation'
 import { UserMetadata } from '@/services/webhook/clerk/types'
 import { Id } from '@/convex/_generated/dataModel'
-import { Role } from '@/convex/types'
+import { Role, SubscriptionPlanName } from '@/convex/types'
+import { fetchQuery } from 'convex/nextjs'
+import { api } from '@/convex/_generated/api'
 
 /**
  * サーバー上でConvexの認証を行う（API Route用）
@@ -18,6 +20,7 @@ export async function getOrganizationAuth(): Promise<{
     orgId: Id<'organization'>
     role: Role
     token: string
+    planName: SubscriptionPlanName | null
 }> {
     console.log('[getOrganizationAuth] Starting authentication check')
     
@@ -48,7 +51,13 @@ export async function getOrganizationAuth(): Promise<{
       throw new Error('Unauthorized: Invalid user metadata')
     }
 
-    return { userId, orgId: metadata.org_id, role: metadata.role, token, tenantId: metadata.tenant_id }
+    const subscription = await fetchQuery(
+      api.tenant.subscription.query.getSubscription,
+      { tenant_id: metadata.tenant_id },
+      { token: token }
+    )
+
+  return { userId, orgId: metadata.org_id, role: metadata.role, token, tenantId: metadata.tenant_id, planName: subscription?.plan_name ?? null }
   }
 
 /**
@@ -60,6 +69,7 @@ export async function getOrganizationAuthForPage(): Promise<{
     orgId: Id<'organization'>
     role: Role
     token: string
+    planName: SubscriptionPlanName | null
 }> {
     const { userId, getToken } = await auth()
     const user = await currentUser()
@@ -68,13 +78,26 @@ export async function getOrganizationAuthForPage(): Promise<{
     if (!userId || !token || !user) {
       redirect('/sign-in')
     }
+
   
     const metadata = user.publicMetadata as UserMetadata
+
+
   
     if (!metadata.org_id || !metadata.tenant_id || metadata.role === null) {
       console.error('ユーザー情報が不正です。必要なメタデータが不足しています')
       redirect('/sign-in')
     }
 
-    return { userId, orgId: metadata.org_id, role: metadata.role, token, tenantId: metadata.tenant_id }
+    const subscription = await fetchQuery(
+      api.tenant.subscription.query.getSubscription,
+      { tenant_id: metadata.tenant_id },
+      { token: token }
+    )
+    if (!subscription) {
+      console.error('サブスクリプション情報が見つかりません')
+      redirect('/sign-in')
+    }
+
+    return { userId, orgId: metadata.org_id, role: metadata.role, token, tenantId: metadata.tenant_id, planName: subscription?.plan_name ?? null }
   }

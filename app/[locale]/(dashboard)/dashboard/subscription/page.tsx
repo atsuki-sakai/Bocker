@@ -2,12 +2,18 @@ import SubscriptionForm from './SubscriptionForm'
 import { preloadQuery, preloadedQueryResult } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { redirect } from 'next/navigation'
-import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
+import { getOrganizationAuthForPage } from '@/lib/auth/getOrganizationAuth'
 import { Suspense } from 'react'
-import { Loading } from '@/components/common'
+import { Loading, UnauthorizedAccess } from '@/components/common'
+import { hasAccess } from '@/lib/utils'
 
 export default async function SubscriptionPage() {
-  const { userId, orgId, token } = await getOrganizationAuth()
+  const { userId, orgId, token, role, planName } = await getOrganizationAuthForPage()
+
+  // アクセス制御：admin権限が必要
+  if (!role || !hasAccess(role, planName ?? 'UNKNOWN', 'admin', 'LITE')) {
+    return <UnauthorizedAccess />
+  }
 
   const tenantPreloaded = await preloadQuery(
     api.tenant.query.findByUserId,

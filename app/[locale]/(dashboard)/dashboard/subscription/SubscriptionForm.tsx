@@ -26,7 +26,7 @@ interface SubscriptionFormProps {
   subscriptionPreloaded: Preloaded<typeof api.tenant.subscription.query.findByStripeCustomerId>
 }
 
-export default function SubscriptionForm({
+function SubscriptionForm({
   tenantId,
   orgId,
   tenantPreloaded,
@@ -403,3 +403,5 @@ export default function SubscriptionForm({
     </div>
   )
 }
+
+export default SubscriptionForm
