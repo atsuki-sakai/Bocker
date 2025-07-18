@@ -96,15 +96,9 @@ export const cleanupExpiredPendingReservations = internalMutation({
     // 期限切れのpending予約を取得
     const expiredReservations = await ctx.db
       .query('reservation')
-      .withIndex('status_start_time_archive', (q) =>
+      .withIndex('by_status_pending_expiry_archive', (q) =>
         q.eq('status', 'pending')
-      )
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('is_archive'), false),
-          q.lte(q.field('pending_expiry'), now),
-          q.eq(q.field('status'), 'pending')
-        )
+        .lte('pending_expiry', now)
       )
       .take(100); // バッチサイズ制限
 
