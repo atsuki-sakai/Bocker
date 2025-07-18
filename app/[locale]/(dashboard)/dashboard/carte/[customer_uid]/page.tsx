@@ -98,7 +98,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
   const tCommon = useTranslations('common')
   const tCarte = useTranslations('dashboard.carte')
   const locale = useLocale() as SupportedLocale
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
 
   const [customerUid, setCustomerUid] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<CustomerWithDetails | null>(null)
@@ -339,20 +339,22 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/customer/${customerUid}/edit`}>
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      {tCarte('detail.customerEdit')}
-                    </Link>
-                  </Button>
-                  <Button size="sm" asChild>
-                    <Link href={`/dashboard/carte/${customerUid}/edit`}>
-                      <Pencil className="w-4 h-4 mr-2" />
-                      {tCarte('detail.edit')}
-                    </Link>
-                  </Button>
-                </div>
+                {(role === 'admin' || role === 'owner' || role === 'manager') && (
+                  <div className="flex gap-3">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/dashboard/customer/${customerUid}/edit`}>
+                        <UserCheck className="w-4 h-4 mr-2" />
+                        {tCarte('detail.customerEdit')}
+                      </Link>
+                    </Button>
+                    <Button size="sm" asChild>
+                      <Link href={`/dashboard/carte/${customerUid}/edit`}>
+                        <Pencil className="w-4 h-4 mr-2" />
+                        {tCarte('detail.edit')}
+                      </Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 

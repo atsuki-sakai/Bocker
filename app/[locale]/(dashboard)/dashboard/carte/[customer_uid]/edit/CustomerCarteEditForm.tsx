@@ -1,5 +1,6 @@
 'use client'
 
+import { withManagerAccess } from '@/components/common'
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -164,7 +165,7 @@ const getScalpConditionOptions = (t: ReturnType<typeof useTranslations>) => [
   { value: 'sensitive', label: t('edit.scalpCondition.sensitive') },
 ]
 
-export default function CustomerCarteEditForm() {
+function CustomerCarteEditForm() {
   const router = useRouter()
   const { customer_uid } = useParams()
   const tCarte = useTranslations('dashboard.carte')
@@ -1069,3 +1070,5 @@ export default function CustomerCarteEditForm() {
     </form>
   )
 }
+
+export default withManagerAccess(CustomerCarteEditForm)

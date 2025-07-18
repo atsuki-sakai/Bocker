@@ -714,6 +714,7 @@ export function sanitizeFileName(fileName: string): string {
  * @param requiredPlan    対象画面に必要な最低プラン
  * @returns               アクセス可能かどうか
  */
+
 export function hasAccess(
   userRole: Role,
   userPlan: SubscriptionPlanName,

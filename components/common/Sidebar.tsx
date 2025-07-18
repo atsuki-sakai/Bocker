@@ -155,7 +155,7 @@ const SidebarNavigation = memo(
                 className={classNames(
                   pathname === `/dashboard/staff/${staffId}/my-page`
                     ? 'text-accent-foreground bg-accent'
-                    : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                    : 'text-neon bg-neon-foreground border border-neon  font-light',
                   'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                 )}
               >
@@ -164,7 +164,7 @@ const SidebarNavigation = memo(
                   className={classNames(
                     pathname === `/dashboard/staff/${staffId}/my-page`
                       ? 'text-accent-foreground bg-accent'
-                      : 'text-primary',
+                      : 'text-neon',
                     'size-4 shrink-0'
                   )}
                 />

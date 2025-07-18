@@ -1,5 +1,6 @@
 'use client'
 
+import { withManagerAccess } from '@/components/common'
 import { useParams } from 'next/navigation'
 import { z } from 'zod'
 import { Gender } from '@/convex/types'
@@ -138,9 +139,9 @@ type CompleteCustomerData = {
   customerPoints: RowType<'customer_points'> | null
 }
 
-export default function CustomerEditForm() {
+function CustomerEditForm() {
   const params = useParams()
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
   const router = useRouter()
   const customerUid = params.customer_uid as string
   const t = useTranslations('customers')
@@ -359,22 +360,24 @@ export default function CustomerEditForm() {
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <div className="flex flex-col gap-4">
-            {/* ポイントフィールド */}
-            <div>
-              <ZodTextField
-                label={t('totalPoints')}
-                register={register}
-                errors={errors}
-                name="total_points"
-                placeholder={t('placeholder.totalPoints')}
-                type="number"
-              />
-              <span className="text-xs font-normal text-muted-foreground">
-                {t('pointsChangeWarning')}
-              </span>
+          {(role === 'admin' || role === 'owner') && (
+            <div className="flex flex-col gap-4">
+              {/* ポイントフィールド */}
+              <div>
+                <ZodTextField
+                  label={t('totalPoints')}
+                  register={register}
+                  errors={errors}
+                  name="total_points"
+                  placeholder={t('placeholder.totalPoints')}
+                  type="number"
+                />
+                <span className="text-xs font-normal text-muted-foreground">
+                  {t('pointsChangeWarning')}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-6">
             <div>
@@ -476,3 +479,5 @@ export default function CustomerEditForm() {
     </div>
   )
 }
+
+export default withManagerAccess(CustomerEditForm)

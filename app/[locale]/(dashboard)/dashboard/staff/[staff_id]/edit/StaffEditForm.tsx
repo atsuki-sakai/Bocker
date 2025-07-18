@@ -513,7 +513,6 @@ export default function StaffEditForm() {
               <CardContent className="space-y-8 pt-6">
                 {/* 基本情報セクション */}
                 <div>
-                  <Separator className="my-8 md:my-12 w-full" />
                   <div className="flex flex-col md:flex-row gap-6 pb-4 w-full overflow-hidden">
                     <div className="w-full md:w-2/5 flex-shrink-0">
                       <div className="mb-2 flex items-center">
@@ -784,7 +783,7 @@ export default function StaffEditForm() {
                         </div>
                       </div>
                     </div>
-                    <Separator />
+                    <Separator className="my-8 md:my-12 w-full" />
                   </>
                 )}
 

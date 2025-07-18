@@ -69,7 +69,7 @@ export default function CustomerList() {
   const tCommon = useTranslations('common')
   const locale = useLocale() as SupportedLocale
   const router = useRouter()
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [debouncedSearchTerm] = useDebounce(searchTerm, 1000)
   // 通常リスト用と検索結果用で状態を分離
@@ -462,98 +462,100 @@ export default function CustomerList() {
           </div>
 
           {/* CSVエクスポートボタン */}
-          <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                顧客データをダウンロード
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>顧客データCSVエクスポート</DialogTitle>
-                <DialogDescription>顧客データをCSV形式でダウンロードできます</DialogDescription>
-              </DialogHeader>
+          {(role === 'admin' || role === 'owner') && (
+            <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  顧客データをダウンロード
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>顧客データCSVエクスポート</DialogTitle>
+                  <DialogDescription>顧客データをCSV形式でダウンロードできます</DialogDescription>
+                </DialogHeader>
 
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="export-type">エクスポート対象</Label>
-                  <Select
-                    value={exportType}
-                    onValueChange={(value: 'all' | 'selected') => setExportType(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="エクスポート対象を選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">全ての顧客</SelectItem>
-                      <SelectItem value="selected" disabled={selectedCustomers.size === 0}>
-                        選択した顧客 ({selectedCustomers.size}件)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {exportType === 'selected' && selectedCustomers.size === 0 && (
-                    <p className="text-sm text-muted-foreground">※ 先に顧客を選択してください</p>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="export-type">エクスポート対象</Label>
+                    <Select
+                      value={exportType}
+                      onValueChange={(value: 'all' | 'selected') => setExportType(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="エクスポート対象を選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">全ての顧客</SelectItem>
+                        <SelectItem value="selected" disabled={selectedCustomers.size === 0}>
+                          選択した顧客 ({selectedCustomers.size}件)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {exportType === 'selected' && selectedCustomers.size === 0 && (
+                      <p className="text-sm text-muted-foreground">※ 先に顧客を選択してください</p>
+                    )}
+                  </div>
+
+                  {exportProgress && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>進捗状況</span>
+                        <span>{exportProgress.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${exportProgress.percentage}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {exportProgress.current.toLocaleString()} /{' '}
+                        {exportProgress.total.toLocaleString()} 件
+                      </p>
+                    </div>
                   )}
                 </div>
 
-                {exportProgress && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>進捗状況</span>
-                      <span>{exportProgress.percentage}%</span>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${exportProgress.percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {exportProgress.current.toLocaleString()} /{' '}
-                      {exportProgress.total.toLocaleString()} 件
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsExportDialogOpen(false)}
-                  disabled={isExporting}
-                >
-                  キャンセル
-                </Button>
-                <Button
-                  onClick={handleExportCsv}
-                  disabled={
-                    isExporting ||
-                    (exportType === 'selected' && selectedCustomers.size === 0) ||
-                    isInterval
-                  }
-                  className="gap-2"
-                >
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      エクスポート中...
-                    </>
-                  ) : isInterval ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      インターバル中 残り{intervalTime}秒
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      顧客データをCSVでダウンロード
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsExportDialogOpen(false)}
+                    disabled={isExporting}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    onClick={handleExportCsv}
+                    disabled={
+                      isExporting ||
+                      (exportType === 'selected' && selectedCustomers.size === 0) ||
+                      isInterval
+                    }
+                    className="gap-2"
+                  >
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        エクスポート中...
+                      </>
+                    ) : isInterval ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        インターバル中 残り{intervalTime}秒
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        顧客データをCSVでダウンロード
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         {/* 検索状態の可視化 */}

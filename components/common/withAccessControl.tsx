@@ -82,6 +82,13 @@ export const withOwnerAccess = <P extends object>(WrappedComponent: ComponentTyp
 }
 
 /**
+ * 管理者以上のアクセス権限が必要なページを保護
+ */
+export const withAdminAccess = <P extends object>(WrappedComponent: ComponentType<P>) => {
+  return withRoleAccess(WrappedComponent, 'admin')
+}
+
+/**
  * マネージャー以上のアクセス権限が必要なページを保護
  */
 export const withManagerAccess = <P extends object>(WrappedComponent: ComponentType<P>) => {

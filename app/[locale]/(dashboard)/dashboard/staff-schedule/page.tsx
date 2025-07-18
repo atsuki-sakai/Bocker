@@ -1,7 +1,7 @@
 // カレンダーの日付表示部分を修正し、予約がある日には特別なマークを表示する
 'use client'
 
-
+import { withManagerAccess } from '@/components/common'
 import { ChevronLeft, ChevronRight, Ellipsis, Loader2 } from 'lucide-react'
 import { DashboardSection } from '@/components/common'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
@@ -51,7 +51,7 @@ const DAY_OF_WEEK_VALUES = [
   { key: 'sunday', value: 7 },
 ] as const
 
-export default function StaffSchedulePage() {
+function StaffSchedulePage() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -813,3 +813,5 @@ export default function StaffSchedulePage() {
     </DashboardSection>
   )
 }
+
+export default withManagerAccess(StaffSchedulePage)

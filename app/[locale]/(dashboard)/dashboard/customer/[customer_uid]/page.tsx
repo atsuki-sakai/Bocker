@@ -1,6 +1,6 @@
 'use client'
 
-import { DashboardSection, withManagerAccess } from '@/components/common' // Assuming this is your layout component
+import { DashboardSection } from '@/components/common' // Assuming this is your layout component
 import { useParams } from 'next/navigation'
 import { Loading } from '@/components/common' // Assuming this is your loading component
 import { Badge } from '@/components/ui/badge'
@@ -64,7 +64,7 @@ type PointTransaction = RowType<'point_transaction'>
 function CustomerDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId, role, isLoaded } = useTenantAndOrganization()
   const customerUid = params.customer_uid as string
   const t = useTranslations('customers')
   const tCommon = useTranslations('common')
@@ -213,10 +213,14 @@ function CustomerDetailPage() {
       title={t('customerDetails')}
       backLink="/dashboard/customer"
       backLinkTitle={t('list')}
-      infoBtn={{
-        text: t('edit'),
-        link: `/dashboard/customer/${customerUid}/edit`,
-      }}
+      infoBtn={
+        role === 'admin' || role === 'owner' || role === 'manager'
+          ? {
+              text: t('edit'),
+              link: `/dashboard/customer/${customerUid}/edit`,
+            }
+          : undefined
+      }
     >
       <div className="min-h-screen bg-gradient-to-br from-background to-secondary pb-8">
         <div className="space-y-4 md:space-y-8">
@@ -239,16 +243,18 @@ function CustomerDetailPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center justify-end w-fit gap-2">
-                  <Button
-                    onClick={(e) => handleShowDeleteModal(e, customerUid)}
-                    variant="destructive"
-                    size="sm"
-                    className="text-xs"
-                  >
-                    {t('delete')}
-                  </Button>
-                </div>
+                {(role === 'admin' || role === 'owner' || role === 'manager') && (
+                  <div className="flex items-center justify-end w-fit gap-2">
+                    <Button
+                      onClick={(e) => handleShowDeleteModal(e, customerUid)}
+                      variant="destructive"
+                      size="sm"
+                      className="text-xs"
+                    >
+                      {t('delete')}
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="flex items-center gap-3 p-2 md:p-4 rounded-lg bg-secondary border border-border">
@@ -648,4 +654,4 @@ function CustomerDetailPage() {
   )
 }
 
-export default withManagerAccess(CustomerDetailPage);
+export default CustomerDetailPage
