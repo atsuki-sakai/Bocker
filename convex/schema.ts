@@ -363,6 +363,7 @@ const organization = defineTable({
   stripe_account_id: v.optional(v.string()), // Stripe Connect Account ID
   stripe_connect_status: v.optional(stripeConnectStatusType), // Stripe Connect ステータス
   stripe_connect_created_at: v.optional(v.number()), // Stripe Connect 作成日時
+  tutorial_end: v.optional(v.boolean()), // チュートリアル完了フラグ
   ...CommonFields,
 })
 .index('by_stripe_account_archive', ['stripe_account_id', 'is_archive']) // user_idとstripe_account_idで取得

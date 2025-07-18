@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { usePaginatedQuery, useQuery } from 'convex/react'
+import { useEffect, useMemo } from 'react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -97,13 +97,11 @@ export const Tutorial = () => {
     ],
     []
   )
-  const [completedSteps, setCompletedSteps] = useState<number[]>([])
-  const [missingItems, setMissingItems] = useState<string[]>([])
 
-  // Convex Queries
-  const org = useQuery(
-    api.organization.config.query.findByTenantAndOrg,
-    tenantId && orgId
+  // 統合されたチュートリアル状態取得
+  const tutorialStatus = useQuery(
+    api.organization.tutorial.query.checkTutorialStatus,
+    tenantId && orgId && ready
       ? {
           tenant_id: tenantId,
           org_id: orgId,
@@ -111,153 +109,34 @@ export const Tutorial = () => {
       : 'skip'
   )
 
-  const weekSchedules = useQuery(
-    api.organization.week_schedule.query.getAllByTenantAndOrg,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip'
-  )
+  // チュートリアル完了ミューテーション
+  const completeTutorial = useMutation(api.organization.tutorial.mutation.completeTutorial)
 
-  const menus = usePaginatedQuery(
-    api.menu.query.listByTenantAndOrg,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip',
-    {
-      initialNumItems: 100,
-    }
-  )
-
-  const staffList = usePaginatedQuery(
-    api.staff.query.list,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip',
-    {
-      initialNumItems: 100,
-    }
-  )
-
-  const reservationConfig = useQuery(
-    api.organization.reservation_config.query.findByTenantAndOrg,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip'
-  )
-
-  // 組織内で少なくとも一人のスタッフがスケジュール設定されているかチェック
-  const hasAnyStaffSchedule = useQuery(
-    api.staff.week_schedule.query.hasAnyStaffSchedule,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip'
-  )
-
-  const apiConfig = useQuery(
-    api.organization.api_config.query.findByTenantAndOrg,
-    tenantId && orgId
-      ? {
-          tenant_id: tenantId,
-          org_id: orgId,
-        }
-      : 'skip'
-  )
-
-  // Check completed steps and missing items
+  // チュートリアル完了時の処理
   useEffect(() => {
-    const completed: number[] = []
-    const missing: string[] = []
-
-    // Step 1: 店舗基本情報
-    if (org?.org.org_name && org?.config?.address) {
-      completed.push(1)
-    } else {
-      missing.push(t(tutorialSteps[0].checkLabelKey))
+    if (tutorialStatus && !tutorialStatus.tutorialEnd && tutorialStatus.completedSteps.length === tutorialSteps.length) {
+      // 全ステップ完了時にフラグを更新
+      completeTutorial({
+        tenant_id: tenantId!,
+        org_id: orgId!,
+      }).catch(console.error)
     }
+  }, [tutorialStatus, tutorialSteps.length, completeTutorial, tenantId, orgId])
 
-    // Step 2: 営業時間
-    if (weekSchedules && weekSchedules.length > 0) {
-      completed.push(2)
-    } else {
-      missing.push(t(tutorialSteps[1].checkLabelKey))
-    }
-
-    // Step 3: 予約設定
-    if (reservationConfig) {
-      completed.push(3)
-    } else {
-      missing.push(t(tutorialSteps[2].checkLabelKey))
-    }
-
-    // Step 4: メニュー
-    if (menus && menus.results.length > 0) {
-      completed.push(4)
-    } else {
-      missing.push(t(tutorialSteps[3].checkLabelKey))
-    }
-
-    // Step 6: スタッフ
-    if (staffList && staffList.results.length > 0) {
-      completed.push(5)
-    } else {
-      missing.push(t(tutorialSteps[4].checkLabelKey))
-    }
-
-    // Step 7: スタッフ勤務スケジュール（一人でもスケジュールが設定されていればOK）
-    if (hasAnyStaffSchedule === true) {
-      completed.push(6)
-    } else {
-      missing.push(t(tutorialSteps[5].checkLabelKey))
-    }
-
-    setCompletedSteps(completed)
-    setMissingItems(missing)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    org,
-    weekSchedules,
-    menus?.results.length,
-    staffList?.results.length,
-    reservationConfig,
-    hasAnyStaffSchedule,
-    apiConfig,
-    t,
-  ])
-
-  const isStepCompleted = (stepId: number) => completedSteps.includes(stepId)
+  const isStepCompleted = (stepId: number) => tutorialStatus?.completedSteps.includes(stepId) || false
   const isAllRequiredStepsCompleted = () =>
     tutorialSteps.filter((s) => s.required).every((s) => isStepCompleted(s.id))
 
-  const progress = (completedSteps.length / tutorialSteps.length) * 100
+  const progress = tutorialStatus ? (tutorialStatus.completedSteps.length / tutorialSteps.length) * 100 : 0
 
-  // Check if all data is loaded
-  const isDataLoading =
-    !ready ||
-    org === undefined ||
-    weekSchedules === undefined ||
-    menus === undefined ||
-    staffList === undefined ||
-    reservationConfig === undefined ||
-    apiConfig === undefined ||
-    hasAnyStaffSchedule === undefined
-
-  if (isDataLoading) {
+  // チュートリアル完了済みまたはデータ未ロードの場合
+  if (!ready || !tutorialStatus) {
     return <Loading />
+  }
+
+  // チュートリアル完了済みの場合は何も表示しない
+  if (tutorialStatus.tutorialEnd) {
+    return null
   }
   return (
     <div
@@ -348,7 +227,7 @@ export const Tutorial = () => {
               )
             })}
 
-            {missingItems.length > 0 && missingItems.length < 3 && (
+            {tutorialStatus.missingItems.length > 0 && tutorialStatus.missingItems.length < 3 && (
               <Card className="bg-warning border-warning-foreground text-warning-foreground">
                 <CardHeader className="flex items-center gap-2">
                   <AlertTitle className="flex items-center gap-2 text-warning-foreground font-bold">
@@ -359,7 +238,7 @@ export const Tutorial = () => {
                 <CardContent>
                   <p className="text-xs">{t('missingItems.description')}</p>
                   <ul className="list-disc pl-5 mt-2">
-                    {missingItems.map((item, index) => (
+                    {tutorialStatus.missingItems.map((item, index) => (
                       <li key={index} className="text-sm font-bold">
                         {item}
                       </li>
