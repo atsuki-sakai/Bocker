@@ -149,9 +149,8 @@ export function useOrganizationReservations({
   const [supabasePage, setSupabasePage] = useState(1);
   const [supabaseHasMore, setSupabaseHasMore] = useState(true);
   const [stats, setStats] = useState<UseOrganizationReservationsReturn['stats']>(null);
-  
+
   const reservationRepo = useMemo(() => new ReservationRepository(), []);
-  
   // Convexからリアルタイムデータを取得（全ステータスを含む）
   // データの鮮度を考慮して、最近のデータはConvexからも取得する
   const shouldFetchFromConvex = !status || status === 'confirmed' || status === 'pending' || status === 'cancelled' || status === 'completed' || status === 'all';
@@ -403,6 +402,7 @@ export function useOrganizationReservations({
     }
   }, [tenantId, orgId, startDate, endDate, fetchStats]);
   
+
   // 初回読み込み
   useEffect(() => {
     if (tenantId && orgId) {
@@ -410,12 +410,13 @@ export function useOrganizationReservations({
       fetchSupabaseReservations(1, true);
     }
   }, [tenantId, orgId, status, startDate, endDate, fetchSupabaseReservations]);
+
   
   // Convex予約詳細の取得と統合（現在は無効化）
   // TODO: 必要に応じて詳細情報取得ロジックを実装
   // 現在は組織レベルの一覧表示では詳細情報は不要なため、パフォーマンスのために無効化
   
-  // データの統合とソート
+  // データの統合とソート（顧客名統合処理付き）
   const integratedReservations = useMemo(() => {
     console.log('[useOrganizationReservations] Data integration:', {
       status,
@@ -468,19 +469,7 @@ export function useOrganizationReservations({
       
       return acc;
     }, [] as IntegratedReservation[]);
-    
-    console.log('[useOrganizationReservations] Final integrated data:', {
-      uniqueCount: uniqueReservations.length,
-      dateFilter: { startDate, endDate },
-      finalSample: uniqueReservations.slice(0, 5).map(r => ({ 
-        id: r.id, 
-        date: r.date, 
-        status: r.status, 
-        source: r.source,
-        customerName: r.customerName 
-      }))
-    });
-    
+
     // 日時でソート（早い順）
     return uniqueReservations.sort((a, b) => {
       const aTime = Number(a.startTimeUnix) || 0;

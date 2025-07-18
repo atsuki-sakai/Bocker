@@ -3,6 +3,27 @@ import type { RowType } from '@/services/supabase/SupabaseService';
 import { supabaseClientService } from '@/services/supabase/SupabaseService';
 import { throwSupabaseError } from '@/services/supabase/utils/errors';
 
+// 最適化されたRPC関数のレスポンス型定義
+interface OptimizedReservationRpcResponse {
+  reservations: Array<{
+    reservation: RowType<'reservation'>;
+    detail: RowType<'reservation_detail'> | null;
+  }>;
+  total_count: number;
+  current_page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+interface ExportReservationRpcResponse {
+  reservations: Array<{
+    reservation: RowType<'reservation'>;
+    detail: RowType<'reservation_detail'> | null;
+  }>;
+  total_count: number;
+  processing_time_ms: number;
+}
+
 /**
  * 予約 (reservation) テーブル操作リポジトリ
  * 
@@ -488,6 +509,211 @@ export class ReservationRepository extends BaseRepository<'reservation'> {
           error: error,
           severity: 'medium',
           details: { tenantId, orgId, startDate, endDate }
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 最適化された予約データ取得（N+1クエリ問題解決版）
+   * JOIN クエリを使用して一度のクエリで予約と詳細情報を取得します。
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param options - 取得オプション
+   * @returns 予約と詳細情報
+   */
+  async findByOrganizationWithDetailsOptimized(
+    tenantId: string,
+    orgId: string,
+    options?: {
+      page?: number;
+      pageSize?: number;
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+      includeCount?: boolean;
+    }
+  ): Promise<{ 
+    data: Array<{
+      reservation: RowType<'reservation'>;
+      detail: RowType<'reservation_detail'> | null;
+    }>; 
+    count: number | null;
+    currentPage: number;
+    pageSize: number;
+    hasMore: boolean;
+  }> {
+    console.log(`[ReservationRepository] findByOrganizationWithDetailsOptimized: tenantId=${tenantId}, orgId=${orgId}`);
+    
+    try {
+      const page = options?.page || 1;
+      const pageSize = options?.pageSize || 10;
+      const status = options?.status;
+      const startDate = options?.startDate;
+      const endDate = options?.endDate;
+      const includeCount = options?.includeCount !== false; // デフォルトでtrueキ
+
+      // RPC関数を呼び出し
+      const { data, error } = await this.supabaseServiceInstance.rpc<OptimizedReservationRpcResponse>(
+        'get_reservations_with_details_optimized',
+        {
+          p_tenant_id: tenantId,
+          p_org_id: orgId,
+          p_page: page,
+          p_page_size: pageSize,
+          p_status: status || null,
+          p_start_date: startDate || null,
+          p_end_date: endDate || null,
+          p_include_count: includeCount
+        }
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          data: [],
+          count: 0,
+          currentPage: page,
+          pageSize: pageSize,
+          hasMore: false
+        };
+      }
+
+      const result = data[0];
+      const reservations = result.reservations || [];
+      const totalCount = result.total_count;
+      const hasMore = result.has_more;
+
+      // データを適切な型に変換（型安全）
+      const formattedData = reservations.map((item) => ({
+        reservation: item.reservation,
+        detail: item.detail
+      }));
+
+      return {
+        data: formattedData,
+        count: totalCount >= 0 ? totalCount : null,
+        currentPage: page,
+        pageSize: pageSize,
+        hasMore: hasMore
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throwSupabaseError({
+          callFunc: 'ReservationRepository.findByOrganizationWithDetailsOptimized',
+          message: error.message,
+          error: error,
+          severity: 'high',
+          details: { tenantId, orgId, options }
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 大量データエクスポート専用の最適化された取得関数
+   * 一度に大量のデータを効率的に取得します。
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param options - 取得オプション
+   * @returns 予約と詳細情報の配列
+   */
+  async exportAllReservationsOptimized(
+    tenantId: string,
+    orgId: string,
+    options?: {
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+      batchSize?: number;
+    }
+  ): Promise<{ 
+    data: Array<{
+      reservation: RowType<'reservation'>;
+      detail: RowType<'reservation_detail'> | null;
+    }>; 
+    totalCount: number;
+    processingTimeMs: number;
+  }> {
+    console.log(`[ReservationRepository] exportAllReservationsOptimized: tenantId=${tenantId}, orgId=${orgId}`);
+    
+    try {
+      const status = options?.status;
+      const startDate = options?.startDate;
+      const endDate = options?.endDate;
+      const batchSize = options?.batchSize || 5000;
+      
+      // RPC関数を呼び出し
+      const { data, error } = await this.supabaseServiceInstance.rpc<ExportReservationRpcResponse>(
+        'export_all_reservations_optimized',
+        {
+          p_tenant_id: tenantId,
+          p_org_id: orgId,
+          p_status: status || null,
+          p_start_date: startDate || null,
+          p_end_date: endDate || null,
+          p_batch_size: batchSize
+        }
+      );
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          data: [],
+          totalCount: 0,
+          processingTimeMs: 0
+        };
+      }
+
+      const result = data[0];
+      const reservations = result.reservations || [];
+      const totalCount = result.total_count;
+      const processingTimeMs = result.processing_time_ms;
+
+      console.log(`[ReservationRepository] Raw result:`, { 
+        reservationsType: typeof reservations, 
+        reservationsLength: Array.isArray(reservations) ? reservations.length : 'not array',
+        reservations: reservations
+      });
+
+      // JSONBデータを適切な型に変換
+      let formattedData: { reservation: RowType<'reservation'>; detail: RowType<'reservation_detail'> | null }[] = [];
+      if (Array.isArray(reservations)) {
+        formattedData = reservations.map((item: { reservation: RowType<'reservation'>; detail: RowType<'reservation_detail'> | null }) => ({
+          reservation: item.reservation as RowType<'reservation'>,
+          detail: item.detail as RowType<'reservation_detail'> | null
+        }));
+      } else if (reservations && typeof reservations === 'object') {
+        // JSONBが配列として正しく解析されていない場合
+        const parsedReservations = Array.isArray(reservations) ? reservations : [reservations];
+        formattedData = parsedReservations.map((item: { reservation: RowType<'reservation'>; detail: RowType<'reservation_detail'> | null }) => ({
+          reservation: item.reservation as RowType<'reservation'>,
+          detail: item.detail as RowType<'reservation_detail'> | null
+        }));
+      }
+
+      console.log(`[ReservationRepository] exportAllReservationsOptimized completed: ${formattedData.length} records in ${processingTimeMs}ms`);
+
+      return {
+        data: formattedData,
+        totalCount: totalCount,
+        processingTimeMs: processingTimeMs
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throwSupabaseError({
+          callFunc: 'ReservationRepository.exportAllReservationsOptimized',
+          message: error.message,
+          error: error,
+          severity: 'high',
+          details: { tenantId, orgId, options }
         });
       }
       throw error;
