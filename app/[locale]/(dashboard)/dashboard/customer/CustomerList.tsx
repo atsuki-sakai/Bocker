@@ -3,7 +3,16 @@
 import { useRouter } from '@/i18n/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
-import { Mail, Phone, Calendar, ChevronDown, Search, RefreshCw } from 'lucide-react'
+import {
+  Mail,
+  Phone,
+  Calendar,
+  ChevronDown,
+  Search,
+  RefreshCw,
+  Download,
+  Loader2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
@@ -16,11 +25,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
-import { CustomerRepository } from '@/services/supabase/repositories/customer'
+import {
+  CustomerRepository,
+  CustomerExportRepository,
+} from '@/services/supabase/repositories/customer'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import type { SupportedLocale } from '@/lib/dateLocale'
 
@@ -61,6 +91,21 @@ export default function CustomerList() {
 
   // CustomerRepositoryのインスタンスをメモ化
   const customerRepo = useMemo(() => new CustomerRepository(), [])
+  const customerExportRepo = useMemo(() => new CustomerExportRepository(), [])
+
+  // テーブル行選択の状態管理
+  const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set())
+  const [isAllSelected, setIsAllSelected] = useState(false)
+
+  // エクスポート関連の状態
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportType, setExportType] = useState<'all' | 'selected'>('all')
+  const [exportProgress, setExportProgress] = useState<{
+    current: number
+    total: number
+    percentage: number
+  } | null>(null)
 
   // 検索結果のキャッシュ
   const [searchCache, setSearchCache] = useState<Map<string, CustomerWithDetails[]>>(new Map())
@@ -266,6 +311,115 @@ export default function CustomerList() {
     [locale, t]
   )
 
+  // テーブル行選択の処理
+  const handleSelectCustomer = useCallback((customerUid: string, checked: boolean) => {
+    setSelectedCustomers((prev) => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(customerUid)
+      } else {
+        newSet.delete(customerUid)
+        setIsAllSelected(false)
+      }
+      return newSet
+    })
+  }, [])
+
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        const allUids = new Set(displayCustomers.map((c) => c.customer.uid))
+        setSelectedCustomers(allUids)
+        setIsAllSelected(true)
+      } else {
+        setSelectedCustomers(new Set())
+        setIsAllSelected(false)
+      }
+    },
+    [displayCustomers]
+  )
+
+  // CSVエクスポート処理
+  const handleExportCsv = useCallback(async () => {
+    if (!tenantId || !orgId) {
+      toast.error('組織情報が取得できません')
+      return
+    }
+
+    setIsExporting(true)
+    setExportProgress(null)
+
+    try {
+      let csvData: string
+      let totalCount: number
+
+      if (exportType === 'selected') {
+        if (selectedCustomers.size === 0) {
+          toast.error('エクスポートする顧客を選択してください')
+          return
+        }
+
+        const customerUids = Array.from(selectedCustomers)
+        console.log(`[CustomerList] Exporting ${customerUids.length} selected customers`)
+
+        const result = await customerExportRepo.exportCustomersCsvBatch(
+          tenantId,
+          orgId,
+          { customerUids },
+          (progress) => setExportProgress(progress)
+        )
+
+        csvData = result.csvData
+        totalCount = result.totalCount
+      } else {
+        // 全件エクスポート
+        console.log('[CustomerList] Exporting all customers')
+
+        const result = await customerExportRepo.exportCustomersCsvBatch(
+          tenantId,
+          orgId,
+          {},
+          (progress) => setExportProgress(progress)
+        )
+
+        csvData = result.csvData
+        totalCount = result.totalCount
+      }
+
+      // CSVファイルとしてダウンロード
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+
+      link.setAttribute('href', url)
+      link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      toast.success(`${totalCount}件の顧客データをエクスポートしました`)
+      setIsExportDialogOpen(false)
+    } catch (error) {
+      console.error('[CustomerList] Export failed:', error)
+      toast.error('エクスポートに失敗しました')
+    } finally {
+      setIsExporting(false)
+      setExportProgress(null)
+    }
+  }, [tenantId, orgId, exportType, selectedCustomers, customerExportRepo])
+
+  // 選択状態の管理
+  useEffect(() => {
+    const currentlyDisplayedUids = new Set(displayCustomers.map((c) => c.customer.uid))
+    const selectedDisplayedCount = Array.from(selectedCustomers).filter((uid) =>
+      currentlyDisplayedUids.has(uid)
+    ).length
+    setIsAllSelected(
+      selectedDisplayedCount > 0 && selectedDisplayedCount === displayCustomers.length
+    )
+  }, [selectedCustomers, displayCustomers])
+
   if (!isLoaded || isLoading) {
     return <Loading />
   }
@@ -273,7 +427,7 @@ export default function CustomerList() {
   return (
     <div className="w-full space-y-4">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col-reverse md:flex-row items-end md:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -284,7 +438,99 @@ export default function CustomerList() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            {selectedCustomers.size > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {selectedCustomers.size}件選択中
+              </Badge>
+            )}
           </div>
+
+          {/* CSVエクスポートボタン */}
+          <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                顧客データをダウンロード
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>顧客データCSVエクスポート</DialogTitle>
+                <DialogDescription>顧客データをCSV形式でダウンロードできます</DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="export-type">エクスポート対象</Label>
+                  <Select
+                    value={exportType}
+                    onValueChange={(value: 'all' | 'selected') => setExportType(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="エクスポート対象を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全ての顧客</SelectItem>
+                      <SelectItem value="selected" disabled={selectedCustomers.size === 0}>
+                        選択した顧客 ({selectedCustomers.size}件)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {exportType === 'selected' && selectedCustomers.size === 0 && (
+                    <p className="text-sm text-muted-foreground">※ 先に顧客を選択してください</p>
+                  )}
+                </div>
+
+                {exportProgress && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>進捗状況</span>
+                      <span>{exportProgress.percentage}%</span>
+                    </div>
+                    <div className="w-full bg-secondary rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${exportProgress.percentage}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {exportProgress.current.toLocaleString()} /{' '}
+                      {exportProgress.total.toLocaleString()} 件
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsExportDialogOpen(false)}
+                  disabled={isExporting}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  onClick={handleExportCsv}
+                  disabled={
+                    isExporting || (exportType === 'selected' && selectedCustomers.size === 0)
+                  }
+                  className="gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      エクスポート中...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      エクスポート
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* 検索状態の可視化 */}
@@ -312,6 +558,13 @@ export default function CustomerList() {
         <Table>
           <TableHeader>
             <TableRow className="bg-neon-foreground">
+              <TableHead className="px-4 w-12 text-neon">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="全選択"
+                />
+              </TableHead>
               <TableHead className="px-4 text-nowrap w-fit text-neon">
                 {t('customerNameLineUser')}
               </TableHead>
@@ -331,12 +584,21 @@ export default function CustomerList() {
               </TableRow>
             ) : (
               displayCustomers.map((customerData) => (
-                <TableRow
-                  key={customerData.customer.uid}
-                  className="hover:bg-secondary cursor-pointer"
-                  onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
-                >
-                  <TableCell className="font-medium px-4">
+                <TableRow key={customerData.customer.uid} className="hover:bg-secondary">
+                  <TableCell className="px-4">
+                    <Checkbox
+                      checked={selectedCustomers.has(customerData.customer.uid)}
+                      onCheckedChange={(checked) =>
+                        handleSelectCustomer(customerData.customer.uid, checked === true)
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`顧客を選択: ${customerData.customer.last_name} ${customerData.customer.first_name}`}
+                    />
+                  </TableCell>
+                  <TableCell
+                    className="font-medium px-4 cursor-pointer"
+                    onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
+                  >
                     <div className="flex items-center text-sm text-muted-foreground gap-4 text-nowrap">
                       <span>
                         {customerData.customer.last_name && customerData.customer.first_name
@@ -351,7 +613,10 @@ export default function CustomerList() {
                     </div>
                   </TableCell>
 
-                  <TableCell className="px-4 text-sm">
+                  <TableCell
+                    className="px-4 text-sm cursor-pointer"
+                    onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
+                  >
                     <div className="space-y-1">
                       {customerData.customer.phone ? (
                         <div className="flex items-center gap-2">
@@ -376,10 +641,16 @@ export default function CustomerList() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell
+                    className="text-center cursor-pointer"
+                    onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
+                  >
                     {customerData.customer.total_reservation_count ?? 0} {t('times')}
                   </TableCell>
-                  <TableCell className="px-4">
+                  <TableCell
+                    className="px-4 cursor-pointer"
+                    onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
+                  >
                     <div className="flex items-center gap-4">
                       <span className="text-nowrap">
                         {customerData.customerDetail?.birthday
@@ -388,7 +659,10 @@ export default function CustomerList() {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4">
+                  <TableCell
+                    className="px-4 cursor-pointer"
+                    onClick={() => router.push(`/dashboard/customer/${customerData.customer.uid}`)}
+                  >
                     <div className="flex items-center gap-4">
                       <Calendar size={16} className="text-muted-foreground" />
                       <span className="text-nowrap">

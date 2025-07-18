@@ -971,6 +971,467 @@ export class CustomerRepository extends BaseRepository<'customer'> {
     // 到達不可能なコードだが、TypeScriptの型チェックのために追加
     throw new Error('Unexpected error in recalculatePointsBalance');
   }
+
+  /**
+   * 大規模SaaS向け高性能顧客名一括取得
+   * 複数の顧客UIDから顧客名を効率的に取得します。
+   * - PostgreSQL IN句による一括取得でクエリ回数を最小化
+   * - Email形式の名前を実名で置き換える優先度ロジック
+   * - 大量データ対応のバッチ処理（最大1000件/リクエスト）
+   * 
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param customerUids - 顧客UID配列（最大1000件まで）
+   * @returns 顧客UID -> 顧客名のマップ
+   */
+  async getCustomerNamesBatch(
+    tenantId: string,
+    orgId: string,
+    customerUids: string[]
+  ): Promise<Map<string, string>> {
+    console.log(`[CustomerRepository] getCustomerNamesBatch: tenantId=${tenantId}, orgId=${orgId}, customerCount=${customerUids.length}`);
+    
+    // 空配列の場合は早期リターン
+    if (customerUids.length === 0) {
+      return new Map();
+    }
+
+    // PostgreSQLのIN句制限とメモリ使用量を考慮して最大1000件に制限
+    if (customerUids.length > 1000) {
+      console.warn(`[CustomerRepository] getCustomerNamesBatch: Too many customer UIDs (${customerUids.length}), limiting to 1000`);
+      customerUids = customerUids.slice(0, 1000);
+    }
+
+    try {
+      // 重複除去して効率化
+      const uniqueUids = [...new Set(customerUids)];
+      
+      console.log(`[CustomerRepository] getCustomerNamesBatch: Fetching ${uniqueUids.length} unique customers`);
+
+      // PostgreSQLのRPC関数を使用して高速な一括取得
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        customer_uid: string;
+        display_name: string;
+        is_email_format: boolean;
+      }>('get_customer_names_batch_optimized', {
+        p_tenant_id: tenantId,
+        p_org_id: orgId,
+        p_customer_uids: uniqueUids
+      });
+
+      if (error) {
+        console.error('[CustomerRepository] getCustomerNamesBatch: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.getCustomerNamesBatch',
+          message: `顧客名一括取得に失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { tenantId, orgId, customerUidsCount: uniqueUids.length }
+        });
+      }
+
+      // 結果をMapに変換
+      const customerNamesMap = new Map<string, string>();
+      
+      if (data && data.length > 0) {
+        // Email形式の名前を実名で置き換える処理
+        const customerNameGroups = new Map<string, Array<{ name: string; isEmail: boolean }>>();
+        
+        // 同一顧客の名前を収集
+        data.forEach(customer => {
+          if (!customerNameGroups.has(customer.customer_uid)) {
+            customerNameGroups.set(customer.customer_uid, []);
+          }
+          customerNameGroups.get(customer.customer_uid)!.push({
+            name: customer.display_name,
+            isEmail: customer.is_email_format
+          });
+        });
+
+        // 各顧客について最適な名前を選択
+        customerNameGroups.forEach((names, uid) => {
+          // Email形式でない名前を優先、なければEmail形式の名前を使用
+          const nonEmailName = names.find(n => !n.isEmail);
+          const finalName = nonEmailName ? nonEmailName.name : names[0]?.name || '';
+          customerNamesMap.set(uid, finalName);
+        });
+      }
+
+      console.log(`[CustomerRepository] getCustomerNamesBatch: Success - retrieved ${customerNamesMap.size} customer names`);
+      return customerNamesMap;
+    } catch (error) {
+      console.error('[CustomerRepository] getCustomerNamesBatch: Error', error);
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.getCustomerNamesBatch',
+        message: `顧客名一括取得に失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'high',
+        details: { tenantId, orgId, customerUidsCount: customerUids.length }
+      });
+    }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in getCustomerNamesBatch');
+  }
+
+  /**
+   * 大規模データ対応の分割バッチ処理
+   * 1000件を超える場合の自動分割処理
+   * 
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param customerUids - 顧客UID配列（件数制限なし）
+   * @returns 顧客UID -> 顧客名のマップ
+   */
+  async getCustomerNamesLargeBatch(
+    tenantId: string,
+    orgId: string,
+    customerUids: string[]
+  ): Promise<Map<string, string>> {
+    console.log(`[CustomerRepository] getCustomerNamesLargeBatch: Processing ${customerUids.length} customer UIDs`);
+    
+    const BATCH_SIZE = 1000;
+    const allResults = new Map<string, string>();
+    
+    // 重複除去
+    const uniqueUids = [...new Set(customerUids)];
+    
+    // バッチ処理で分割実行
+    for (let i = 0; i < uniqueUids.length; i += BATCH_SIZE) {
+      const batch = uniqueUids.slice(i, i + BATCH_SIZE);
+      console.log(`[CustomerRepository] getCustomerNamesLargeBatch: Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(uniqueUids.length/BATCH_SIZE)} (${batch.length} items)`);
+      
+      const batchResults = await this.getCustomerNamesBatch(tenantId, orgId, batch);
+      
+      // 結果をマージ
+      batchResults.forEach((name, uid) => {
+        allResults.set(uid, name);
+      });
+    }
+    
+    console.log(`[CustomerRepository] getCustomerNamesLargeBatch: Completed - retrieved ${allResults.size} customer names from ${uniqueUids.length} requests`);
+    return allResults;
+  }
+
+  /**
+   * 大規模SaaS向け顧客データエクスポート機能
+   * 複数の選択オプションに対応した高性能エクスポート
+   * 
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param options - エクスポートオプション
+   * @returns エクスポート用顧客データ
+   */
+  async exportCustomerData(
+    tenantId: string,
+    orgId: string,
+    options: {
+      // エクスポート方式選択
+      exportType: 'all' | 'by_ids' | 'by_count';
+      
+      // ID指定エクスポート用
+      customerUids?: string[];
+      
+      // 件数指定エクスポート用
+      maxCount?: number;
+      offset?: number;
+      
+      // フィルタ条件
+      filters?: {
+        customerType?: string;
+        hasReservations?: boolean;
+        registrationDateFrom?: string;
+        registrationDateTo?: string;
+        lastReservationDateFrom?: string;
+        lastReservationDateTo?: string;
+      };
+      
+      // 含める情報の選択
+      includeDetails?: boolean;
+      includePoints?: boolean;
+      includeReservationStats?: boolean;
+    }
+  ): Promise<{
+    customers: Array<{
+      // 基本情報
+      uid: string;
+      email: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      phone: string | null;
+      lineId: string | null;
+      lineUserName: string | null;
+      customerType: string | null;
+      totalReservationCount: number | null;
+      lastReservationDateUnix: number | null;
+      createdAt: string;
+      
+      // 詳細情報（オプション）
+      details?: {
+        gender: string | null;
+        birthday: string | null;
+        age: number | null;
+        notes: string | null;
+      };
+      
+      // ポイント情報（オプション）
+      points?: {
+        totalPoints: number;
+        lastTransactionDateUnix: number | null;
+      };
+      
+      // 予約統計（オプション）
+      reservationStats?: {
+        totalCount: number;
+        completedCount: number;
+        cancelledCount: number;
+        totalAmount: number;
+      };
+    }>;
+    totalCount: number;
+    exportedCount: number;
+    hasMore: boolean;
+  }> {
+    console.log(`[CustomerRepository] exportCustomerData: Starting export`, {
+      tenantId,
+      orgId,
+      exportType: options.exportType,
+      customerUidsCount: options.customerUids?.length || 0,
+      maxCount: options.maxCount,
+      includeDetails: options.includeDetails,
+      includePoints: options.includePoints,
+      includeReservationStats: options.includeReservationStats
+    });
+
+    try {
+      // 大規模データ対応のためRPC関数を使用
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        customers: Array<{
+          uid: string;
+          email: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          phone: string | null;
+          line_id: string | null;
+          line_user_name: string | null;
+          customer_type: string | null;
+          total_reservation_count: number | null;
+          last_reservation_date_unix: number | null;
+          created_at: string;
+          // 詳細情報
+          detail_gender?: string | null;
+          detail_birthday?: string | null;
+          detail_age?: number | null;
+          detail_notes?: string | null;
+          // ポイント情報
+          total_points?: number | null;
+          last_transaction_date_unix?: number | null;
+          // 予約統計
+          reservation_total_count?: number | null;
+          reservation_completed_count?: number | null;
+          reservation_cancelled_count?: number | null;
+          reservation_total_amount?: number | null;
+        }>;
+        total_count: number;
+        exported_count: number;
+        has_more: boolean;
+      }>('export_customer_data_optimized', {
+        p_tenant_id: tenantId,
+        p_org_id: orgId,
+        p_export_type: options.exportType,
+        p_customer_uids: options.customerUids || null,
+        p_max_count: options.maxCount || null,
+        p_offset: options.offset || 0,
+        p_filters: options.filters ? JSON.stringify(options.filters) : null,
+        p_include_details: options.includeDetails || false,
+        p_include_points: options.includePoints || false,
+        p_include_reservation_stats: options.includeReservationStats || false
+      });
+
+      if (error) {
+        console.error('[CustomerRepository] exportCustomerData: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.exportCustomerData',
+          message: `顧客データエクスポートに失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { tenantId, orgId, options }
+        });
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          customers: [],
+          totalCount: 0,
+          exportedCount: 0,
+          hasMore: false
+        };
+      }
+
+      const result = data[0];
+      
+      // データを整形
+      const formattedCustomers = result.customers.map(customer => {
+        const baseCustomer: any = {
+          uid: customer.uid,
+          email: customer.email,
+          firstName: customer.first_name,
+          lastName: customer.last_name,
+          phone: customer.phone,
+          lineId: customer.line_id,
+          lineUserName: customer.line_user_name,
+          customerType: customer.customer_type,
+          totalReservationCount: customer.total_reservation_count,
+          lastReservationDateUnix: customer.last_reservation_date_unix,
+          createdAt: customer.created_at
+        };
+
+        // オプション情報を追加
+        if (options.includeDetails) {
+          baseCustomer.details = {
+            gender: customer.detail_gender,
+            birthday: customer.detail_birthday,
+            age: customer.detail_age,
+            notes: customer.detail_notes
+          };
+        }
+
+        if (options.includePoints) {
+          baseCustomer.points = {
+            totalPoints: customer.total_points || 0,
+            lastTransactionDateUnix: customer.last_transaction_date_unix
+          };
+        }
+
+        if (options.includeReservationStats) {
+          baseCustomer.reservationStats = {
+            totalCount: customer.reservation_total_count || 0,
+            completedCount: customer.reservation_completed_count || 0,
+            cancelledCount: customer.reservation_cancelled_count || 0,
+            totalAmount: customer.reservation_total_amount || 0
+          };
+        }
+
+        return baseCustomer;
+      });
+
+      console.log(`[CustomerRepository] exportCustomerData: Success - exported ${result.exported_count} customers from ${result.total_count} total`);
+
+      return {
+        customers: formattedCustomers,
+        totalCount: result.total_count,
+        exportedCount: result.exported_count,
+        hasMore: result.has_more
+      };
+
+    } catch (error) {
+      console.error('[CustomerRepository] exportCustomerData: Error', error);
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.exportCustomerData',
+        message: `顧客データエクスポートに失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'high',
+        details: { tenantId, orgId, options }
+      });
+    }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in exportCustomerData');
+  }
+
+  /**
+   * CSVエクスポート用の高速顧客データ取得
+   * メモリ効率を重視したストリーミング対応
+   * 
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param options - エクスポートオプション
+   * @returns CSVエクスポート用のデータ
+   */
+  async getCustomersForCsvExport(
+    tenantId: string,
+    orgId: string,
+    options: {
+      batchSize?: number;
+      offset?: number;
+      customerUids?: string[];
+      includeHeaders?: boolean;
+    }
+  ): Promise<{
+    csvData: string;
+    totalCount: number;
+    hasMore: boolean;
+  }> {
+    console.log(`[CustomerRepository] getCustomersForCsvExport: Exporting CSV data`, options);
+
+    try {
+      const { data, error } = await this.supabaseServiceInstance.rpc<{
+        csv_data: string;
+        total_count: number;
+        has_more: boolean;
+      }>('export_customers_csv_optimized', {
+        p_tenant_id: tenantId,
+        p_org_id: orgId,
+        p_batch_size: options.batchSize || 1000,
+        p_offset: options.offset || 0,
+        p_customer_uids: options.customerUids || null,
+        p_include_headers: options.includeHeaders || false
+      });
+
+      if (error) {
+        console.error('[CustomerRepository] getCustomersForCsvExport: RPC error', error);
+        throwSupabaseError({
+          callFunc: 'CustomerRepository.getCustomersForCsvExport',
+          message: `CSV顧客データエクスポートに失敗しました: ${error.message}`,
+          error: new Error(error.message),
+          severity: 'high',
+          details: { tenantId, orgId, options }
+        });
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          csvData: options.includeHeaders ? 'uid,email,firstName,lastName,phone,customerType,totalReservations,createdAt\n' : '',
+          totalCount: 0,
+          hasMore: false
+        };
+      }
+
+      const result = data[0];
+      console.log(`[CustomerRepository] getCustomersForCsvExport: Success - generated CSV for ${result.total_count} customers`);
+
+      return {
+        csvData: result.csv_data,
+        totalCount: result.total_count,
+        hasMore: result.has_more
+      };
+
+    } catch (error) {
+      console.error('[CustomerRepository] getCustomersForCsvExport: Error', error);
+      if (error instanceof Error && error.constructor.name === 'SupabaseError') {
+        throw error;
+      }
+      
+      throwSupabaseError({
+        callFunc: 'CustomerRepository.getCustomersForCsvExport',
+        message: `CSV顧客データエクスポートに失敗しました: ${(error as Error).message}`,
+        error: error as Error,
+        severity: 'high',
+        details: { tenantId, orgId, options }
+      });
+    }
+    
+    // 到達不可能なコードだが、TypeScriptの型チェックのために追加
+    throw new Error('Unexpected error in getCustomersForCsvExport');
+  }
 }
 
 
