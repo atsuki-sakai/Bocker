@@ -51,18 +51,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               }}
               className="relative mb-8"
             >
-              {/* ロゴの外側のリング */}
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{
-                  duration: 1.2,
-                  ease: 'easeOut',
-                  delay: 0.5,
-                }}
-                className="absolute inset-0 w-32 h-32 border-2 border-accent rounded-full"
-              />
-
               {/* 実際のロゴ画像 */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -72,7 +60,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   ease: 'easeOut',
                   delay: 0.8,
                 }}
-                className="relative z-10 w-28 h-28 flex items-center justify-center border-2 border-accent rounded-full p-4 shadow-lg"
+                className="relative z-10 w-28 h-28 flex items-center justify-center"
               >
                 <Image
                   src="/assets/images/logo-darkgreen.png"
@@ -91,11 +79,27 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               transition={{
                 duration: 0.6,
                 ease: 'easeOut',
-                delay: 1.2,
+                delay: 1,
               }}
               className="text-center"
             >
-              <h1 className="text-2xl font-bold text-foreground mb-2">Bocker</h1>
+              <h1 className="text-2xl font-bold text-foreground mb-2">
+                {'Bocker'.split('').map((letter, index) => (
+                  <motion.span
+                    key={index}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{
+                      duration: 0.4,
+                      ease: 'easeInOut',
+                      delay: 1 + index * 0.1,
+                    }}
+                    className="inline-block"
+                  >
+                    {letter}
+                  </motion.span>
+                ))}
+              </h1>
             </motion.div>
 
             {/* ローディングインジケーター */}
@@ -105,7 +109,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               transition={{
                 duration: 2,
                 ease: 'easeInOut',
-                delay: 1.5,
+                delay: 1.2,
               }}
               className="mt-8 w-32 h-0.5 bg-primary/20 rounded-full overflow-hidden"
             >
@@ -121,21 +125,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               />
             </motion.div>
 
-            {/* パルス効果 */}
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{
-                scale: [0.8, 1.2, 0.8],
-                opacity: [0, 0.3, 0],
-              }}
-              transition={{
-                duration: 2,
-                ease: 'easeInOut',
-                repeat: Infinity,
-                delay: 1,
-              }}
-              className="absolute w-32 h-32 border border-primary/10 rounded-full"
-            />
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{
@@ -151,32 +140,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               className="absolute w-40 h-40 border border-primary/5 rounded-full"
             />
           </div>
-
-          {/* 背景のパーティクル効果 */}
-          {Array.from({ length: 6 }).map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{
-                opacity: 0,
-                scale: 0,
-                x: Math.random() * 400 - 200,
-                y: Math.random() * 400 - 200,
-              }}
-              animate={{
-                opacity: [0, 0.5, 0],
-                scale: [0, 1, 0],
-                y: [0, -50, -100],
-              }}
-              transition={{
-                duration: 3,
-                ease: 'easeOut',
-                delay: 1 + i * 0.3,
-                repeat: Infinity,
-                repeatDelay: 2,
-              }}
-              className="absolute w-1 h-1 bg-primary/30 rounded-full"
-            />
-          ))}
         </motion.div>
       )}
     </AnimatePresence>
