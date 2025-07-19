@@ -12,12 +12,7 @@ Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプ�
   3. 実際に確認してから回答する
   4. 事実のみを報告する
   5. カラーの指定は必ずはglobal.cssを使用する
-
-  
-## 本番環境と開発環境について
-
-本番環境URL: https://bocker.jp
-開発環境URL: https://bocker-project.vercel.app
+  6. 根本原因を正確に特定せずに、推測に基づいて修正を行う事を禁止します。
 
 
 ## 利用可能なMCPツール
@@ -40,9 +35,8 @@ stripe:prod:　本番環境のStripe
   - Supabase: PostgreSQL（履歴データ保存・分析用）
 - **認証**: Clerk（マルチ組織対応）
 - **決済**: Stripe, Stripe Connect（マーケットプレイス型）
-- **メッセージング**: LINE（LIFF対応）
+- **メッセージング**: LINE（LIFF対応） Resend(メール)
 - **ストレージ**: Google Cloud Storage
-- **モニタリング**: Sentry（Vercel統合）
 
 ### アーキテクチャ上の重要な設計思想
 
