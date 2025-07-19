@@ -319,7 +319,6 @@ export default function ReservationList() {
                             'w-full justify-start text-left font-normal',
                             !csvStartDate && !csvEndDate && 'text-muted-foreground'
                           )}
-                          onClick={() => setIsCsvCalendarOpen(true)}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {csvStartDate && csvEndDate ? (
@@ -334,61 +333,83 @@ export default function ReservationList() {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 -translate-y-[50%]" align="start">
-                        <div className="p-3  max-h-[95vh] overflow-y-scroll relative">
-                          <div className="absolute top-0 right-0">
+                      <PopoverContent
+                        className={`w-auto p-0 ${
+                          !isCsvCalendarOpen ? 'translate-y-0 hidden' : '-translate-y-[50%]'
+                        }`}
+                      >
+                        <div className="flex flex-col max-h-[85vh] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200">
+                          {/* ヘッダー */}
+                          <div className="flex items-center justify-between p-3 border-b">
+                            <h4 className="font-medium text-sm">期間を選択</h4>
                             <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => {
-                                setIsCsvCalendarOpen(false)
-                              }}
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsCsvCalendarOpen(false)}
+                              className="h-8 w-8 p-0 hover:bg-muted"
                             >
                               <XIcon className="h-4 w-4" />
                             </Button>
                           </div>
-                          <div className="mt-8 " />
-                          <Calendar
-                            initialFocus
-                            mode="range"
-                            selected={{
-                              from: csvStartDate ? new Date(csvStartDate) : undefined,
-                              to: csvEndDate ? new Date(csvEndDate) : undefined,
-                            }}
-                            onSelect={(dateRange) => {
-                              if (dateRange?.from) {
-                                setCsvStartDate(format(dateRange.from, 'yyyy-MM-dd'))
-                              } else {
-                                setCsvStartDate('')
-                              }
-                              if (dateRange?.to) {
-                                setCsvEndDate(format(dateRange.to, 'yyyy-MM-dd'))
-                              } else if (dateRange?.from && !dateRange?.to) {
-                                // 単一日付選択の場合、終了日も同じに設定
-                                setCsvEndDate(format(dateRange.from, 'yyyy-MM-dd'))
-                              } else {
-                                setCsvEndDate('')
-                              }
-                            }}
-                            disabled={(date) => {
-                              const min = new Date(minDate)
-                              const max = new Date(maxDate)
-                              return date < min || date > max
-                            }}
-                            numberOfMonths={1}
-                            locale={locale === 'ja' ? ja : enUS}
-                          />
-                          <div className="flex justify-between">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setCsvStartDate('')
-                                setCsvEndDate('')
-                              }}
-                              size="sm"
-                            >
-                              クリア
-                            </Button>
+
+                          {/* カレンダーコンテンツ */}
+                          <div className="overflow-y-auto flex-1">
+                            <div className="p-3">
+                              <Calendar
+                                initialFocus
+                                mode="range"
+                                selected={{
+                                  from: csvStartDate ? new Date(csvStartDate) : undefined,
+                                  to: csvEndDate ? new Date(csvEndDate) : undefined,
+                                }}
+                                onSelect={(dateRange) => {
+                                  if (dateRange?.from) {
+                                    setCsvStartDate(format(dateRange.from, 'yyyy-MM-dd'))
+                                  } else {
+                                    setCsvStartDate('')
+                                  }
+                                  if (dateRange?.to) {
+                                    setCsvEndDate(format(dateRange.to, 'yyyy-MM-dd'))
+                                  } else if (dateRange?.from && !dateRange?.to) {
+                                    // 単一日付選択の場合、終了日も同じに設定
+                                    setCsvEndDate(format(dateRange.from, 'yyyy-MM-dd'))
+                                  } else {
+                                    setCsvEndDate('')
+                                  }
+                                }}
+                                disabled={(date) => {
+                                  const min = new Date(minDate)
+                                  const max = new Date(maxDate)
+                                  return date < min || date > max
+                                }}
+                                numberOfMonths={1}
+                                locale={locale === 'ja' ? ja : enUS}
+                              />
+                            </div>
+                          </div>
+
+                          {/* フッター */}
+                          <div className="border-t p-3">
+                            <div className="flex justify-between items-center">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setCsvStartDate('')
+                                  setCsvEndDate('')
+                                }}
+                                size="sm"
+                                className="transition-all duration-200 hover:scale-105"
+                              >
+                                クリア
+                              </Button>
+                              <Button
+                                onClick={() => setIsCsvCalendarOpen(false)}
+                                size="sm"
+                                className="transition-all duration-200 hover:scale-105"
+                              >
+                                完了
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </PopoverContent>

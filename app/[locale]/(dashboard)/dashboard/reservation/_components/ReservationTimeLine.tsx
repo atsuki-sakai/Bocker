@@ -42,7 +42,7 @@ import { format, addDays, subDays, isWeekend } from 'date-fns'
 import { ja, enUS } from 'date-fns/locale'
 import { useLocale } from 'next-intl'
 import Image from 'next/image'
-import { useQuery } from 'convex/react'
+import { useQueryWithStatus } from '@/hooks/useQueryWithStatus'
 import { api } from '@/convex/_generated/api'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -611,7 +611,7 @@ export default function ReservationTimeLine() {
   // ■ データ取得（最適化されたカスタムフック使用）
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd')
 
-  const orgExceptionSchedule = useQuery(
+  const { data: orgExceptionSchedule } = useQueryWithStatus(
     api.organization.exception_schedule.query.getByOrgAndDate,
     tenantId && orgId && ready ? { org_id: orgId, type: 'holiday', tenant_id: tenantId } : 'skip'
   )
@@ -636,7 +636,7 @@ export default function ReservationTimeLine() {
   const startDateStr = useMemo(() => format(today, 'yyyy-MM-dd'), [today])
   const endDateStr = useMemo(() => format(twoWeeksLater, 'yyyy-MM-dd'), [twoWeeksLater])
 
-  const reservationCountsData = useQuery(
+  const { data: reservationCountsData } = useQueryWithStatus(
     api.reservation.query.getReservationCountsByDateRange,
     ready && tenantId && orgId
       ? {

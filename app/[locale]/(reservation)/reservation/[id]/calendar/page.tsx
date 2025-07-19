@@ -483,7 +483,8 @@ export default function CalendarPage() {
         })),
         options: countOptionOccurrences(selectedOptions),
         extra_charge:
-          selectedStaffCompleted.staff === 'free'
+          selectedStaffCompleted.staff === 'free' ||
+          isAutoAssignedStaff(selectedStaffCompleted.staff)
             ? 0
             : 'extraCharge' in selectedStaffCompleted.staff
               ? (selectedStaffCompleted.staff as AutoAssignedStaff).extraCharge || 0
@@ -679,6 +680,8 @@ export default function CalendarPage() {
     }
   }
 
+  console.log('#### selectedStaffCompleted: ', selectedStaffCompleted)
+
   const handleConfirmReservation = async () => {
     if (
       !sessionCustomer ||
@@ -783,7 +786,8 @@ export default function CalendarPage() {
         })),
         options: countOptionOccurrences(selectedOptions),
         extra_charge:
-          selectedStaffCompleted.staff === 'free'
+          selectedStaffCompleted.staff === 'free' ||
+          isAutoAssignedStaff(selectedStaffCompleted.staff)
             ? 0
             : 'extraCharge' in selectedStaffCompleted.staff
               ? (selectedStaffCompleted.staff as AutoAssignedStaff).extraCharge || 0
@@ -829,7 +833,10 @@ export default function CalendarPage() {
             customerName, // 3. customerName
             organizationComplete.organization._id as Id<'organization'>, // 4. orgId
             sessionCustomer.customerUid, // 5. customerUid
-            selectedStaffCompleted.staff === 'free' ? null : selectedStaffCompleted.staff, // 6. selectedStaff (null for free nomination)
+            selectedStaffCompleted.staff === 'free' ||
+              isAutoAssignedStaff(selectedStaffCompleted.staff)
+              ? null
+              : selectedStaffCompleted.staff, // 6. selectedStaff (null for free nomination)
             selectedDate!, // 7. selectedDate
             selectedTime!, // 8. selectedTimeSlot
             selectedMenus, // 9. selectedMenus
@@ -876,6 +883,7 @@ export default function CalendarPage() {
             throw new Error(`LINEメッセージ送信に失敗しました: ${errorMessage}`)
           }
 
+          console.log(selectedStaffCompleted)
           try {
             const result = await response.json()
             if (result.success) {
@@ -924,7 +932,8 @@ export default function CalendarPage() {
             )
 
             const extraCharge =
-              selectedStaffCompleted.staff === 'free'
+              selectedStaffCompleted.staff === 'free' ||
+              isAutoAssignedStaff(selectedStaffCompleted.staff)
                 ? 0
                 : selectedStaffCompleted.staff.extra_charge || 0
 
@@ -950,11 +959,13 @@ export default function CalendarPage() {
                 ? `${selectedTime.startHour}～${selectedTime.endHour}`
                 : '時間未定',
               staffName:
-                selectedStaffCompleted.staff === 'free'
+                selectedStaffCompleted.staff === 'free' ||
+                isAutoAssignedStaff(selectedStaffCompleted.staff)
                   ? '指名フリー'
                   : selectedStaffCompleted.staff.name,
               extraCharge:
-                selectedStaffCompleted.staff === 'free'
+                selectedStaffCompleted.staff === 'free' ||
+                isAutoAssignedStaff(selectedStaffCompleted.staff)
                   ? 0
                   : selectedStaffCompleted.staff.extra_charge || 0,
               menus: selectedMenus.map((menu) => ({
@@ -1074,7 +1085,14 @@ export default function CalendarPage() {
         const data = await response.json()
 
         if (data.session) {
-          setSessionCustomer(data.session)
+          // Handle backward compatibility: if 'name' exists but 'customerName' doesn't, use 'name'
+          const session = data.session;
+          const legacySession = session as SessionPayload & { name?: string };
+          if (legacySession.name && !session.customerName) {
+            session.customerName = legacySession.name;
+            console.log('[Calendar] Migrated old session format: name -> customerName');
+          }
+          setSessionCustomer(session)
           try {
             const organizationComplete = await fetchQuery(api.organization.query.getRelations, {
               tenant_id: data.session.tenantId,
@@ -1122,6 +1140,7 @@ export default function CalendarPage() {
     fetchSession()
   }, [router, liff, orgId, customerRepository, sessionCustomer?.orgId])
 
+  console.log('#### sessionCustomer: ', sessionCustomer)
   if (isLoading) return <Loading />
 
   if (!organizationComplete) {
@@ -1773,14 +1792,17 @@ export default function CalendarPage() {
               <CheckCheck className="w-5 h-5 text-accent-2 rounded-full p-1" />
               <span className="font-light">{sessionCustomer?.customerName} 様</span>
             </p>
-          ) : (
-            sessionCustomer?.email && (
-              <p className="text-sm flex items-center gap-2 mt-1">
-                <CheckCheck className="w-5 h-5 text-accent-2" />
-                <span className="font-light">{sessionCustomer?.email}</span>
-              </p>
-            )
-          )}
+          ) : sessionCustomer?.email ? (
+            <p className="text-sm flex items-center gap-2 mt-1">
+              <CheckCheck className="w-5 h-5 text-accent-2" />
+              <span className="font-light">{sessionCustomer?.email}</span>
+            </p>
+          ) : sessionCustomer?.lineUserName ? (
+            <p className="text-sm flex items-center gap-2 mt-1">
+              <CheckCheck className="w-5 h-5 text-accent-2" />
+              <span className="font-light">{sessionCustomer?.lineUserName}</span>
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <ModeToggle />
