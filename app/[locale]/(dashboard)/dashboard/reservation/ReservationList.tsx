@@ -334,9 +334,8 @@ export default function ReservationList() {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className={`w-auto p-0 ${
-                          !isCsvCalendarOpen ? 'translate-y-0 hidden' : '-translate-y-[50%]'
-                        }`}
+                        className="w-auto p-0"
+                        align="start"
                       >
                         <div className="flex flex-col max-h-[85vh] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200">
                           {/* ヘッダー */}
