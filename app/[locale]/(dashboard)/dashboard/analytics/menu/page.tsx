@@ -438,6 +438,7 @@ function MenuAnalyticsPage() {
           (performer) => performer.menu_name === menu.name
         )
         const bookings = menuDetail?.booking_count || 0
+        // 予約数が0の場合、このメニューはランキングに含まれるべきではない（サーバー側でフィルタ済み）
         const avgAmount = bookings > 0 ? Math.round(menu.value / bookings) : 0
 
         let performance = ''
@@ -645,6 +646,7 @@ function MenuAnalyticsPage() {
           (performer) => performer.menu_name === menu.name
         )
         const bookings = menuDetail?.booking_count || 0
+        // 予約数が0の場合、このメニューはランキングに含まれるべきではない（サーバー側でフィルタ済み）
         const avgAmount = bookings > 0 ? Math.round(menu.value / bookings) : 0
         const improvementPotential =
           avgMenuPerformance > 0
@@ -986,14 +988,28 @@ function MenuAnalyticsPage() {
                                   const bookings = menuDetail?.booking_count || 0
                                   const amount = menuDetail?.total_amount || menu.value
 
-                                  // 予約数が0の場合の処理
+                                  // 予約数が0の場合はこのメニューはランキングに含まれるべきではない
+                                  // （サーバー側で既にフィルタリングされているはず）
                                   if (bookings === 0) {
-                                    return `予約データなし`
+                                    console.warn('[Menu Analytics] Menu with 0 bookings found in ranking:', menu.name)
+                                    return `取引実績なし（データ要確認）`
+                                  }
+
+                                  // データ整合性チェック
+                                  if (amount <= 0) {
+                                    console.warn('[Menu Analytics] Menu with invalid amount found:', menu.name, amount)
+                                    return `データエラー`
                                   }
 
                                   // 平均単価を計算
                                   const avgAmount = Math.round(amount / bookings)
-                                  return `${bookings}件の注文 | 平均単価 - ¥${avgAmount.toLocaleString()}`
+                                  
+                                  // 異常に低い単価の場合は警告
+                                  if (avgAmount < 100) {
+                                    console.warn('[Menu Analytics] Unusually low average amount:', menu.name, avgAmount)
+                                  }
+
+                                  return `${bookings}件の予約 | 平均単価 ¥${avgAmount.toLocaleString()}`
                                 })()}
                               </p>
                             </div>
@@ -1008,9 +1024,14 @@ function MenuAnalyticsPage() {
                       ))
                     ) : (
                       <div className="min-h-96 flex items-center justify-center pt-4">
-                        <p className="text-center text-muted-foreground text-sm">
-                          データがありません
-                        </p>
+                        <div className="text-center">
+                          <p className="text-muted-foreground text-sm">
+                            売上実績のあるメニューがありません
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            実際の予約・取引があったメニューのみ表示されます
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>

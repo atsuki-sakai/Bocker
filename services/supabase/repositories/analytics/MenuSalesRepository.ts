@@ -244,8 +244,24 @@ export class MenuSalesRepository extends AnalyticsRepository {
           order: 'desc'
         });
 
-        const totalAmount = selectedData.reduce((sum, item) => sum + item.total_amount, 0);
-        const limitedData = selectedData.slice(0, limit);
+        // 実際の予約実績があるメニューのみフィルタリング
+        const validMenus = selectedData.filter(item => 
+          item.booking_count > 0 && item.total_amount > 0
+        );
+
+        // データ整合性チェック：予約数と売上額の整合性を検証
+        const verifiedMenus = validMenus.filter(item => {
+          const expectedMinAmount = item.booking_count * 100; // 最低単価100円と仮定
+          return item.total_amount >= expectedMinAmount;
+        });
+
+        if (verifiedMenus.length === 0) {
+          console.warn('[MenuSalesRepository] No valid menu data found for ranking');
+          return [];
+        }
+
+        const totalAmount = verifiedMenus.reduce((sum, item) => sum + item.total_amount, 0);
+        const limitedData = verifiedMenus.slice(0, limit);
 
         return limitedData.map((item, index) => ({
           id: item.menu_id,
@@ -262,8 +278,24 @@ export class MenuSalesRepository extends AnalyticsRepository {
           order: 'desc'
         });
 
-        const totalAmount = allData.reduce((sum, item) => sum + item.total_amount, 0);
-        const limitedData = allData.slice(0, limit);
+        // 実際の予約実績があるメニューのみフィルタリング
+        const validMenus = allData.filter(item => 
+          item.booking_count > 0 && item.total_amount > 0
+        );
+
+        // データ整合性チェック：予約数と売上額の整合性を検証
+        const verifiedMenus = validMenus.filter(item => {
+          const expectedMinAmount = item.booking_count * 100; // 最低単価100円と仮定
+          return item.total_amount >= expectedMinAmount;
+        });
+
+        if (verifiedMenus.length === 0) {
+          console.warn('[MenuSalesRepository] No valid menu data found for ranking');
+          return [];
+        }
+
+        const totalAmount = verifiedMenus.reduce((sum, item) => sum + item.total_amount, 0);
+        const limitedData = verifiedMenus.slice(0, limit);
 
         return limitedData.map((item, index) => ({
           id: item.menu_id,
@@ -315,8 +347,27 @@ export class MenuSalesRepository extends AnalyticsRepository {
     try {
       const { data } = await this.getMenuSales(filters);
 
-      const totalAmount = data.reduce((sum, item) => sum + item.total_amount, 0);
-      const totalBookings = data.reduce((sum, item) => sum + item.booking_count, 0);
+      // 実際の予約実績があるメニューのみフィルタリング
+      const validMenus = data.filter(item => 
+        item.booking_count > 0 && item.total_amount > 0
+      );
+
+      // データ整合性チェック：予約数と売上額の整合性を検証
+      const verifiedMenus = validMenus.filter(item => {
+        const expectedMinAmount = item.booking_count * 100; // 最低単価100円と仮定
+        return item.total_amount >= expectedMinAmount;
+      });
+
+      console.log('[MenuSalesRepository] Summary data verification:', {
+        totalMenus: data.length,
+        validMenus: validMenus.length,
+        verifiedMenus: verifiedMenus.length,
+        filteredOut: data.length - verifiedMenus.length
+      });
+
+      // 検証済みデータのみで計算
+      const totalAmount = verifiedMenus.reduce((sum, item) => sum + item.total_amount, 0);
+      const totalBookings = verifiedMenus.reduce((sum, item) => sum + item.booking_count, 0);
       const averageAmount = this.calculateAverage(totalAmount, totalBookings);
       
       const periodDays = Math.ceil(
@@ -324,8 +375,8 @@ export class MenuSalesRepository extends AnalyticsRepository {
       ) + 1;
       
       const dailyAverage = this.calculateDailyAverage(totalAmount, periodDays);
-      const activeMenuCount = data.filter(item => item.total_amount > 0).length;
-      const topMenu = data.length > 0 ? data[0] : null;
+      const activeMenuCount = verifiedMenus.length; // 検証済みメニュー数
+      const topMenu = verifiedMenus.length > 0 ? verifiedMenus[0] : null;
 
       return {
         totalAmount,
@@ -444,18 +495,39 @@ export class MenuSalesRepository extends AnalyticsRepository {
         };
       }
 
-      // 全体平均を計算
-      const totalAmount = data.reduce((sum, item) => sum + item.total_amount, 0);
-      const totalBookings = data.reduce((sum, item) => sum + item.booking_count, 0);
-      const averageAmount = totalAmount / data.length;
-      const averageBookings = totalBookings / data.length;
+      // 実際の予約実績があるメニューのみフィルタリング
+      const validMenus = data.filter(item => 
+        item.booking_count > 0 && item.total_amount > 0
+      );
+
+      // データ整合性チェック：予約数と売上額の整合性を検証
+      const verifiedMenus = validMenus.filter(item => {
+        const expectedMinAmount = item.booking_count * 100; // 最低単価100円と仮定
+        return item.total_amount >= expectedMinAmount;
+      });
+
+      if (verifiedMenus.length === 0) {
+        console.warn('[MenuSalesRepository] No valid menu data found for performance analysis');
+        return {
+          topPerformers: [],
+          averagePerformance: { averageAmount: 0, averageBookings: 0 },
+          performanceDistribution: { high: 0, medium: 0, low: 0 },
+          popularityTrend: []
+        };
+      }
+
+      // 全体平均を計算（検証済みデータのみ使用）
+      const totalAmount = verifiedMenus.reduce((sum, item) => sum + item.total_amount, 0);
+      const totalBookings = verifiedMenus.reduce((sum, item) => sum + item.booking_count, 0);
+      const averageAmount = totalAmount / verifiedMenus.length;
+      const averageBookings = totalBookings / verifiedMenus.length;
 
       // トップパフォーマー（上位5メニュー）
-      const topPerformers = data.slice(0, 5);
+      const topPerformers = verifiedMenus.slice(0, 5);
 
       // パフォーマンス分布
       let high = 0, medium = 0, low = 0;
-      data.forEach(menu => {
+      verifiedMenus.forEach(menu => {
         if (menu.total_amount >= averageAmount) {
           high++;
         } else if (menu.total_amount >= averageAmount * 0.5) {
@@ -463,6 +535,14 @@ export class MenuSalesRepository extends AnalyticsRepository {
         } else {
           low++;
         }
+      });
+
+      console.log('[MenuSalesRepository] Performance analysis completed:', {
+        totalMenus: data.length,
+        validMenus: validMenus.length,
+        verifiedMenus: verifiedMenus.length,
+        averageAmount: Math.round(averageAmount),
+        performanceDistribution: { high, medium, low }
       });
 
       return {
@@ -511,8 +591,31 @@ export class MenuSalesRepository extends AnalyticsRepository {
         };
       }
 
-      // 価格帯を実際のメニューデータから自動計算
-      const menuPrices = data.map(item => item.average_amount).filter(price => price > 0);
+      // 実際の予約実績があるメニューのみフィルタリング
+      const validMenus = data.filter(item => 
+        item.booking_count > 0 && item.total_amount > 0
+      );
+
+      // データ整合性チェック：予約数と売上額の整合性を検証
+      const verifiedMenus = validMenus.filter(item => {
+        const expectedMinAmount = item.booking_count * 100; // 最低単価100円と仮定
+        return item.total_amount >= expectedMinAmount;
+      });
+
+      if (verifiedMenus.length === 0) {
+        console.warn('[MenuSalesRepository] No valid menu data found for price tier analysis');
+        return {
+          priceTiers: [],
+          insights: {
+            mostProfitableTier: '',
+            mostPopularTier: '',
+            averageMenuPrice: 0
+          }
+        };
+      }
+
+      // 価格帯を実際のメニューデータから自動計算（検証済みデータのみ使用）
+      const menuPrices = verifiedMenus.map(item => item.average_amount).filter(price => price > 0);
       
       if (menuPrices.length === 0) {
         return {
@@ -545,7 +648,7 @@ export class MenuSalesRepository extends AnalyticsRepository {
       ];
 
       const priceTiers = priceRanges.map((range, index) => {
-        const tieredMenus = data.filter(menu => {
+        const tieredMenus = verifiedMenus.filter(menu => {
           // 最後の価格帯（高価格帯）は最大値を含む
           if (index === priceRanges.length - 1) {
             return menu.average_amount >= range.min && menu.average_amount <= range.max;

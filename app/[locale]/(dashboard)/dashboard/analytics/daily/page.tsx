@@ -365,6 +365,37 @@ function DailyAnalyticsPage() {
     }
   }, [fetchData, isRefreshing, isInterval, showErrorToast])
 
+  // Safe date parsing function for mobile compatibility
+  const safeParseDate = useCallback((dateStr: string): Date | null => {
+    if (!dateStr) return null
+    
+    // Try different parsing methods for cross-browser compatibility
+    try {
+      // First try: assume ISO format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [year, month, day] = dateStr.split('-').map(Number)
+        return new Date(year, month - 1, day) // month is 0-indexed
+      }
+      
+      // Second try: parse as-is
+      const parsed = new Date(dateStr)
+      if (!isNaN(parsed.getTime())) {
+        return parsed
+      }
+      
+      // Third try: add time component for Safari compatibility
+      const withTime = new Date(dateStr + 'T00:00:00')
+      if (!isNaN(withTime.getTime())) {
+        return withTime
+      }
+      
+      return null
+    } catch (error) {
+      console.warn('Date parsing failed for:', dateStr, error)
+      return null
+    }
+  }, [])
+
   const downloadCSVFile = useCallback((csvData: string[][], fileName: string) => {
     const csvContent = csvData.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n')
 
@@ -560,15 +591,17 @@ function DailyAnalyticsPage() {
       csvData.push(['--- TOP 5 高売上日 ---'])
       sortedTrend.slice(0, Math.min(5, sortedTrend.length)).forEach((item, index) => {
         const diff = item.value - salesSummary.dailyAverage
-        const dateStr = format(new Date(item.date), 'yyyy-MM-dd')
+        const parsedDate = safeParseDate(item.date)
+        const dateStr = parsedDate ? format(parsedDate, 'yyyy-MM-dd') : item.date
         const dayData = dailySalesData.find((d) => d.sale_date === dateStr)
         const bookingCount = dayData?.booking_count || 0
         const avgAmount = bookingCount > 0 ? Math.round(item.value / bookingCount) : 0
+        const weekdayName = parsedDate ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' }) : '不明'
 
         csvData.push([
           `${index + 1}位`,
           item.date,
-          new Date(item.date).toLocaleDateString('ja-JP', { weekday: 'short' }),
+          weekdayName,
           `¥${item.value.toLocaleString()}`,
           `${bookingCount}件`,
           `¥${avgAmount.toLocaleString()}`,
@@ -586,15 +619,17 @@ function DailyAnalyticsPage() {
         .reverse()
         .forEach((item, index) => {
           const diff = item.value - salesSummary.dailyAverage
-          const dateStr = format(new Date(item.date), 'yyyy-MM-dd')
+          const parsedDate = safeParseDate(item.date)
+          const dateStr = parsedDate ? format(parsedDate, 'yyyy-MM-dd') : item.date
           const dayData = dailySalesData.find((d) => d.sale_date === dateStr)
           const bookingCount = dayData?.booking_count || 0
           const avgAmount = bookingCount > 0 ? Math.round(item.value / bookingCount) : 0
+          const weekdayName = parsedDate ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' }) : '不明'
 
           csvData.push([
             `下位${index + 1}`,
             item.date,
-            new Date(item.date).toLocaleDateString('ja-JP', { weekday: 'short' }),
+            weekdayName,
             `¥${item.value.toLocaleString()}`,
             `${bookingCount}件`,
             `¥${avgAmount.toLocaleString()}`,
@@ -782,7 +817,8 @@ function DailyAnalyticsPage() {
       trendData.forEach((item) => {
         const rank = trendData.filter((t) => t.value > item.value).length + 1
         const diff = item.value - salesSummary.dailyAverage
-        const weekday = new Date(item.date).toLocaleDateString('ja-JP', { weekday: 'short' })
+        const parsedDate = safeParseDate(item.date)
+        const weekday = parsedDate ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' }) : '不明'
         const expectedSales = salesSummary.dailyAverage
         const achievementRate = ((item.value / expectedSales) * 100).toFixed(1)
 
@@ -834,6 +870,7 @@ function DailyAnalyticsPage() {
     showErrorToast,
     downloadCSVFile,
     weekdayAnalysis,
+    safeParseDate,
   ])
 
   // ボタンのテキストを決定
