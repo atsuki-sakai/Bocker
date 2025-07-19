@@ -2,6 +2,7 @@
 
 import '@/app/globals.css'
 import { ConvexClientProvider } from '@/components/providers'
+import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache'
 import { ClerkProvider } from '@clerk/nextjs'
 import { jaJP } from '@clerk/localizations'
 import { Toaster } from 'sonner'
@@ -31,9 +32,11 @@ export default function RootLayout({
     >
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <ConvexClientProvider>
-          <GoogleAnalytics />
-          <div className="pb-12 md:pb-20">{children}</div>
-          <Toaster position="bottom-right" richColors />
+          <ConvexQueryCacheProvider>
+            <GoogleAnalytics />
+            <div className="pb-12 md:pb-20">{children}</div>
+            <Toaster position="bottom-right" richColors />
+          </ConvexQueryCacheProvider>
         </ConvexClientProvider>
       </ThemeProvider>
     </ClerkProvider>

@@ -10,6 +10,7 @@ import { SystemError } from '@/lib/errors/custom_errors'
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants'
 import { getEnv } from '@/lib/env-config'
 import { createClient } from '@supabase/supabase-js'
+import type { SessionPayload } from '@/lib/types'
 
 const convex = new ConvexHttpClient(getEnv('NEXT_PUBLIC_CONVEX_URL'))
 
@@ -349,13 +350,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. セッションCookieを発行 (JWTを使用)
-    const sessionPayload = {
+    const sessionPayload: SessionPayload = {
       lineUserId: lineUserId,
-      customerUid: customerUid, // Supabaseの顧客UID
+      customerUid: customerUid || '', // Supabaseの顧客UID
       tenantId: tenantId, // 予約フローのためにtenantIdもセッションに含める
       orgId: orgId, // 予約フローのためにorgIdもセッションに含める
-      name: lineUserName,
-      email: email,
+      customerName: lineUserName || '',
+      email: email || '',
       target_type: 'first_time',
       // 他にセッションに含めたい情報
     }

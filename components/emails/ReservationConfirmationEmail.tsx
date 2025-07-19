@@ -349,21 +349,49 @@ export const ContactEmail = ({
   subject,
   message,
 }: ContactEmailProps) => {
+  // subject値のマッピング
+  const getSubjectLabel = (subjectValue: string): string => {
+    const subjectMap: Record<string, string> = {
+      general: '資料請求',
+      support: '導入サポート',
+      other: 'その他'
+    }
+    return subjectMap[subjectValue] || subjectValue
+  }
+
+  const subjectLabel = getSubjectLabel(subject)
+
   return (
     <Html>
       <Head />
-      <Preview>{subject}</Preview>
+      <Preview>HPからのお問い合わせ - {subjectLabel}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Heading style={headerTitle}>{subject}</Heading>
+            <Heading style={headerTitle}>HPからのお問い合わせ</Heading>
           </Section>
           <Section style={content}>
-            <Text style={text}>{name}</Text>
-            <Text style={text}>{email}</Text>
-            <Text style={text}>{company}</Text>
-            <Text style={text}>{phone}</Text>
-            <Text style={text}>{message}</Text>
+            <Text style={text}>
+              <strong>お名前:</strong> {name}
+            </Text>
+            <Text style={text}>
+              <strong>メールアドレス:</strong> {email}
+            </Text>
+            <Text style={text}>
+              <strong>会社名:</strong> {company}
+            </Text>
+            <Text style={text}>
+              <strong>電話番号:</strong> {phone}
+            </Text>
+            <Text style={text}>
+              <strong>お問い合わせ種別:</strong> {subjectLabel}
+            </Text>
+            <Text style={text}>
+              <strong>お問い合わせ内容:</strong>
+            </Text>
+            <Text style={{...text, whiteSpace: 'pre-wrap' as const}}>
+              {message}
+            </Text>
           </Section>
         </Container>
       </Body>

@@ -155,7 +155,15 @@ export async function GET(request: NextRequest) {
 
     let currentSession: SessionPayload;
     try {
-      currentSession = jwt.verify(token, APP_JWT_SECRET) as SessionPayload;
+      const decodedPayload = jwt.verify(token, APP_JWT_SECRET) as SessionPayload & { name?: string };
+      
+      // Handle backward compatibility: if 'name' exists but 'customerName' doesn't, use 'name'
+      if (decodedPayload.name && !decodedPayload.customerName) {
+        decodedPayload.customerName = decodedPayload.name;
+        console.log('[API /api/auth/session] Migrated old token format: name -> customerName');
+      }
+      
+      currentSession = decodedPayload;
     } catch (err) {
       console.warn('[API /api/auth/session] Invalid session token:', err);
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });

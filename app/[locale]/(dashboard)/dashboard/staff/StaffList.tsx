@@ -6,7 +6,7 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
 import { Badge } from '@/components/ui/badge'
 import InviteManagement from './_components/InviteManagement'
-import { useQuery } from 'convex/react'
+import { useQueryWithStatus } from '@/hooks/useQueryWithStatus'
 import { CheckCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
@@ -16,7 +16,7 @@ export default function StaffList() {
   const { tenantId, orgId } = useTenantAndOrganization()
   const router = useRouter()
   // 招待状態を含むスタッフ一覧を取得
-  const staffsWithInvitation = useQuery(
+  const { data: staffsWithInvitation, isPending } = useQueryWithStatus(
     api.staff.invitation.query.getStaffWithInvitationStatus,
     tenantId && orgId
       ? {
@@ -27,7 +27,7 @@ export default function StaffList() {
       : 'skip'
   )
 
-  if (!staffsWithInvitation) {
+  if (isPending || !staffsWithInvitation) {
     return <Loading />
   }
 
