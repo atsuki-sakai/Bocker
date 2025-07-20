@@ -3611,7 +3611,8 @@
     "meta": {
       "title": "Bocker（ブッカー）- 美容サロン向け次世代予約管理システム",
       "description": "美容サロン・ヘアサロンの予約管理をデジタル化。リアルタイム予約、顧客管理、LINE連携、決済システムを統合した次世代SaaSプラットフォーム。30日間無料トライアル。月額6,000円から。",
-      "keywords": "美容サロン,ヘアサロン,予約管理システム,SaaS,DX,デジタル化,LINE予約,オンライン予約,Bocker,ブッカー,サロン経営,顧客管理,レジシステム,クレジットカード決済,ポイント管理,スタッフ管理,売上分析,予約システム,サロン運営,美容業界,クラウドサービス,リアルタイム予約"
+      "keywords": "美容サロン,ヘアサロン,予約管理システム,SaaS,DX,デジタル化,LINE予約,オンライン予約,Bocker,ブッカー,サロン経営,顧客管理,レジシステム,クレジットカード決済,ポイント管理,スタッフ管理,売上分析,予約システム,サロン運営,美容業界,クラウドサービス,リアルタイム予約",
+      "siteName": "Bocker"
     },
     "structuredData": {
       "organization": {
@@ -3619,9 +3620,13 @@
         "alternateName": "Bocker",
         "description": "美容サロン・ヘアサロンの予約管理をデジタル化する次世代SaaSプラットフォーム",
         "industry": "Software as a Service (SaaS)",
-        "contactType": "カスタマーサービス"
+        "contactType": "カスタマーサービス",
+        "address": {
+          "locality": "東京都",
+          "region": "関東地方"
+        }
       },
-      "softwareApplication": {
+      "application": {
         "name": "Bocker（ブッカー）",
         "description": "美容サロン・ヘアサロンの予約管理、顧客管理、LINE連携、決済システムを統合した次世代SaaSプラットフォーム",
         "applicationCategory": "ビジネスアプリケーション",
@@ -3676,6 +3681,10 @@
       "description": "美容サロン・ヘアサロンの予約管理をデジタル化。リアルタイム予約、顧客管理、LINE連携を統合した次世代SaaSプラットフォーム。30日間無料トライアル。",
       "siteName": "Bocker",
       "imageAlt": "Bocker - 美容サロン向け次世代予約管理システム"
+    },
+    "twitter": {
+      "title": "Bocker（ブッカー）- 美容サロン向け次世代予約管理システム",
+      "description": "美容サロン・ヘアサロンの予約管理をデジタル化。リアルタイム予約、顧客管理、LINE連携を統合した次世代SaaSプラットフォーム。30日間無料トライアル。"
     }
   }
 }
