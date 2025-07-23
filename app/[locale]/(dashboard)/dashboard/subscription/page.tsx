@@ -4,16 +4,10 @@ import { api } from '@/convex/_generated/api'
 import { redirect } from 'next/navigation'
 import { getOrganizationAuthForPage } from '@/lib/auth/getOrganizationAuth'
 import { Suspense } from 'react'
-import { Loading, UnauthorizedAccess } from '@/components/common'
-import { hasAccess } from '@/lib/utils'
+import { Loading } from '@/components/common'
 
 export default async function SubscriptionPage() {
-  const { userId, orgId, token, role, planName } = await getOrganizationAuthForPage()
-
-  // アクセス制御：admin権限が必要
-  if (!role || !hasAccess(role, planName ?? 'UNKNOWN', 'admin', 'LITE')) {
-    return <UnauthorizedAccess />
-  }
+  const { userId, orgId, token } = await getOrganizationAuthForPage()
 
   const tenantPreloaded = await preloadQuery(
     api.tenant.query.findByUserId,

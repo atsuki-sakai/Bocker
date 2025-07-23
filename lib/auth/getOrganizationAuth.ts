@@ -94,10 +94,6 @@ export async function getOrganizationAuthForPage(): Promise<{
       { tenant_id: metadata.tenant_id },
       { token: token }
     )
-    if (!subscription) {
-      console.error('サブスクリプション情報が見つかりません')
-      redirect('/sign-in')
-    }
 
     return { userId, orgId: metadata.org_id, role: metadata.role, token, tenantId: metadata.tenant_id, planName: subscription?.plan_name ?? null }
   }

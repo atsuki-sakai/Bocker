@@ -904,3 +904,39 @@ export const changeStaffForFreeNomination = mutation({
     };
   },
 })
+
+/**
+ * Supabase移行後にConvexの予約データを削除する内部ミューテーション
+ * 移行成功後のデータ重複を防ぐために使用
+ */
+export const deleteReservationAfterMigration = internalMutation({
+  args: {
+    reservation_id: v.id('reservation'),
+  },
+  handler: async (ctx, args) => {
+    try {
+      console.log(`[deleteReservationAfterMigration] Starting deletion for reservation: ${args.reservation_id}`);
+      
+      // 予約の存在確認
+      const reservation = await ctx.db.get(args.reservation_id);
+      if (!reservation) {
+        console.log(`[deleteReservationAfterMigration] Reservation not found: ${args.reservation_id}`);
+        return { success: true, reason: 'already_deleted' };
+      }
+      
+      // 共通ヘルパーで予約と関連データを完全削除
+      await deleteReservationWithDetails(ctx, args.reservation_id);
+      
+      console.log(`[deleteReservationAfterMigration] Successfully deleted reservation: ${args.reservation_id}`);
+      return { success: true };
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[deleteReservationAfterMigration] Failed to delete reservation ${args.reservation_id}:`, errorMessage);
+      
+      // 削除失敗は重要だが、Supabase移行は成功しているので再スローしない
+      // エラーログを記録するのみ
+      return { success: false, error: errorMessage };
+    }
+  },
+});

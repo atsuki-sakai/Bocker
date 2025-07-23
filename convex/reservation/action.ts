@@ -1,6 +1,6 @@
 "use node"
 
-import { internalAction, action } from '@/convex/_generated/server';
+import { internalAction, action, ActionCtx } from '@/convex/_generated/server';
 import { v } from 'convex/values';
 import { RowType, SupabaseService } from '@/services/supabase/SupabaseService';
 import { createClient } from '@supabase/supabase-js';
@@ -19,6 +19,7 @@ import { api } from '@/convex/_generated/api';
 import { validateStringLength, validateDateStrFormat } from '@/convex/utils/validations';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
+
 
 /**
  * 予約IDに紐づくポイントタスクを削除する
@@ -414,7 +415,7 @@ export const performSideEffects = internalAction({
           break;
         case "status":
           if (isStatusSideEffectsPayload(payload)) {
-            await handleStatusSideEffects(supabaseService, payload, coreResult);
+            await handleStatusSideEffects(ctx, supabaseService, payload, coreResult);
           } else {
             throw new ConvexError(
               'Invalid payload type for status mode',
@@ -671,6 +672,7 @@ async function handleCancelSideEffects(
 
 // ステータス変更時の副次処理
 async function handleStatusSideEffects(
+  ctx: ActionCtx, // Action context for running mutations
   supabaseService: SupabaseService, 
   payload: StatusSideEffectsPayload, 
   coreResult: {
@@ -800,10 +802,10 @@ async function handleStatusSideEffects(
         }
       }
       
-      // 8. 予約データをSupabaseに即座移行
+      // 8. 予約データをSupabaseに移行し、成功後にConvexから削除
       try {
-        await migrateReservationToSupabase(reservation);
-        console.log(`[handleStatusSideEffects] Reservation migrated to Supabase successfully: ${reservation._id}`);
+        await migrateReservationToSupabase(ctx, reservation);
+        console.log(`[handleStatusSideEffects] Reservation migrated to Supabase and deleted from Convex successfully: ${reservation._id}`);
       } catch (migrationError) {
         // Supabase移行エラーは予約完了処理を停止させない（ビジネス継続性優先）
         const errorMessage = migrationError instanceof Error ? migrationError.message : 'Unknown migration error';
@@ -895,12 +897,15 @@ async function handleStatusSideEffects(
 }
 
 /**
- * 単一の予約データをConvexからSupabaseに移行する
+ * 単一の予約データをConvexからSupabaseに移行し、移行成功後にConvexから削除する
  * 予約完了時に即座に実行される
  */
-async function migrateReservationToSupabase(reservation: Doc<'reservation'> & {
-  detail?: Doc<'reservation_detail'> | null;
-}) {
+async function migrateReservationToSupabase(
+  ctx: ActionCtx,
+  reservation: Doc<'reservation'> & {
+    detail?: Doc<'reservation_detail'> | null;
+  }
+) {
   try {
     // Supabase管理者クライアントを作成
     const supabase = createClient(
@@ -994,6 +999,29 @@ async function migrateReservationToSupabase(reservation: Doc<'reservation'> & {
     }
     
     console.log(`[migrateReservationToSupabase] Migration completed successfully for reservation: ${reservation._id}`);
+    
+    // Supabase移行成功後、Convexから予約データを削除してデータ重複を防ぐ
+    try {
+      const deleteResult = await ctx.runMutation(internal.reservation.mutation.deleteReservationAfterMigration, {
+        reservation_id: reservation._id,
+      });
+      
+      if (deleteResult.success) {
+        console.log(`[migrateReservationToSupabase] Convex reservation data deleted successfully after migration: ${reservation._id}`);
+      } else {
+        console.warn(`[migrateReservationToSupabase] Failed to delete Convex data after successful migration: ${reservation._id}`, deleteResult.error);
+      }
+    } catch (deleteError) {
+      // 削除失敗はSupabase移行の成功を阻害しない（ログのみ記録）
+      const deleteErrorMessage = deleteError instanceof Error ? deleteError.message : 'Unknown delete error';
+      console.error(`[migrateReservationToSupabase] Critical: Failed to delete Convex data after successful Supabase migration for reservation ${reservation._id}:`, {
+        error: deleteErrorMessage,
+        reservation_id: reservation._id,
+        tenant_id: reservation.tenant_id,
+        org_id: reservation.org_id
+      });
+      // エラーは再スローしない（Supabase移行は成功しているため）
+    }
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

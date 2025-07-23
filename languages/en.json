@@ -663,7 +663,8 @@
     "openSidebar": "Open sidebar",
     "closeSidebar": "Close",
     "subscriptionRequired": "Please subscribe to a plan.",
-    "subscriptionRequiredDetail": "After subscribing via the link below, you can use features based on your plan."
+    "subscriptionRequiredDetail": "After subscribing via the link below, you can use features based on your plan.",
+    "goToSubscription": "Go to Subscription Page"
   },
   "reservationLink": {
     "selectLinkDestination": "Select link destination",

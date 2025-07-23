@@ -1945,7 +1945,8 @@
     "openSidebar": "サイドバーを開く",
     "closeSidebar": "閉じる",
     "subscriptionRequired": "サブスクリプションをご契約ください。",
-    "subscriptionRequiredDetail": "以下のリンクから契約後にプラン毎の機能をご利用いただけます。"
+    "subscriptionRequiredDetail": "以下のリンクから契約後にプラン毎の機能をご利用いただけます。",
+    "goToSubscription": "サブスクリプションページへ"
   },
   "reservationLink": {
     "selectLinkDestination": "リンクの設置先を選択",

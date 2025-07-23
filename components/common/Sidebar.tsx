@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, memo, useCallback } from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Loading } from './'
 import Image from 'next/image'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogBackdrop, DialogPanel, TransitionChild } from '@headlessui/react'
 import { MenuIcon, XIcon } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
@@ -138,13 +139,21 @@ const SidebarNavigation = memo(
     return (
       <nav className="flex flex-1 flex-col">
         {!isSubscriptionActive && (
-          <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
-            <p className="text-xs text-muted-foreground">
-              <span className="inline-block font-bold mb-2">{t('subscriptionRequired')}</span>
-              <br />
-              {t('subscriptionRequiredDetail')}
-            </p>
-          </div>
+          <>
+            <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
+              <p className="text-xs text-muted-foreground">
+                <span className="inline-block font-bold mb-2">{t('subscriptionRequired')}</span>
+                <br />
+                {t('subscriptionRequiredDetail')}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/subscription"
+              className="text-sm text-primary hover:text-primary-foreground"
+            >
+              <Button className="text-xs w-full">{t('goToSubscription')}</Button>
+            </Link>
+          </>
         )}
         <div className="flex flex-1 flex-col">
           {/* マイページ */}
