@@ -10,7 +10,7 @@ export function HeroSection() {
   const t = useTranslations('landing.hero')
 
   return (
-    <div className="bg-background">
+    <div data-id="hero-section" className="bg-background">
       <div className="relative isolate">
         <svg
           aria-hidden="true"

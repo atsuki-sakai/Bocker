@@ -1,0 +1,213 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - link "Bocker Bocker Simple and convenient salon reservations":
+    - /url: /
+    - img "Bocker"
+    - text: Bocker Simple and convenient salon reservations
+  - button "Toggle theme":
+    - img
+    - img
+    - text: Toggle theme
+  - button "Toggle menu":
+    - img
+- main:
+  - heading "Bookings, Customers, Sales, Marketing." [level=1]
+  - paragraph: Streamline your daily operations and enhance customer satisfaction with our menu reservation management system
+  - link "View Demo":
+    - /url: https://bocker-project.vercel.app/ja/reservation/v5799kb53q14k5tyf4y0kj636d7jhz8p
+    - button "View Demo"
+  - link "30-Day Free Trial":
+    - /url: /en/sign-up
+  - link "Request Materials":
+    - /url: /en/contact
+    - button "Request Materials"
+  - paragraph: All Reservation Management Features in One
+  - paragraph: We provide all the features necessary for salon management, from reservations, customers, sales, menu management, customer analysis to marketing.
+  - img "App screenshot"
+  - term: Smart Reservation Management
+  - definition: Maximize customer convenience with 24/7 online booking and pre-visit menu selection. Staff can prepare in advance by knowing the number of customers and menu choices, significantly reducing preparation costs and waiting times.
+  - term: Reservation Slot Optimization Algorithm
+  - definition: Our unique algorithm automatically generates optimal booking slots and shifts tailored to your salon. Minimize idle time while maximizing revenue and utilization rates simultaneously.
+  - term: Digital Client Records
+  - definition: Centralize treatment history, skin/hair conditions, and before/after photos. Reduce documentation burden with voice input and AI image analysis for smooth information sharing.
+  - term: Complete Business Efficiency
+  - definition: All-in-one solution from reservation and customer management to staff scheduling, points, and payments. Cut management hours in half without multiple tools and significantly reduce operational costs.
+  - term: Designed for Beauty Professionals
+  - definition: Intuitive simple UI enables instant operation even for IT beginners. Workflow-based design reduces training costs and mistakes for new staff.
+  - term: Reliable Support System
+  - definition: Comprehensive support from paper/Excel data migration to initial setup, manuals, and video tutorials. Our companion support via chat thoroughly eliminates implementation concerns.
+  - heading "Simple Pricing Plans" [level=2]
+  - paragraph: No hidden fees, all features unlimited
+  - paragraph: Cancel anytime · 30-day free trial
+  - group "Payment frequency":
+    - text: Monthly
+    - switch
+    - text: Annually
+  - heading "LITE" [level=3]
+  - paragraph: ¥8,000
+  - paragraph: Subscription
+  - paragraph: Monthly
+  - list:
+    - listitem: Reservation Management (timeline, staff scheduling, confirmation/cancellation, 24/7 online booking)
+    - listitem: Customer Management (basic info, booking/purchase history, points, customer portal)
+    - listitem: Customer Records (automatic treatment details, allergies, hair quality management)
+    - listitem: Staff Management (account creation, login, permissions, basic scheduling) ※Up to 3 staff
+    - listitem: Menu Settings (one image, menu registration, pricing/duration) ※Up to 20 items
+    - listitem: Options & Retail (add options, option selection) ※Up to 15 items
+    - listitem: Points & Coupons (customizable point system, coupon management)
+    - listitem: Automatic Reminders & Notifications (LINE)
+    - listitem: Staff (3), Menus (30), Options (15), Coupons (10), Reservations (300/month)
+  - heading "PRO" [level=3]
+  - paragraph: ¥12,000
+  - paragraph: Subscription
+  - paragraph: Monthly
+  - list:
+    - listitem: All LITE plan features
+    - listitem: Customer Records (4 image attachments, voice input available)
+    - listitem: Menu Settings (2 images) ※Up to 60 items
+    - listitem: Staff (10), Menus (60), Options (30), Coupons (30), Reservations (1000/month)
+  - region "Feature comparison":
+    - heading "Feature comparison" [level=2]
+    - heading "LITE" [level=3]
+    - paragraph: Everything you need to get started.
+    - heading "Basic Features" [level=4]
+    - term: Max Reservations/Month
+    - definition: "500"
+    - term: Max Customer Registration
+    - definition: "1000"
+    - term: Staff Management
+    - definition: 5 people
+    - term: Menu Settings
+    - definition: 50 items
+    - term: Options & Retail
+    - definition: 25 items
+    - term: Points & Coupons
+    - definition: 25 items
+    - term: Automatic Reminders & Notifications
+    - definition: "Yes"
+    - heading "Customer Management & Records" [level=4]
+    - term: Customer Records Feature
+    - definition: "Yes"
+    - term: Advanced Records (Images & Voice)
+    - definition: "No"
+    - heading "Support & Other" [level=4]
+    - term: Chat Support (bottom right chat button)
+    - definition: "Yes"
+    - heading "PRO" [level=3]
+    - paragraph: Added flexibility at scale.
+    - heading "Basic Features" [level=4]
+    - term: Max Reservations/Month
+    - definition: Unlimited
+    - term: Max Customer Registration
+    - definition: Unlimited
+    - term: Staff Management
+    - definition: 15 people
+    - term: Menu Settings
+    - definition: 100 items
+    - term: Options & Retail
+    - definition: 50 items
+    - term: Points & Coupons
+    - definition: 100 items
+    - term: Automatic Reminders & Notifications
+    - definition: "Yes"
+    - heading "Customer Management & Records" [level=4]
+    - term: Customer Records Feature
+    - definition: "Yes"
+    - term: Advanced Records (Images & Voice)
+    - definition: 4 images (voice input PC only)
+    - heading "Support & Other" [level=4]
+    - term: Chat Support (bottom right chat button)
+    - definition: "Yes"
+  - paragraph: Increase Revenue & Reduce Costs
+  - heading "Save ¥1.2M in Annual Labor Costs" [level=1]
+  - paragraph: With an investment starting at ¥8,000/month, achieve ¥100,000 monthly labor cost savings. Automated reservation management lets your staff focus on treatments, simultaneously achieving increased sales and cost reduction.
+  - paragraph: 79.9% of beauty salons struggle with declining customer numbers. Bocker solves this with 24/7 online booking and automated systems for improving repeat rates.
+  - list:
+    - listitem:
+      - strong: 15% Revenue Increase
+      - text: Achieve higher booking conversion rates through online reservations and 20% improvement in customer repeat rates with points and coupon systems.
+    - listitem:
+      - strong: Zero Booking Mistakes
+      - text: Eliminate lost opportunities from double bookings and missed reservations. Maintain customer trust and achieve stable management.
+    - listitem:
+      - strong: Save 30 Hours Monthly
+      - text: Reduce reservation phone time to 5 hours monthly. Staff can focus on treatments, significantly improving customer satisfaction.
+  - paragraph: "Average results from implemented businesses: 8% increase in customer spending, 40% decrease in no-shows, improved staff retention. Differentiate from competitors and achieve sustainable growth."
+  - heading "Immediate Return on Investment" [level=2]
+  - paragraph: ¥8,000 monthly investment yields ¥100,000 in monthly savings. ROI achieved within the first month. Experience the benefits with a 30-day free trial before committing. No cancellation fees, cancel anytime.
+  - heading "ご利用を開始する 今すぐ無料トライアルを開始" [level=2]
+  - link "無料トライアルを開始":
+    - /url: "#"
+  - link "詳細を見る":
+    - /url: "#"
+  - heading "Frequently Asked Questions" [level=2]
+  - paragraph:
+    - text: Trusted by many beauty salon and spa owners
+    - link "Contact Us":
+      - /url: /en/contact
+  - term: What is Bocker and who is it for?
+  - definition: Bocker is a cutting-edge SaaS platform for appointment-based service businesses like beauty salons, nail salons, and aesthetic salons. With our unique hybrid database architecture and optimistic inventory management system, we achieve 99.9% uptime at half the industry-standard operating costs. We guarantee zero double bookings and offer a 30-day free trial for risk-free implementation.
+  - term: What features does Bocker offer?
+  - definition: "Key features include: 1) Reservation management (24/7 online booking, 100% double-booking prevention), 2) Customer management (360-degree customer view, complete visit tracking), 3) Staff management (shift management, performance analytics), 4) Points & coupon system (Pro plan and above), 5) Payment management (Stripe Connect integration, automatic settlement), 6) Analytics (real-time data analysis)."
+  - term: What are the concrete benefits of implementing Bocker?
+  - definition: "1) Labor cost reduction: Phone reservation time reduced from 30 to 5 hours monthly (¥100,000 monthly savings), 2) Revenue increase: 15% higher booking conversion rate, 20% higher repeat rate with points/coupons, 8% higher average customer spending, 3) Loss prevention: 40% reduction in no-shows, zero booking errors, 10% improved operational efficiency."
+  - term: What are your pricing plans?
+  - definition: "LITE plan (¥8,000/month or ¥80,000/year) covers all essential salon features: up to 500 bookings/month, 500 customers, 3 staff, 20 menu items, 15 options, 10 coupons. PRO plan (¥12,000/month or ¥120,000/year) includes all LITE features plus 4 image/voice charting, up to 60 menu items, 12 staff, 30 options, 30 coupons, and unlimited bookings/customers. Both plans offer a 30-day free trial, no cancellation fees, and flexible plan changes."
+  - term: How does Bocker differ from other booking systems?
+  - definition: "1) Technical advantage: Industry-exclusive \"optimistic inventory management\" prevents double bookings even under race conditions. Hybrid DB architecture ensures ultra-fast response. 2) Economic advantage: Clear ROI and immediate investment recovery, fully transparent pricing with no hidden fees. 3) Comprehensive support: Dedicated onboarding, initial setup service, and ongoing online support. Bocker stands out for speed, reliability, and support."
+  - term: How secure is the platform?
+  - definition: We provide enterprise-grade security with TLS 1.3 encryption for communications, AES-256 data encryption, and regular security audits. We are fully compliant with Personal Information Protection Law, GDPR-ready, and PCI DSS compliant for payment data. Additionally, we implement multi-region redundancy for high availability and perform hourly automatic backups.
+  - heading "Bocker Support Center" [level=2]
+  - paragraph: Bocker is a SaaS platform designed to support salon operations. If you have any questions or concerns, please feel free to contact us at any time.
+  - link "Contact":
+    - /url: /contact
+    - button "Contact"
+  - heading "Contact" [level=3]
+  - paragraph: For service-related questions or inquiries, please feel free to contact us at any time. Our dedicated staff will respond to you with care.
+  - heading "Support" [level=3]
+  - paragraph: We provide detailed support for any issues or questions you may have during your use. You can also refer to our frequently asked questions for quick answers.
+- contentinfo:
+  - img "Bocker"
+  - text: Bocker
+  - paragraph: Salon Management System for Beauty Services
+  - heading "Product" [level=3]
+  - list:
+    - listitem:
+      - link "Features":
+        - /url: /features
+    - listitem:
+      - link "Pricing":
+        - /url: /pricing
+    - listitem:
+      - link "Demo":
+        - /url: https://bocker-project.vercel.app/ja/reservation/v5799kb53q14k5tyf4y0kj636d7jhz8p
+  - heading "Support" [level=3]
+  - list:
+    - listitem:
+      - link "FAQ":
+        - /url: /faq
+    - listitem:
+      - link "Contact":
+        - /url: /contact
+  - heading "Company" [level=3]
+  - list:
+    - listitem:
+      - link "About":
+        - /url: /about
+    - listitem:
+      - link "Privacy Policy":
+        - /url: /privacy
+    - listitem:
+      - link "Terms of Use":
+        - /url: /terms
+  - paragraph: © 2025 Bocker. All rights reserved.
+  - link "Instagram":
+    - /url: https://www.instagram.com/bocker_fujimoto
+    - img
+- region "Notifications alt+T"
+- alert
+- button "Open Next.js Dev Tools":
+  - img
+```

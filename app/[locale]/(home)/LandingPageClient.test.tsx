@@ -12,20 +12,32 @@ interface SplashScreenProps {
 }
 
 vi.mock('./_components', () => ({
-  HeroSection: vi.fn(() => React.createElement('div', { 'data-testid': 'hero-section' }, 'Hero Section')),
-  FeatureSection: vi.fn(() => React.createElement('div', { 'data-testid': 'feature-section' }, 'Feature Section')),
-  Pricing: vi.fn(() => React.createElement('div', { 'data-testid': 'pricing' }, 'Pricing')),
-  HeaderSection: vi.fn(() => React.createElement('div', { 'data-testid': 'header-section' }, 'Header Section')),
-  ContentSection: vi.fn(() => React.createElement('div', { 'data-testid': 'content-section' }, 'Content Section')),
-  CTASection: vi.fn(() => React.createElement('div', { 'data-testid': 'cta-section' }, 'CTA Section')),
-  FAQ: vi.fn((props: FAQProps) => React.createElement('div', { 'data-testid': 'faq' }, `FAQ - ${props.locale || ''}`)),
-  SplashScreen: vi.fn(({ onComplete }: SplashScreenProps) => 
-    React.createElement('div', { 'data-testid': 'splash-screen' },
+  HeroSection: vi.fn(() =>
+    React.createElement('div', { 'data-id': 'hero-section' }, 'Hero Section')
+  ),
+  FeatureSection: vi.fn(() =>
+    React.createElement('div', { 'data-id': 'feature-section' }, 'Feature Section')
+  ),
+  Pricing: vi.fn(() => React.createElement('div', { 'data-id': 'pricing' }, 'Pricing')),
+  HeaderSection: vi.fn(() =>
+    React.createElement('div', { 'data-id': 'header-section' }, 'Header Section')
+  ),
+  ContentSection: vi.fn(() =>
+    React.createElement('div', { 'data-id': 'content-section' }, 'Content Section')
+  ),
+  CTASection: vi.fn(() => React.createElement('div', { 'data-id': 'cta-section' }, 'CTA Section')),
+  FAQ: vi.fn((props: FAQProps) =>
+    React.createElement('div', { 'data-id': 'faq' }, `FAQ - ${props.locale || ''}`)
+  ),
+  SplashScreen: vi.fn(({ onComplete }: SplashScreenProps) =>
+    React.createElement(
+      'div',
+      { 'data-id': 'splash-screen' },
       React.createElement('button', { onClick: onComplete }, 'Complete Splash')
     )
   ),
-  Header: vi.fn(() => React.createElement('div', { 'data-testid': 'header' }, 'Header')),
-  Footer: vi.fn(() => React.createElement('div', { 'data-testid': 'footer' }, 'Footer')),
+  Header: vi.fn(() => React.createElement('div', { 'data-id': 'header' }, 'Header')),
+  Footer: vi.fn(() => React.createElement('div', { 'data-id': 'footer' }, 'Footer')),
 }))
 
 // localStorage モック

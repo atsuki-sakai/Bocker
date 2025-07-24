@@ -76,7 +76,7 @@ export function FAQ({ locale }: { locale: string }) {
   const faqs = getFaqData(locale)
   const t = useTranslations('landing.faq')
   return (
-    <div className="bg-background">
+    <div data-id="faq-section" className="bg-background">
       <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <motion.h2

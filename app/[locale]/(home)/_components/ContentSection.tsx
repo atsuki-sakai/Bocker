@@ -11,6 +11,7 @@ export function ContentSection() {
   const t = useTranslations('landing.content')
   return (
     <motion.div
+      data-id="content-section"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}

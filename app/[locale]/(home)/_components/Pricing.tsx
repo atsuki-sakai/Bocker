@@ -151,7 +151,7 @@ export function Pricing() {
   }
 
   return (
-    <form className="group/tiers isolate overflow-hidden">
+    <form data-id="pricing" className="group/tiers isolate overflow-hidden">
       <div className="flow-root bg-background pt-24 pb-16 sm:pt-32 lg:pb-0">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="relative z-10">

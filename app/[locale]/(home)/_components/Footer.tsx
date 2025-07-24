@@ -17,7 +17,7 @@ export function Footer() {
     }, [])
 
     return (
-      <footer className="py-12 bg-background border-t">
+      <footer data-id="footer" className="py-12 bg-background border-t">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-3">
