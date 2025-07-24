@@ -1,2 +1,47 @@
-<testsuites id="" name="" tests="0" failures="0" skipped="0" errors="0" time="2.977667">
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="17.285311999999998">
+<testsuite name="home.spec.ts" timestamp="2025-07-24T01:19:56.111Z" hostname="chromium" tests="1" failures="1" skipped="0" time="12.879" errors="0">
+<testcase name="ホームページ › ページが正しく読み込まれる" classname="home.spec.ts" time="12.879">
+<failure message="home.spec.ts:9:7 ページが正しく読み込まれる" type="FAILURE">
+<![CDATA[  [chromium] › home.spec.ts:9:7 › ホームページ › ページが正しく読み込まれる ───────────────────────────────────────────
+
+    Error: Timed out 5000ms waiting for expect(page).toHaveTitle(expected)
+
+    Expected pattern: /Bocker/
+    Received string:  ""
+    Call log:
+      - Expect "toHaveTitle" with timeout 5000ms
+        9 × unexpected value ""
+
+
+       9 |   test('ページが正しく読み込まれる', async ({ page }) => {
+      10 |     // ページタイトルを確認
+    > 11 |     await expect(page).toHaveTitle(/Bocker/)
+         |                        ^
+      12 |     
+      13 |     // メインセクションが存在することを確認
+      14 |     await expect(page.locator('main')).toBeVisible()
+        at /Users/atsukisakai/Desktop/bokcer-project/bocker/e2e/home.spec.ts:11:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/home-ホームページ-ページが正しく読み込まれる-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/home-ホームページ-ページが正しく読み込まれる-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/home-ホームページ-ページが正しく読み込まれる-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|home-ホームページ-ページが正しく読み込まれる-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|home-ホームページ-ページが正しく読み込まれる-chromium/video.webm]]
+
+[[ATTACHMENT|home-ホームページ-ページが正しく読み込まれる-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
 </testsuites>

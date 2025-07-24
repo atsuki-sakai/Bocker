@@ -3733,7 +3733,8 @@
     "meta": {
       "title": "Bocker - Next-Generation Reservation Management System for Beauty Salons",
       "description": "Digitize your beauty salon management with real-time reservations, customer management, LINE integration, and payment systems. Next-generation SaaS platform for hair salons. 30-day free trial. Starting from $60/month.",
-      "keywords": "beauty salon,hair salon,reservation management system,SaaS,digital transformation,LINE booking,online reservation,Bocker,salon management,customer management,POS system,credit card payment,point management,staff management,sales analytics,booking system,salon operations,beauty industry,cloud service,real-time booking"
+      "keywords": "beauty salon,hair salon,reservation management system,SaaS,digital transformation,LINE booking,online reservation,Bocker,salon management,customer management,POS system,credit card payment,point management,staff management,sales analytics,booking system,salon operations,beauty industry,cloud service,real-time booking",
+      "siteName": "Bocker"
     },
     "structuredData": {
       "organization": {
@@ -3741,9 +3742,13 @@
         "alternateName": "Bocker",
         "description": "Next-generation SaaS platform for digitizing beauty salon and hair salon reservation management",
         "industry": "Software as a Service (SaaS)",
-        "contactType": "customer service"
+        "contactType": "customer service",
+        "address": {
+          "locality": "Tokyo",
+          "region": "Kanto Region"
+        }
       },
-      "softwareApplication": {
+      "application": {
         "name": "Bocker",
         "description": "Next-generation SaaS platform integrating reservation management, customer management, LINE integration, and payment systems for beauty salons and hair salons",
         "applicationCategory": "BusinessApplication",
@@ -3798,6 +3803,10 @@
       "description": "Digitize your beauty salon management with real-time reservations, customer management, and LINE integration. Next-generation SaaS platform. 30-day free trial.",
       "siteName": "Bocker",
       "imageAlt": "Bocker - Next-Generation Reservation Management System for Beauty Salons"
+    },
+    "twitter": {
+      "title": "Bocker - Next-Generation Reservation Management System for Beauty Salons",
+      "description": "Digitize your beauty salon management with real-time reservations, customer management, and LINE integration. Next-generation SaaS platform. 30-day free trial."
     }
   }
 }
