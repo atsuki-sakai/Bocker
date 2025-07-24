@@ -33,6 +33,14 @@ export default defineConfig({
         '**/*.test.*',
         '**/*.spec.*',
       ],
+      thresholds: {
+        global: {
+          branches: 70,
+          functions: 70,
+          lines: 70,
+          statements: 70,
+        },
+      },
     },
     include: [
       'app/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

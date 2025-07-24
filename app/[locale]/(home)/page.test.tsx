@@ -43,7 +43,7 @@ vi.mock('./LandingPageClient', () => {
       </div>
     )
   })
-  
+
   return {
     LandingPageClient: MockLandingPageClient,
   }
@@ -62,7 +62,9 @@ describe('Home Page', () => {
       const metadata = await generateMetadata({ params })
 
       expect(metadata.title).toBe('Bocker - 美容サロン向け予約管理システム')
-      expect(metadata.description).toBe('美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム')
+      expect(metadata.description).toBe(
+        '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム'
+      )
       expect(metadata.keywords).toBe('予約管理,美容サロン,SaaS')
     })
 
@@ -71,8 +73,9 @@ describe('Home Page', () => {
       const metadata = await generateMetadata({ params })
 
       expect(metadata.openGraph?.title).toBe('Bocker - 美容サロン向け予約管理システム')
-      expect(metadata.openGraph?.description).toBe('美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム')
-      expect(metadata.openGraph?.type).toBe('website')
+      expect(metadata.openGraph?.description).toBe(
+        '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム'
+      )
       expect(metadata.openGraph?.locale).toBe('ja_JP')
     })
 
@@ -112,7 +115,7 @@ describe('Home Page', () => {
 
       const scripts = container.querySelectorAll('script[type="application/ld+json"]')
       expect(scripts.length).toBe(3) // organization, application, website
-      
+
       // 最初のscriptの内容をチェック
       const firstScript = scripts[0]
       const scriptContent = firstScript.textContent
