@@ -3,37 +3,34 @@ import { render, screen } from '@testing-library/react'
 import Home, { generateMetadata } from './page'
 import { redirect } from 'next/navigation'
 
-// Next.js server function モック
-const mockGetTranslations = vi.fn(() => (key: string) => {
-  const translations: Record<string, string> = {
-    'meta.title': 'Bocker - 美容サロン向け予約管理システム',
-    'meta.description': '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム',
-    'meta.keywords': '予約管理,美容サロン,SaaS',
-    'meta.siteName': 'Bocker',
-    'ogp.title': 'Bocker - 美容サロン向け予約管理システム',
-    'ogp.description': '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム',
-    'ogp.imageAlt': 'Bocker ロゴ',
-    'twitter.title': 'Bocker - 美容サロン向け予約管理システム',
-    'twitter.description': '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム',
-    'structuredData.organization.name': 'Bocker',
-    'structuredData.organization.alternateName': 'ブッカー',
-    'structuredData.organization.description': '美容サロン向け予約管理システム',
-    'structuredData.organization.address.locality': '東京',
-    'structuredData.organization.address.region': '東京都',
-    'structuredData.application.name': 'Bocker',
-    'structuredData.application.description': '美容サロン向け予約管理システム',
-    'structuredData.application.offers.lite.name': 'Liteプラン',
-    'structuredData.application.offers.lite.description': '基本的な予約管理機能',
-    'structuredData.application.offers.pro.name': 'Proプラン',
-    'structuredData.application.offers.pro.description': '高度な予約管理機能',
-    'structuredData.website.name': 'Bocker',
-    'structuredData.website.description': '美容サロン向け予約管理システム',
-  }
-  return translations[key] || key
-})
-
 vi.mock('next-intl/server', () => ({
-  getTranslations: vi.fn(() => mockGetTranslations),
+  getTranslations: vi.fn(() => {
+    const translations: Record<string, string> = {
+      'meta.title': 'Bocker - 美容サロン向け予約管理システム',
+      'meta.description': '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム',
+      'meta.keywords': '予約管理,美容サロン,SaaS',
+      'meta.siteName': 'Bocker',
+      'ogp.title': 'Bocker - 美容サロン向け予約管理システム',
+      'ogp.description': '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム',
+      'ogp.imageAlt': 'Bocker ロゴ',
+      'twitter.title': 'Bocker - 美容サロン向け予約管理システム',
+      'twitter.description': '美容サロン向けの効率的な予約・顧客管理SaaSプラットフォーム',
+      'structuredData.organization.name': 'Bocker',
+      'structuredData.organization.alternateName': 'ブッカー',
+      'structuredData.organization.description': '美容サロン向け予約管理システム',
+      'structuredData.organization.address.locality': '東京',
+      'structuredData.organization.address.region': '東京都',
+      'structuredData.application.name': 'Bocker',
+      'structuredData.application.description': '美容サロン向け予約管理システム',
+      'structuredData.application.offers.lite.name': 'Liteプラン',
+      'structuredData.application.offers.lite.description': '基本的な予約管理機能',
+      'structuredData.application.offers.pro.name': 'Proプラン',
+      'structuredData.application.offers.pro.description': '高度な予約管理機能',
+      'structuredData.website.name': 'Bocker',
+      'structuredData.website.description': '美容サロン向け予約管理システム',
+    }
+    return (key: string) => translations[key] || key
+  }),
 }))
 
 // LandingPageClient モック
