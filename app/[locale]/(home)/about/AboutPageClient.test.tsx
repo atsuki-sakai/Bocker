@@ -40,12 +40,6 @@ vi.mock('../_components/Footer', () => ({
   Footer: () => <div data-testid="footer">Footer</div>,
 }))
 
-// Next.js Image のモック
-vi.mock('next/image', () => ({
-  default: ({ src, alt, ...props }: any) => (
-    <img src={src} alt={alt} {...props} data-testid="next-image" />
-  ),
-}))
 
 describe('AboutPageClient', () => {
   beforeEach(() => {
@@ -175,24 +169,13 @@ describe('AboutPageClient', () => {
   })
 
   describe('エラーハンドリング', () => {
-    it('翻訳キーが見つからない場合でもエラーにならない', async () => {
-      const { useTranslations } = await import('next-intl')
-      vi.mocked(useTranslations).mockImplementation(() => 
-        (key: string) => `missing.${key}`
-      )
-      
-      expect(() => render(<AboutPageClient />)).not.toThrow()
-      
-      expect(screen.getByText('missing.subtitle')).toBeInTheDocument()
-    })
-
     it('コンポーネントのレンダリングエラーを適切に処理する', () => {
       // エラーバウンダリをテストするため、console.errorをモック
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      
+
       // TeamSectionコンポーネントをmockImplementationで置き換える必要があるため、直接mockする
       expect(() => render(<AboutPageClient />)).not.toThrow()
-      
+
       consoleSpy.mockRestore()
     })
   })

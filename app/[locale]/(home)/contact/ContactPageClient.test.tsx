@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ContactPageClient } from './ContactPageClient'
 
@@ -19,11 +19,11 @@ const mockTranslations = {
     title: 'お問い合わせフォーム',
     fields: {
       name: 'お名前',
-      email: 'メールアドレス', 
+      email: 'メールアドレス',
       company: '会社名',
       phone: '電話番号',
       subject: 'お問い合わせ種別',
-      message: 'お問い合わせ内容'
+      message: 'お問い合わせ内容',
     },
     placeholders: {
       name: 'お名前を入力してください',
@@ -31,38 +31,38 @@ const mockTranslations = {
       company: '会社名を入力してください',
       phone: '電話番号を入力してください',
       subject: 'お問い合わせ種別を選択してください',
-      message: 'お問い合わせ内容を入力してください'
+      message: 'お問い合わせ内容を入力してください',
     },
     submit: '送信する',
     submitting: '送信中...',
     success: 'お問い合わせを受け付けました',
-    error: 'エラーが発生しました'
+    error: 'エラーが発生しました',
   },
   info: {
     title: 'お問い合わせ先',
     items: {
       email: {
         label: 'メール',
-        value: 'support@bocker.jp'
+        value: 'support@bocker.jp',
       },
       hours: {
         label: '受付時間',
-        value: '平日 9:00-18:00'
+        value: '平日 9:00-18:00',
       },
       phone: {
         label: '電話',
-        value: '03-1234-5678'
+        value: '03-1234-5678',
       },
       response: {
         label: '返信時間',
-        value: '24時間以内'
-      }
-    }
+        value: '24時間以内',
+      },
+    },
   },
   faq: {
     title: 'よくある質問',
-    cta: 'その他のご質問はFAQページをご確認ください'
-  }
+    cta: 'その他のご質問はFAQページをご確認ください',
+  },
 }
 
 // Fetch API のモック
@@ -92,15 +92,7 @@ vi.mock('../_components/Footer', () => ({
   Footer: () => <div data-testid="footer">Footer</div>,
 }))
 
-// Framer Motion のモック
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
-    p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
-    form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
-  },
-}))
+
 
 describe('ContactPageClient', () => {
   const user = userEvent.setup()
