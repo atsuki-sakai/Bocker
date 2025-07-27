@@ -20,7 +20,7 @@ import {
   isToday,
 } from 'date-fns'
 import { useQuery } from 'convex/react'
-import { formatDate } from '@/lib/formatDate'
+import { formatDate } from '@/lib/schedules'
 import type { SupportedLocale } from '@/lib/dateLocale'
 import { Id, Doc } from '@/convex/_generated/dataModel'
 import {
@@ -34,7 +34,7 @@ import { usePaginatedQuery } from 'convex/react'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { convertReservationStatus } from '@/convex/types'
-import { convertDayOfWeekToJa } from '@/lib/schedules'
+import { convertDayOfWeek } from '@/lib/schedules'
 
 // 10分刻みのグリッド単位を定数として定義
 const GRID_UNIT_MIN = 10 // 1行 = 10分
@@ -637,7 +637,7 @@ function StaffSchedulePage() {
                         {weekDays[Number(schedule.day_of_week) - 1]}
                       </span>
                       <span className="text-xs text-nowrap px-2 py-0.5 rounded-full">
-                        {convertDayOfWeekToJa(schedule.day_of_week as DayOfWeek)}
+                        {convertDayOfWeek(schedule.day_of_week as DayOfWeek, locale)}
                       </span>
                       <span
                         className={`text-xs text-nowrap px-2 py-0.5 rounded-full ${

@@ -34,7 +34,7 @@ import { toast } from 'sonner'
 import { useTranslations, useLocale } from 'next-intl'
 
 // Import date formatting library
-import { formatDate } from '@/lib/formatDate'
+import { formatDate } from '@/lib/schedules'
 import type { SupportedLocale } from '@/lib/dateLocale'
 
 // Import point transaction repository
