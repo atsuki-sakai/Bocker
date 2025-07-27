@@ -3258,6 +3258,12 @@
       "description": "With an investment starting at ¥8,000/month, achieve ¥100,000 monthly labor cost savings. Automated reservation management lets your staff focus on treatments, simultaneously achieving increased sales and cost reduction.",
       "industryProblem": "79.9% of beauty salons struggle with declining customer numbers. Bocker solves this with 24/7 online booking and automated systems for improving repeat rates."
     },
+    "cta": {
+      "title": "Start Your Free Trial",
+      "title2": "Let's Start Free Trial Now",
+      "button": "Start Free Trial",
+      "button2": "More Details"
+    },
     "headerSection": {
       "title": "Bocker Support Center",
       "description": "Bocker is a SaaS platform designed to support salon operations. If you have any questions or concerns, please feel free to contact us at any time.",

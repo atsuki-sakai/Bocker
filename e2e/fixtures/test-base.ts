@@ -1,12 +1,13 @@
 import { test as base } from '@playwright/test'
-
+import { Doc } from '@/convex/_generated/dataModel'
+import { RowType } from '@/services/supabase/SupabaseService'
 // テスト用のフィクスチャを定義
 type TestFixtures = {
   // 将来的にConvexやSupabaseのモックデータを注入するためのフィクスチャ
   mockData: {
-    organizations: any[]
-    reservations: any[]
-    customers: any[]
+    organizations: Doc<'organization'>[]
+    reservations: Doc<'reservation' | 'reservation_detail'>[]
+    customers: RowType<'customer' | 'customer_detail'>[]
   }
 }
 

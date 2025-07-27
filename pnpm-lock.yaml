@@ -35,6 +35,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.1.0)
+      '@edge-runtime/vm':
+        specifier: ^5.0.0
+        version: 5.0.0
       '@google-cloud/storage':
         specifier: ^7.15.2
         version: 7.16.0
@@ -170,6 +173,9 @@ importers:
       convex-helpers:
         specifier: ^0.1.76
         version: 0.1.86(convex@1.24.1(@clerk/clerk-react@5.31.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.8.3)(zod@3.24.4)
+      convex-test:
+        specifier: ^0.0.38
+        version: 0.0.38(convex@1.24.1(@clerk/clerk-react@5.31.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))
       crypto-js:
         specifier: ^4.2.0
         version: 4.2.0
@@ -329,7 +335,7 @@ importers:
         version: 4.7.0(vite@5.4.19(@types/node@20.17.47)(terser@5.42.0))
       '@vitest/coverage-v8':
         specifier: ^2.1.8
-        version: 2.1.9(vitest@2.1.9(@edge-runtime/vm@3.2.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0))
+        version: 2.1.9(vitest@2.1.9(@edge-runtime/vm@5.0.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0))
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
@@ -367,8 +373,8 @@ importers:
         specifier: ^5
         version: 5.8.3
       vitest:
-        specifier: ^2.1.8
-        version: 2.1.9(@edge-runtime/vm@3.2.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0)
+        specifier: ^2.1.9
+        version: 2.1.9(@edge-runtime/vm@5.0.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0)
 
 packages:
 
@@ -652,9 +658,17 @@ packages:
     resolution: {integrity: sha512-Vw0lbJ2lvRUqc7/soqygUX216Xb8T3WBZ987oywz6aJqRxcwSVWwr9e+Nqo2m9bxobA9mdbWNNoRY6S9eko1EQ==}
     engines: {node: '>=16'}
 
+  '@edge-runtime/primitives@6.0.0':
+    resolution: {integrity: sha512-FqoxaBT+prPBHBwE1WXS1ocnu/VLTQyZ6NMUBAdbP7N2hsFTTxMC/jMu2D/8GAlMQfxeuppcPuCUk/HO3fpIvA==}
+    engines: {node: '>=18'}
+
   '@edge-runtime/vm@3.2.0':
     resolution: {integrity: sha512-0dEVyRLM/lG4gp1R/Ik5bfPl/1wX00xFwd5KcNH602tzBa09oF7pbTKETEhR1GjZ75K6OJnYFu8II2dyMhONMw==}
     engines: {node: '>=16'}
+
+  '@edge-runtime/vm@5.0.0':
+    resolution: {integrity: sha512-NKBGBSIKUG584qrS1tyxVpX/AKJKQw5HgjYEnPLC0QsTw79JrGn+qUr8CXFb955Iy7GUdiiUv1rJ6JBGvaKb6w==}
+    engines: {node: '>=18'}
 
   '@emnapi/core@1.4.3':
     resolution: {integrity: sha512-4m62DuCE07lw01soJwPiBGC0nAww0Q+RY70VZ+n49yDIO13yyinhbWCeNnaob0lakDtWQzSdtNWzJeOJt2ma+g==}
@@ -4290,6 +4304,11 @@ packages:
         optional: true
       zod:
         optional: true
+
+  convex-test@0.0.38:
+    resolution: {integrity: sha512-1o/3GvUR9gMLjiqq7SxchI/0OYQaWwbQC4INmB1SNt1WLBjUgEM8+brgpqrZwJ+Vb1DdGZokCVeihwT5IPk49w==}
+    peerDependencies:
+      convex: ^1.16.4
 
   convex@1.24.1:
     resolution: {integrity: sha512-LucaIBktohO7KuKKsxLXxGhKoxYqcLUFqOXoC2p0HU4f8lWKNmDv1ackTB4DU5u/thnh/tIOvySEVNdoAdGXAw==}
@@ -8011,9 +8030,15 @@ snapshots:
 
   '@edge-runtime/primitives@4.1.0': {}
 
+  '@edge-runtime/primitives@6.0.0': {}
+
   '@edge-runtime/vm@3.2.0':
     dependencies:
       '@edge-runtime/primitives': 4.1.0
+
+  '@edge-runtime/vm@5.0.0':
+    dependencies:
+      '@edge-runtime/primitives': 6.0.0
 
   '@emnapi/core@1.4.3':
     dependencies:
@@ -8557,8 +8582,8 @@ snapshots:
 
   '@jridgewell/source-map@0.3.6':
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.8
-      '@jridgewell/trace-mapping': 0.3.25
+      '@jridgewell/gen-mapping': 0.3.12
+      '@jridgewell/trace-mapping': 0.3.29
 
   '@jridgewell/sourcemap-codec@1.5.0': {}
 
@@ -11583,7 +11608,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@edge-runtime/vm@3.2.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@edge-runtime/vm@5.0.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -11597,7 +11622,7 @@ snapshots:
       std-env: 3.9.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@edge-runtime/vm@3.2.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0)
+      vitest: 2.1.9(@edge-runtime/vm@5.0.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -12201,6 +12226,10 @@ snapshots:
       react: 19.1.0
       typescript: 5.8.3
       zod: 3.24.4
+
+  convex-test@0.0.38(convex@1.24.1(@clerk/clerk-react@5.31.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)):
+    dependencies:
+      convex: 1.24.1(@clerk/clerk-react@5.31.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
 
   convex@1.24.1(@clerk/clerk-react@5.31.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0):
     dependencies:
@@ -15257,7 +15286,7 @@ snapshots:
 
   terser-webpack-plugin@5.3.14(webpack@5.99.8):
     dependencies:
-      '@jridgewell/trace-mapping': 0.3.25
+      '@jridgewell/trace-mapping': 0.3.29
       jest-worker: 27.5.1
       schema-utils: 4.3.2
       serialize-javascript: 6.0.2
@@ -15654,7 +15683,7 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.42.0
 
-  vitest@2.1.9(@edge-runtime/vm@3.2.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0):
+  vitest@2.1.9(@edge-runtime/vm@5.0.0)(@types/node@20.17.47)(happy-dom@15.11.7)(jsdom@25.0.1)(terser@5.42.0):
     dependencies:
       '@vitest/expect': 2.1.9
       '@vitest/mocker': 2.1.9(vite@5.4.19(@types/node@20.17.47)(terser@5.42.0))
@@ -15677,7 +15706,7 @@ snapshots:
       vite-node: 2.1.9(@types/node@20.17.47)(terser@5.42.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@edge-runtime/vm': 3.2.0
+      '@edge-runtime/vm': 5.0.0
       '@types/node': 20.17.47
       happy-dom: 15.11.7
       jsdom: 25.0.1

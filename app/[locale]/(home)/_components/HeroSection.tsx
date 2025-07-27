@@ -10,7 +10,7 @@ export function HeroSection() {
   const t = useTranslations('landing.hero')
 
   return (
-    <div data-id="hero-section" className="bg-background">
+    <div data-testid="hero-section" className="bg-background">
       <div className="relative isolate">
         <svg
           aria-hidden="true"
@@ -108,7 +108,7 @@ export function HeroSection() {
                   transition={{ duration: 0.8, ease: 'easeOut', delay: 0.6 }}
                   className="mt-5 flex items-center gap-x-6 w-full"
                 >
-                  <Link href="/contact" className="w-full">
+                  <Link data-testid="hero-cta" href="/contact" className="w-full">
                     <Button size="lg" className="py-2 w-full text-base font-bold">
                       {t('cta.requestMaterial')}
                     </Button>
@@ -246,5 +246,3 @@ export function HeroSection() {
     </div>
   )
 }
-
-

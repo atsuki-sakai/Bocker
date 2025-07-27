@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
-import { convertDayOfWeekToJa } from '@/lib/schedules'
+import { convertDayOfWeek } from '@/lib/schedules'
 import { fetchQuery } from 'convex/nextjs'
 import { useMutation } from 'convex/react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
@@ -26,7 +26,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import Image from 'next/image'
 import { ReservationPaymentStatus, ActiveCustomerType } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import { formatDateToYYYYMMDD } from '@/lib/formatDate'
+import { formatDateToYYYYMMDD } from '@/lib/schedules'
 import { BASE_URL } from '@/lib/constants'
 
 import {
@@ -1086,11 +1086,11 @@ export default function CalendarPage() {
 
         if (data.session) {
           // Handle backward compatibility: if 'name' exists but 'customerName' doesn't, use 'name'
-          const session = data.session;
-          const legacySession = session as SessionPayload & { name?: string };
+          const session = data.session
+          const legacySession = session as SessionPayload & { name?: string }
           if (legacySession.name && !session.customerName) {
-            session.customerName = legacySession.name;
-            console.log('[Calendar] Migrated old session format: name -> customerName');
+            session.customerName = legacySession.name
+            console.log('[Calendar] Migrated old session format: name -> customerName')
           }
           setSessionCustomer(session)
           try {
@@ -1734,7 +1734,7 @@ export default function CalendarPage() {
                               className={`h-3 w-3 rounded-full border border-border ring-1 ring-offset-1 ${schedule.is_open ? 'bg-accent-2 ring-accent-2' : 'bg-destructive-foreground ring-destructive-foreground'}`}
                             />
                             <p className="text-sm text-muted-foreground text-nowrap">
-                              {convertDayOfWeekToJa(schedule.day_of_week!)}
+                              {convertDayOfWeek(schedule.day_of_week!)}
                             </p>
                           </div>
                           <p

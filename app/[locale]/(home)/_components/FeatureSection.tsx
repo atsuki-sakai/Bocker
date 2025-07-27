@@ -47,7 +47,7 @@ export function FeatureSection() {
     },
   ]
   return (
-    <div data-id="feature-section" className="bg-background py-24 sm:py-32">
+    <div data-testid="feature-section" className="bg-background py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl sm:text-center">
           <motion.p

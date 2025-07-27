@@ -3,7 +3,8 @@ import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "@/convex/_generated/dataModel";
 import { STORAGE_URL } from "./constants";
-import { getAppUrl, getEnv } from '@/lib/env-config'
+import { getEnv } from '@/lib/env-config'
+
 /**
  * GCS URLをCDN URLに変換する（クライアントサイド版）
  * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
@@ -11,70 +12,74 @@ import { getAppUrl, getEnv } from '@/lib/env-config'
  */
 function getCdnUrl(gcsUrl: string | null | undefined): string {
   // 空文字列、null、undefinedの場合はそのまま返す
-  if (!gcsUrl) return '';
-  
+  if (!gcsUrl) return ''
+
   // 環境変数からCDNのベースURLを取得
-  const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
-  
+  const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN')
+
   // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
   if (!cdnBaseUrl) {
-    return gcsUrl;
+    return gcsUrl
   }
-  
+
   try {
     // GCS URLをパース
-    const url = new URL(gcsUrl);
-    
+    const url = new URL(gcsUrl)
+
     // storage.googleapis.com のURLでない場合はそのまま返す
     if (url.hostname !== 'storage.googleapis.com') {
-      return gcsUrl;
+      return gcsUrl
     }
-    
+
     // パスからバケット名を除去（最初のセグメントがバケット名）
-    const pathSegments = url.pathname.split('/').filter(segment => segment);
+    const pathSegments = url.pathname.split('/').filter((segment) => segment)
     if (pathSegments.length < 2) {
-      return gcsUrl; // 不正なパスの場合はそのまま返す
+      return gcsUrl // 不正なパスの場合はそのまま返す
     }
-    
+
     // バケット名を除いたパスを構築
-    const pathWithoutBucket = pathSegments.slice(1).join('/');
-    
+    const pathWithoutBucket = pathSegments.slice(1).join('/')
+
     // CDN URLを構築
-    return `${cdnBaseUrl}/${pathWithoutBucket}`;
+    return `${cdnBaseUrl}/${pathWithoutBucket}`
   } catch (error) {
-    console.warn('[CDN] URL変換エラー:', error, { gcsUrl });
+    console.warn('[CDN] URL変換エラー:', error, { gcsUrl })
     // エラーの場合は元のURLを返す
-    return gcsUrl;
+    return gcsUrl
   }
+}
+
+export function isCdnEnabled(): boolean {
+  return !!getEnv('NEXT_PUBLIC_CDN_DOMAIN')
 }
 
 /**
  * ブラウザが Canvas で WebP エンコード可能かを非同期に判定する。
  * 一度判定した結果をキャッシュして次回以降は即 return する。
  */
-let webpEncodeSupport: boolean | undefined;
+let webpEncodeSupport: boolean | undefined
 export async function canEncodeWebp(): Promise<boolean> {
-  if (webpEncodeSupport !== undefined) return webpEncodeSupport;
-  if (typeof document === 'undefined') return (webpEncodeSupport = false);
+  if (webpEncodeSupport !== undefined) return webpEncodeSupport
+  if (typeof document === 'undefined') return (webpEncodeSupport = false)
 
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement('canvas')
   return new Promise<boolean>((resolve) => {
     canvas.toBlob(
       (blob) => {
-        webpEncodeSupport = !!blob && blob.type === 'image/webp';
-        resolve(webpEncodeSupport);
+        webpEncodeSupport = !!blob && blob.type === 'image/webp'
+        resolve(webpEncodeSupport)
       },
       'image/webp',
       0.1
-    );
-  });
+    )
+  })
 }
 
 export const qualityTable = {
-    low: { original: { width: 600, quality: 0.3 }, thumb: { width: 120, quality: 0.25 }},
-    medium: { original: { width: 1024, quality: 0.5 }, thumb: { width: 200, quality: 0.35 }},
-    high: { original: { width: 1600, quality: 0.7 }, thumb: { width: 300, quality: 0.45 }},
-};
+  low: { original: { width: 600, quality: 0.3 }, thumb: { width: 120, quality: 0.25 } },
+  medium: { original: { width: 1024, quality: 0.5 }, thumb: { width: 200, quality: 0.35 } },
+  high: { original: { width: 1600, quality: 0.7 }, thumb: { width: 300, quality: 0.45 } },
+}
 
 /**
  * ファイル名を安全な形式に変換する
@@ -85,20 +90,20 @@ export const qualityTable = {
 function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): string {
   // ベース名生成: ディレクトリと既存拡張子を除去し、安全文字に置換
   const base = fileName
-    .replace(/^.*[\\/]/, '')        // ディレクトリ除去
-    .replace(/\.[^.]+$/, '')        // 既存拡張子除去
-    .replace(/[^\w\-]/g, '_')       // 非英数字をアンダースコアへ
-    .replace(/_+/g, '_')            // 連続する _ を1つに圧縮
-    .replace(/^_+|_+$/g, '');       // 先頭・末尾の _ を削除
+    .replace(/^.*[\\/]/, '') // ディレクトリ除去
+    .replace(/\.[^.]+$/, '') // 既存拡張子除去
+    .replace(/[^\w\-]/g, '_') // 非英数字をアンダースコアへ
+    .replace(/_+/g, '_') // 連続する _ を1つに圧縮
+    .replace(/^_+|_+$/g, '') // 先頭・末尾の _ を削除
 
-  const timestamp = Date.now().toString(36);  // 衝突低減
-  const uuid = uuidv4().slice(0, 8);
+  const timestamp = Date.now().toString(36) // 衝突低減
+  const uuid = uuidv4().slice(0, 8)
 
   // ファイル名の長さ制限（拡張子含めて255文字以内）
-  const maxBaseLength = 255 - preferredExt.length - timestamp.length - uuid.length - 2; // "_"分を考慮
-  const truncatedBase = base.length > maxBaseLength ? base.substring(0, maxBaseLength) : base;
+  const maxBaseLength = 255 - preferredExt.length - timestamp.length - uuid.length - 2 // "_"分を考慮
+  const truncatedBase = base.length > maxBaseLength ? base.substring(0, maxBaseLength) : base
 
-  return `${timestamp}_${truncatedBase}_${uuid}${preferredExt}`;
+  return `${timestamp}_${truncatedBase}_${uuid}${preferredExt}`
 }
 
 /**
@@ -107,30 +112,30 @@ function sanitizeFileName(fileName: string, preferredExt: string = '.webp'): str
  */
 function isLowMemoryDevice(): boolean {
   // navigator.deviceMemoryがサポートされている場合は使用（GB単位）
-  if ('deviceMemory' in navigator && typeof (navigator).deviceMemory === 'number') {
-    return (navigator).deviceMemory <= 4; // 4GB以下は低メモリ端末と判定（より安全な閾値）
+  if ('deviceMemory' in navigator && typeof navigator.deviceMemory === 'number') {
+    return navigator.deviceMemory <= 4 // 4GB以下は低メモリ端末と判定（より安全な閾値）
   }
-  
+
   // User Agentベースの推定（フォールバック）
-  const ua = navigator.userAgent;
+  const ua = navigator.userAgent
   // 古いデバイス、エントリーレベルのデバイスを検出
   if (/iPhone OS [89]_|Android [4-9]\.|Windows Phone|BlackBerry/.test(ua)) {
-    return true;
+    return true
   }
-  
+
   // iOS デバイスは一律低メモリとして扱う（メモリ管理が厳しいため）
-  const isIOS = /iP(hone|od|ad)/.test(ua) || (ua.includes('Mac') && navigator.maxTouchPoints > 1);
+  const isIOS = /iP(hone|od|ad)/.test(ua) || (ua.includes('Mac') && navigator.maxTouchPoints > 1)
   if (isIOS) {
-    return true;
+    return true
   }
-  
-  return false; // 不明な場合は最新のものと仮定
+
+  return false // 不明な場合は最新のものと仮定
 }
 
 /**
- * フロントエンドで画像を指定のアスペクト比＆幅でリサイズ・圧縮する  
- * iOS 17+ / Safari 17+ など OffscreenCanvas が使えるブラウザでは  
- * `OffscreenCanvas.convertToBlob()` を利用し、高速かつ品質指定付きで JPEG/WebP へエンコード。  
+ * フロントエンドで画像を指定のアスペクト比＆幅でリサイズ・圧縮する
+ * iOS 17+ / Safari 17+ など OffscreenCanvas が使えるブラウザでは
+ * `OffscreenCanvas.convertToBlob()` を利用し、高速かつ品質指定付きで JPEG/WebP へエンコード。
  * 旧ブラウザ（OffscreenCanvas 未対応）では `toDataURL → fetch()` フォールバックで
  * iOS Safari (<17) の `canvas.toBlob` 品質無視バグも回避する。
  */
@@ -140,38 +145,39 @@ export async function compressAndCropImage(
   aspectType: AspectType,
   quality: number
 ): Promise<File> {
-  console.log('[画像圧縮] 処理開始:', { fileName: file.name, size: file.size, type: file.type });
-  
+  console.log('[画像圧縮] 処理開始:', { fileName: file.name, size: file.size, type: file.type })
+
   // --- WebP エンコード可否 & iOS 判定 ----------------------------------------
-  const canWebp = await canEncodeWebp();
-  const isIOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
-                (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
-  const useWebp = canWebp && !isIOS;
+  const canWebp = await canEncodeWebp()
+  const isIOS =
+    /iP(hone|od|ad)/.test(navigator.userAgent) ||
+    (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1)
+  const useWebp = canWebp && !isIOS
 
   // --- iOS だけ追加で品質・サイズを落としてファイルサイズを半分程度に抑える ----------
   // 体感目標: 約 40–60 % 削減
-  const iosQualityFactor = 0.6;   // 品質を 60 % に
-  const iosWidthFactor   = 0.8;   // 幅を 80 % に
-  const effectiveQuality   = isIOS ? Math.max(0.25, quality * iosQualityFactor) : quality;
-  const effectiveMaxWidth  = isIOS ? Math.round(maxWidth * iosWidthFactor)      : maxWidth;
+  const iosQualityFactor = 0.6 // 品質を 60 % に
+  const iosWidthFactor = 0.8 // 幅を 80 % に
+  const effectiveQuality = isIOS ? Math.max(0.25, quality * iosQualityFactor) : quality
+  const effectiveMaxWidth = isIOS ? Math.round(maxWidth * iosWidthFactor) : maxWidth
 
-  const mime = useWebp ? 'image/webp' : 'image/jpeg';
-  const ext  = useWebp ? '.webp'    : '.jpg';
+  const mime = useWebp ? 'image/webp' : 'image/jpeg'
+  const ext = useWebp ? '.webp' : '.jpg'
 
   // --- 低メモリ端末判定 ----------------------------------------------------
-  const isLowMemory = isLowMemoryDevice();
-  console.log('[画像圧縮] デバイス情報:', { isLowMemory, useWebp, isIOS });
-  
+  const isLowMemory = isLowMemoryDevice()
+  console.log('[画像圧縮] デバイス情報:', { isLowMemory, useWebp, isIOS })
+
   // --- OffscreenCanvas サポート判定 ------------------------------------------
   const supportsOffscreen =
     typeof OffscreenCanvas !== 'undefined' &&
     typeof createImageBitmap === 'function' &&
     // 型定義に convertToBlob がまだ無い場合があるため any キャスト
-    (OffscreenCanvas.prototype).convertToBlob !== undefined;
+    OffscreenCanvas.prototype.convertToBlob !== undefined
 
   // 低メモリ端末の場合は強制的にフォールバックを使用
-  const useOffscreenPath = supportsOffscreen && !isLowMemory;
-  console.log('[画像圧縮] 処理パス選択:', { supportsOffscreen, useOffscreenPath });
+  const useOffscreenPath = supportsOffscreen && !isLowMemory
+  console.log('[画像圧縮] 処理パス選択:', { supportsOffscreen, useOffscreenPath })
 
   // --- 画像の向きは変更しない方針 ---------------------------------------
   // Exif の Orientation タグを読まず、常に 0° で描画する
@@ -180,70 +186,90 @@ export async function compressAndCropImage(
   // 1) OffscreenCanvas パス  (iOS 17+ / 最新ブラウザ)
   // ========================================================================
   if (useOffscreenPath) {
-    let bitmap: ImageBitmap | null = null;
-    const fileUrl: string | null = null;
-    
+    let bitmap: ImageBitmap | null = null
+    const fileUrl: string | null = null
+
     try {
-      console.log('[画像圧縮] OffscreenCanvasパス開始');
-      
+      console.log('[画像圧縮] OffscreenCanvasパス開始')
+
       // ImageBitmap作成（例外処理強化）
       try {
-        bitmap = await createImageBitmap(file);
-        console.log('[画像圧縮] ImageBitmap作成成功:', { width: bitmap.width, height: bitmap.height });
+        bitmap = await createImageBitmap(file)
+        console.log('[画像圧縮] ImageBitmap作成成功:', {
+          width: bitmap.width,
+          height: bitmap.height,
+        })
       } catch (bitmapError) {
-        console.warn('[画像圧縮] createImageBitmap失敗、フォールバックを使用:', bitmapError);
+        console.warn('[画像圧縮] createImageBitmap失敗、フォールバックを使用:', bitmapError)
         // フォールバックパスに転送
-        return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext);
+        return await executeCanvasFallback(
+          file,
+          effectiveMaxWidth,
+          aspectType,
+          effectiveQuality,
+          mime,
+          ext
+        )
       }
-      
-      const { width, height } = bitmap;
+
+      const { width, height } = bitmap
 
       // ----- アスペクト比計算 & クロップ領域算出 -----------------------------
-      let targetAspect = 1;
-      if (aspectType === 'landscape') targetAspect = 16 / 9;
-      if (aspectType === 'mobile')    targetAspect = 2 / 3;
+      let targetAspect = 1
+      if (aspectType === 'landscape') targetAspect = 16 / 9
+      if (aspectType === 'mobile') targetAspect = 2 / 3
 
-      let cropWidth = width, cropHeight = height;
+      let cropWidth = width,
+        cropHeight = height
       if (width / height > targetAspect) {
-        cropHeight = height;
-        cropWidth  = Math.round(height * targetAspect);
+        cropHeight = height
+        cropWidth = Math.round(height * targetAspect)
       } else {
-        cropWidth  = width;
-        cropHeight = Math.round(width / targetAspect);
+        cropWidth = width
+        cropHeight = Math.round(width / targetAspect)
       }
 
-      const left = Math.floor((width  - cropWidth)  / 2);
-      const top  = Math.floor((height - cropHeight) / 2);
+      const left = Math.floor((width - cropWidth) / 2)
+      const top = Math.floor((height - cropHeight) / 2)
 
       // ----- クロップ & リサイズ --------------------------------------------
-      const scale = effectiveMaxWidth / cropWidth;
-      const outW  = effectiveMaxWidth;
-      const outH = Math.round(cropHeight * scale);
+      const scale = effectiveMaxWidth / cropWidth
+      const outW = effectiveMaxWidth
+      const outH = Math.round(cropHeight * scale)
 
-      const off = new OffscreenCanvas(outW, outH);
-      const ctx = off.getContext('2d')!;
-      
-      ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH);
+      const off = new OffscreenCanvas(outW, outH)
+      const ctx = off.getContext('2d')!
+
+      ctx.drawImage(bitmap, left, top, cropWidth, cropHeight, 0, 0, outW, outH)
 
       // ----- 画像エンコード ---------------------------------------------------
-      const blob: Blob = await (off).convertToBlob({ type: mime, quality: effectiveQuality });
-      console.log('[画像圧縮] OffscreenCanvas圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
-      
-      return new File([blob], sanitizeFileName(file.name, ext), { type: mime });
-      
+      const blob: Blob = await off.convertToBlob({ type: mime, quality: effectiveQuality })
+      console.log('[画像圧縮] OffscreenCanvas圧縮完了:', {
+        originalSize: file.size,
+        compressedSize: blob.size,
+      })
+
+      return new File([blob], sanitizeFileName(file.name, ext), { type: mime })
     } catch (error) {
-      console.error('[画像圧縮] OffscreenCanvasパスでエラー、フォールバックを試行:', error);
+      console.error('[画像圧縮] OffscreenCanvasパスでエラー、フォールバックを試行:', error)
       // フォールバックパスに転送
-      return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext);
+      return await executeCanvasFallback(
+        file,
+        effectiveMaxWidth,
+        aspectType,
+        effectiveQuality,
+        mime,
+        ext
+      )
     } finally {
       // メモリ解放
       if (bitmap) {
-        bitmap.close();
-        console.log('[画像圧縮] ImageBitmapを解放');
+        bitmap.close()
+        console.log('[画像圧縮] ImageBitmapを解放')
       }
       if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
-        console.log('[画像圧縮] ObjectURLを解放');
+        URL.revokeObjectURL(fileUrl)
+        console.log('[画像圧縮] ObjectURLを解放')
       }
     }
   }
@@ -251,7 +277,14 @@ export async function compressAndCropImage(
   // ========================================================================
   // 2) フォールバックパス  (toDataURL → fetch で全 iOS 対応)
   // ========================================================================
-  return await executeCanvasFallback(file, effectiveMaxWidth, aspectType, effectiveQuality, mime, ext);
+  return await executeCanvasFallback(
+    file,
+    effectiveMaxWidth,
+    aspectType,
+    effectiveQuality,
+    mime,
+    ext
+  )
 }
 
 /**
@@ -263,76 +296,80 @@ async function executeCanvasFallback(
   aspectType: AspectType,
   effectiveQuality: number,
   mime: string,
-  ext: string,
+  ext: string
 ): Promise<File> {
-  console.log('[画像圧縮] Canvasフォールバックパス開始');
-  
+  console.log('[画像圧縮] Canvasフォールバックパス開始')
+
   return new Promise<File>((resolve, reject) => {
-    const img = new Image();
-    let fileUrl: string | null = null;
-    
+    const img = new Image()
+    let fileUrl: string | null = null
+
     img.onload = async () => {
       try {
-        const width  = img.width;
-        const height = img.height;
+        const width = img.width
+        const height = img.height
 
-        let targetAspect = 1;
-        if (aspectType === 'landscape') targetAspect = 16 / 9;
-        if (aspectType === 'mobile')    targetAspect = 2 / 3;
+        let targetAspect = 1
+        if (aspectType === 'landscape') targetAspect = 16 / 9
+        if (aspectType === 'mobile') targetAspect = 2 / 3
 
-        let cropWidth = width, cropHeight = height;
+        let cropWidth = width,
+          cropHeight = height
         if (width / height > targetAspect) {
-          cropHeight = height;
-          cropWidth  = Math.round(height * targetAspect);
+          cropHeight = height
+          cropWidth = Math.round(height * targetAspect)
         } else {
-          cropWidth  = width;
-          cropHeight = Math.round(width / targetAspect);
+          cropWidth = width
+          cropHeight = Math.round(width / targetAspect)
         }
 
-        const left = Math.floor((width  - cropWidth)  / 2);
-        const top  = Math.floor((height - cropHeight) / 2);
+        const left = Math.floor((width - cropWidth) / 2)
+        const top = Math.floor((height - cropHeight) / 2)
 
-        const canvas = document.createElement('canvas');
-        const scale  = effectiveMaxWidth / cropWidth;
-        
+        const canvas = document.createElement('canvas')
+        const scale = effectiveMaxWidth / cropWidth
+
         // 画像の向きを変更しない
-        canvas.width  = effectiveMaxWidth;
-        canvas.height = Math.round(cropHeight * scale);
+        canvas.width = effectiveMaxWidth
+        canvas.height = Math.round(cropHeight * scale)
 
-        const ctx = canvas.getContext('2d')!;
-        
-        ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+        const ctx = canvas.getContext('2d')!
+
+        ctx.drawImage(img, left, top, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height)
 
         // iOS Safari でも quality が反映される toDataURL 経由
-        const dataURL = canvas.toDataURL(mime, effectiveQuality);
-        const blob = await (await fetch(dataURL)).blob();
-        console.log('[画像圧縮] Canvasフォールバック圧縮完了:', { originalSize: file.size, compressedSize: blob.size });
-        
-        resolve(new File([blob], sanitizeFileName(file.name, ext), { type: mime }));
+        const dataURL = canvas.toDataURL(mime, effectiveQuality)
+        const blob = await (await fetch(dataURL)).blob()
+        console.log('[画像圧縮] Canvasフォールバック圧縮完了:', {
+          originalSize: file.size,
+          compressedSize: blob.size,
+        })
+
+        resolve(new File([blob], sanitizeFileName(file.name, ext), { type: mime }))
       } catch (err) {
-        console.error('[画像圧縮] Canvasフォールバック処理エラー:', err);
-        reject(err);
+        console.error('[画像圧縮] Canvasフォールバック処理エラー:', err)
+        reject(err)
       } finally {
         // ObjectURL解放
         if (fileUrl) {
-          URL.revokeObjectURL(fileUrl);
-          console.log('[画像圧縮] ObjectURL解放（フォールバック）');
+          URL.revokeObjectURL(fileUrl)
+          console.log('[画像圧縮] ObjectURL解放（フォールバック）')
         }
       }
-    };
-    
+    }
+
     img.onerror = (error) => {
-      console.error('[画像圧縮] 画像読み込みエラー:', error);
+      console.error('[画像圧縮] 画像読み込みエラー:', error)
       if (fileUrl) {
-        URL.revokeObjectURL(fileUrl);
+        URL.revokeObjectURL(fileUrl)
       }
-      reject(new Error('画像の読み込みに失敗しました'));
-    };
-    
+      reject(new Error('画像の読み込みに失敗しました'))
+    }
+
     // ObjectURL作成
-    fileUrl = URL.createObjectURL(file);
-    img.src = fileUrl;
-  });
+    fileUrl = URL.createObjectURL(file)
+    img.src = fileUrl
+  })
 }
 
 /**
@@ -341,316 +378,256 @@ async function executeCanvasFallback(
  * @param orgId 組織ID
  * @param directory ディレクトリ
  * @param aspectType アスペクト比の種類 (square, landscape, mobile)
- * @param quality 画像品質設定 ('low' | medium |  'high') 
+ * @param quality 画像品質設定 ('low' | medium |  'high')
  * @returns オリジナル画像とサムネイル画像の公開URLとGCSパス
  */
 export async function uploadCompressedImageWithThumbnailSignedUrl(
-    file: File,
-    orgId: Id<'organization'>,
-    directory: ImageDirectory,
-    aspectType: AspectType,
-    quality: ImageQuality
-    ): Promise<{ original: { publicUrl: string; filePath: string }; thumbnail: { publicUrl: string; filePath: string } }> {
-    
-    // ⏱️ パフォーマンス計測開始
-    const performanceStart = performance.now();
-    const timings = {
-        compressionStart: 0,
-        compressionEnd: 0,
-        signedUrlStart: 0,
-        signedUrlEnd: 0,
-        uploadStart: 0,
-        uploadEnd: 0,
-        totalStart: performanceStart
-    };
-    
-    console.log('[画像アップロード] 開始:', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        orgId,
-        directory,
-        aspectType,
-        quality,
-        currentOrigin: typeof window !== 'undefined' ? getAppUrl() : 'サーバーサイド',
-        currentHostname: typeof window !== 'undefined' ? window.location.hostname : 'サーバーサイド'
-    })
-    
-    // 圧縮品質＆幅設定
-    const settings = qualityTable[quality];
+  file: File,
+  orgId: Id<'organization'>,
+  directory: ImageDirectory,
+  aspectType: AspectType,
+  quality: ImageQuality
+): Promise<{
+  original: { publicUrl: string; filePath: string }
+  thumbnail: { publicUrl: string; filePath: string }
+}> {
+  // 圧縮品質＆幅設定
+  const settings = qualityTable[quality]
 
-    try {
-        // ⏱️ 圧縮処理時間計測
-        timings.compressionStart = performance.now();
-        
-        // オリジナル画像圧縮
-        console.log('[画像アップロード] オリジナル画像圧縮開始')
-        const compressed = await compressAndCropImage(file, settings.original.width, aspectType, settings.original.quality);
-        console.log('[画像アップロード] オリジナル画像圧縮完了:', compressed.name)
+  try {
+    const compressed = await compressAndCropImage(
+      file,
+      settings.original.width,
+      aspectType,
+      settings.original.quality
+    )
 
-        // サムネイル圧縮
-        console.log('[画像アップロード] サムネイル画像圧縮開始')
-        const thumbnail = await compressAndCropImage(file, settings.thumb.width, aspectType, settings.thumb.quality);
-        console.log('[画像アップロード] サムネイル画像圧縮完了:', thumbnail.name)
-        
-        timings.compressionEnd = performance.now();
-        const compressionTime = timings.compressionEnd - timings.compressionStart;
-        console.log(`[パフォーマンス] 圧縮処理時間: ${compressionTime.toFixed(2)}ms`)
+    const thumbnail = await compressAndCropImage(
+      file,
+      settings.thumb.width,
+      aspectType,
+      settings.thumb.quality
+    )
 
-        // 実際の圧縮ファイルのContent-Typeを取得（署名とPUTで一致させるため）
-        const actualContentType = compressed.type;
-        const ext = actualContentType === 'image/jpeg' ? '.jpg' : '.webp';
-        // 安全なファイル名を生成（オリジナルとサムネイルで同じベース名を使用）
-        const safeFileName = sanitizeFileName(file.name, ext);
-        console.log('[画像アップロード] 安全なファイル名:', safeFileName)
+    // 実際の圧縮ファイルのContent-Typeを取得（署名とPUTで一致させるため）
+    const actualContentType = compressed.type
+    const ext = actualContentType === 'image/jpeg' ? '.jpg' : '.webp'
+    // 安全なファイル名を生成（オリジナルとサムネイルで同じベース名を使用）
+    const safeFileName = sanitizeFileName(file.name, ext)
 
-        console.log('[画像アップロード] 実際のContent-Type:', actualContentType)
-        console.log('[画像アップロード] サムネイルContent-Type:', thumbnail.type)
-
-        // Content-Type整合性チェック
-        if (compressed.type !== thumbnail.type) {
-            console.warn('[画像アップロード] 警告: オリジナルとサムネイルのContent-Typeが異なります', {
-                original: compressed.type,
-                thumbnail: thumbnail.type
-            });
-        }
-
-        // ⏱️ 署名付きURL取得時間計測
-        timings.signedUrlStart = performance.now();
-
-        // オリジナル画像の署名付きURL取得
-        console.log('[画像アップロード] オリジナル署名付きURL取得開始')
-        console.log('[画像アップロード] 署名に使用するContent-Type:', actualContentType)
-        const res = await fetch('/api/storage/signed-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-            fileName: safeFileName,
-            contentType: actualContentType,  // 実際のファイルタイプを使用
-            orgId,
-            directory: `${directory}/original`,
-            }),
-        });
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error('[画像アップロード] オリジナル署名付きURL取得失敗:', {
-                status: res.status,
-                statusText: res.statusText,
-                errorText
-            })
-            throw new Error(`オリジナル署名付きURLの取得に失敗: ${res.status} ${res.statusText} - ${errorText}`);
-        }
-        
-        const { url: originalUrl, filePath: originalFilePath } = await res.json();
-        console.log('[画像アップロード] オリジナル署名付きURL取得完了:', { originalFilePath })
-
-        // サムネイル画像の署名付きURL取得
-        console.log('[画像アップロード] サムネイル署名付きURL取得開始')
-        const thumbRes = await fetch('/api/storage/signed-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-            fileName: safeFileName,
-            contentType: actualContentType,  // 同じContent-Typeを使用
-            orgId,
-            directory: `${directory}/thumbnail`,
-            }),
-        });
-        
-        if (!thumbRes.ok) {
-            const errorText = await thumbRes.text();
-            console.error('[画像アップロード] サムネイル署名付きURL取得失敗:', {
-                status: thumbRes.status,
-                statusText: thumbRes.statusText,
-                errorText
-            })
-            throw new Error(`サムネイル署名付きURLの取得に失敗: ${thumbRes.status} ${thumbRes.statusText} - ${errorText}`);
-        }
-        
-        const { url: thumbUrl, filePath: thumbFilePath } = await thumbRes.json();
-        console.log('[画像アップロード] サムネイル署名付きURL取得完了:', { thumbFilePath })
-        
-        timings.signedUrlEnd = performance.now();
-        const signedUrlTime = timings.signedUrlEnd - timings.signedUrlStart;
-        console.log(`[パフォーマンス] 署名付きURL取得時間: ${signedUrlTime.toFixed(2)}ms`)
-
-        // ⏱️ アップロード時間計測
-        timings.uploadStart = performance.now();
-        
-        // オリジナル＆サムネイルをそれぞれPUT直送（一時的に順次実行でテスト）
-        console.log('[画像アップロード] GCSへの直送アップロード開始')
-        console.log('[画像アップロード] オリジナルURL:', originalUrl.substring(0, 100) + '...')
-        console.log('[画像アップロード] サムネイルURL:', thumbUrl.substring(0, 100) + '...')
-        console.log('[画像アップロード] ファイルサイズ - オリジナル:', compressed.size, 'サムネイル:', thumbnail.size)
-        
-        // タイムアウト設定付きのfetch関数
-        const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 60000) => {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), timeoutMs);
-            
-            try {
-                console.log('[画像アップロード] PUTリクエスト開始:', {
-                    url: url.substring(0, 100) + '...',
-                    method: options.method,
-                    headers: options.headers,
-                    bodySize: options.body instanceof Blob ? options.body.size : 'unknown'
-                });
-                
-                const response = await fetch(url, {
-                    ...options,
-                    signal: controller.signal
-                });
-                clearTimeout(timeout);
-                return response;
-            } catch (error) {
-                clearTimeout(timeout);
-                console.error('[画像アップロード] fetchエラー詳細:', {
-                    error: error instanceof Error ? error.message : String(error),
-                    errorName: error instanceof Error ? error.name : 'unknown',
-                    errorStack: error instanceof Error ? error.stack : undefined,
-                    url: url.substring(0, 100) + '...',
-                    method: options.method,
-                    headers: options.headers
-                });
-                
-                // CORSエラーの可能性をチェック
-                if (error instanceof TypeError && error.message === 'Failed to fetch') {
-                    console.error('[画像アップロード] CORSエラーの可能性が高いです。ブラウザのネットワークタブで詳細を確認してください。');
-                    throw new Error('CORSエラー: 画像アップロードがブロックされました。GCSのCORS設定を確認してください。');
-                }
-                
-                if (error instanceof Error && error.name === 'AbortError') {
-                    throw new Error('アップロードがタイムアウトしました');
-                }
-                throw error;
-            }
-        };
-        
-        // 並列アップロードで速度測定
-        const uploadPromises = [
-            // オリジナル画像アップロード
-            (async () => {
-                const uploadStartTime = performance.now();
-                console.log('[画像アップロード] オリジナルPUT開始')
-                try {
-                    // CORSプリフライト回避のため、シンプルなリクエストにする
-                    const originalResponse = await fetchWithTimeout(originalUrl, { 
-                        method: 'PUT', 
-                        headers: { 
-                            'Content-Type': actualContentType  // 署名時と同じContent-Typeを使用
-                        }, 
-                        body: compressed
-                    }, 60000) // 60秒タイムアウト
-                    const uploadEndTime = performance.now();
-                    const uploadDuration = uploadEndTime - uploadStartTime;
-                    const speedMbps = (compressed.size * 8) / (uploadDuration / 1000) / (1024 * 1024);
-                    
-                    console.log(`[パフォーマンス] オリジナル画像アップロード: ${uploadDuration.toFixed(2)}ms, 速度: ${speedMbps.toFixed(2)}Mbps`)
-                    
-                    if (!originalResponse.ok) {
-                        const errorText = await originalResponse.text().catch(() => 'レスポンス読み取り失敗')
-                        console.error('[画像アップロード] オリジナルPUTエラー詳細:', {
-                            status: originalResponse.status,
-                            statusText: originalResponse.statusText,
-                            errorText
-                        })
-                        throw new Error(`オリジナル画像のアップロードに失敗: ${originalResponse.status} ${originalResponse.statusText} - ${errorText}`)
-                    }
-                } catch (fetchError) {
-                    console.error('[画像アップロード] オリジナルPUTネットワークエラー:', fetchError)
-                    throw new Error(`オリジナル画像のPUTリクエストが失敗: ${fetchError instanceof Error ? fetchError.message : 'ネットワークエラー'}`)
-                }
-            })(),
-            
-            // サムネイル画像アップロード
-            (async () => {
-                const uploadStartTime = performance.now();
-                console.log('[画像アップロード] サムネイルPUT開始')
-                try {
-                    // CORSプリフライト回避のため、シンプルなリクエストにする
-                    const thumbnailResponse = await fetchWithTimeout(thumbUrl, { 
-                        method: 'PUT', 
-                        headers: { 
-                            'Content-Type': actualContentType  // 署名時と同じContent-Typeを使用
-                        }, 
-                        body: thumbnail
-                    }, 60000) // 60秒タイムアウト
-                    const uploadEndTime = performance.now();
-                    const uploadDuration = uploadEndTime - uploadStartTime;
-                    const speedMbps = (thumbnail.size * 8) / (uploadDuration / 1000) / (1024 * 1024);
-                    
-                    console.log(`[パフォーマンス] サムネイル画像アップロード: ${uploadDuration.toFixed(2)}ms, 速度: ${speedMbps.toFixed(2)}Mbps`)
-                    
-                    if (!thumbnailResponse.ok) {
-                        const errorText = await thumbnailResponse.text().catch(() => 'レスポンス読み取り失敗')
-                        console.error('[画像アップロード] サムネイルPUTエラー詳細:', {
-                            status: thumbnailResponse.status,
-                            statusText: thumbnailResponse.statusText,
-                            errorText
-                        })
-                        throw new Error(`サムネイル画像のアップロードに失敗: ${thumbnailResponse.status} ${thumbnailResponse.statusText} - ${errorText}`)
-                    }
-                } catch (fetchError) {
-                    console.error('[画像アップロード] サムネイルPUTネットワークエラー:', fetchError)
-                    throw new Error(`サムネイル画像のPUTリクエストが失敗: ${fetchError instanceof Error ? fetchError.message : 'ネットワークエラー'}`)
-                }
-            })()
-        ];
-        
-        // 並列アップロード実行
-        await Promise.all(uploadPromises);
-        
-        timings.uploadEnd = performance.now();
-        const uploadTime = timings.uploadEnd - timings.uploadStart;
-        console.log(`[パフォーマンス] 並列アップロード時間: ${uploadTime.toFixed(2)}ms`)
-        
-        console.log('[画像アップロード] GCSへの直送アップロード完了')
-
-        const bucket = getEnv('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME');
-        
-        if (!bucket) {
-            console.error('[画像アップロード] バケット名が設定されていません')
-            throw new Error('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME環境変数が設定されていません')
-        }
-        
-        // GCS URLを構築
-        const originalGcsUrl = `${STORAGE_URL}/${bucket}/${originalFilePath}`;
-        const thumbnailGcsUrl = `${STORAGE_URL}/${bucket}/${thumbFilePath}`;
-        
-        // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
-        const result = {
-            original: { 
-                publicUrl: getCdnUrl(originalGcsUrl), 
-                filePath: originalFilePath 
-            },
-            thumbnail: { 
-                publicUrl: getCdnUrl(thumbnailGcsUrl), 
-                filePath: thumbFilePath 
-            },
-        };
-        
-        // ⏱️ 最終パフォーマンス報告
-        const totalTime = performance.now() - timings.totalStart;
-        const totalSize = compressed.size + thumbnail.size;
-        const avgSpeedMbps = (totalSize * 8) / (uploadTime / 1000) / (1024 * 1024);
-        
-        console.log('[パフォーマンス] === 最終レポート ===');
-        console.log(`[パフォーマンス] 画像圧縮: ${compressionTime.toFixed(2)}ms`);
-        console.log(`[パフォーマンス] 署名付きURL: ${signedUrlTime.toFixed(2)}ms`);
-        console.log(`[パフォーマンス] アップロード: ${uploadTime.toFixed(2)}ms`);
-        console.log(`[パフォーマンス] 合計時間: ${totalTime.toFixed(2)}ms`);
-        console.log(`[パフォーマンス] 合計サイズ: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
-        console.log(`[パフォーマンス] 平均速度: ${avgSpeedMbps.toFixed(2)}Mbps`);
-        
-        console.log('[画像アップロード] 完了:', result)
-        return result;
-        
-    } catch (error) {
-        const totalErrorTime = performance.now() - timings.totalStart;
-        console.error(`[画像アップロード] エラー発生 (${totalErrorTime.toFixed(2)}ms経過):`, error)
-        throw error; // 呼び出し元でハンドリングするためにエラーを再throw
+    // Content-Type整合性チェック
+    if (compressed.type !== thumbnail.type) {
+      console.warn('[画像アップロード] 警告: オリジナルとサムネイルのContent-Typeが異なります', {
+        original: compressed.type,
+        thumbnail: thumbnail.type,
+      })
     }
+
+    const res = await fetch('/api/storage/signed-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: safeFileName,
+        contentType: actualContentType, // 実際のファイルタイプを使用
+        orgId,
+        directory: `${directory}/original`,
+      }),
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('[画像アップロード] オリジナル署名付きURL取得失敗:', {
+        status: res.status,
+        statusText: res.statusText,
+        errorText,
+      })
+      throw new Error(
+        `オリジナル署名付きURLの取得に失敗: ${res.status} ${res.statusText} - ${errorText}`
+      )
+    }
+
+    const { url: originalUrl, filePath: originalFilePath } = await res.json()
+
+    const thumbRes = await fetch('/api/storage/signed-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: safeFileName,
+        contentType: actualContentType, // 同じContent-Typeを使用
+        orgId,
+        directory: `${directory}/thumbnail`,
+      }),
+    })
+
+    if (!thumbRes.ok) {
+      const errorText = await thumbRes.text()
+      console.error('[画像アップロード] サムネイル署名付きURL取得失敗:', {
+        status: thumbRes.status,
+        statusText: thumbRes.statusText,
+        errorText,
+      })
+      throw new Error(
+        `サムネイル署名付きURLの取得に失敗: ${thumbRes.status} ${thumbRes.statusText} - ${errorText}`
+      )
+    }
+
+    const { url: thumbUrl, filePath: thumbFilePath } = await thumbRes.json()
+
+    // タイムアウト設定付きのfetch関数
+    const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 60000) => {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+      try {
+        console.log('[画像アップロード] PUTリクエスト開始:', {
+          url: url.substring(0, 100) + '...',
+          method: options.method,
+          headers: options.headers,
+          bodySize: options.body instanceof Blob ? options.body.size : 'unknown',
+        })
+
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        })
+        clearTimeout(timeout)
+        return response
+      } catch (error) {
+        clearTimeout(timeout)
+        console.error('[画像アップロード] fetchエラー詳細:', {
+          error: error instanceof Error ? error.message : String(error),
+          errorName: error instanceof Error ? error.name : 'unknown',
+          errorStack: error instanceof Error ? error.stack : undefined,
+          url: url.substring(0, 100) + '...',
+          method: options.method,
+          headers: options.headers,
+        })
+
+        // CORSエラーの可能性をチェック
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+          console.error(
+            '[画像アップロード] CORSエラーの可能性が高いです。ブラウザのネットワークタブで詳細を確認してください。'
+          )
+          throw new Error(
+            'CORSエラー: 画像アップロードがブロックされました。GCSのCORS設定を確認してください。'
+          )
+        }
+
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('アップロードがタイムアウトしました')
+        }
+        throw error
+      }
+    }
+
+    const uploadPromises = [
+      (async () => {
+        const uploadStartTime = performance.now()
+        try {
+          // CORSプリフライト回避のため、シンプルなリクエストにする
+          const originalResponse = await fetchWithTimeout(
+            originalUrl,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': actualContentType, // 署名時と同じContent-Typeを使用
+              },
+              body: compressed,
+            },
+            60000
+          ) // 60秒タイムアウト
+          const uploadEndTime = performance.now()
+          const uploadDuration = uploadEndTime - uploadStartTime
+          const speedMbps = (compressed.size * 8) / (uploadDuration / 1000) / (1024 * 1024)
+
+          console.log(
+            `[パフォーマンス] オリジナル画像アップロード: ${uploadDuration.toFixed(2)}ms, 速度: ${speedMbps.toFixed(2)}Mbps`
+          )
+
+          if (!originalResponse.ok) {
+            const errorText = await originalResponse.text().catch(() => 'レスポンス読み取り失敗')
+            console.error('[画像アップロード] オリジナルPUTエラー詳細:', {
+              status: originalResponse.status,
+              statusText: originalResponse.statusText,
+              errorText,
+            })
+            throw new Error(
+              `オリジナル画像のアップロードに失敗: ${originalResponse.status} ${originalResponse.statusText} - ${errorText}`
+            )
+          }
+        } catch (fetchError) {
+          console.error('[画像アップロード] オリジナルPUTネットワークエラー:', fetchError)
+          throw new Error(
+            `オリジナル画像のPUTリクエストが失敗: ${fetchError instanceof Error ? fetchError.message : 'ネットワークエラー'}`
+          )
+        }
+      })(),
+      // サムネイル画像アップロード
+      (async () => {
+        console.log('[画像アップロード] サムネイルPUT開始')
+        try {
+          // CORSプリフライト回避のため、シンプルなリクエストにする
+          const thumbnailResponse = await fetchWithTimeout(
+            thumbUrl,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': actualContentType, // 署名時と同じContent-Typeを使用
+              },
+              body: thumbnail,
+            },
+            60000
+          ) // 60秒タイムアウト
+
+          if (!thumbnailResponse.ok) {
+            const errorText = await thumbnailResponse.text().catch(() => 'レスポンス読み取り失敗')
+            console.error('[画像アップロード] サムネイルPUTエラー詳細:', {
+              status: thumbnailResponse.status,
+              statusText: thumbnailResponse.statusText,
+              errorText,
+            })
+            throw new Error(
+              `サムネイル画像のアップロードに失敗: ${thumbnailResponse.status} ${thumbnailResponse.statusText} - ${errorText}`
+            )
+          }
+        } catch (fetchError) {
+          console.error('[画像アップロード] サムネイルPUTネットワークエラー:', fetchError)
+          throw new Error(
+            `サムネイル画像のPUTリクエストが失敗: ${fetchError instanceof Error ? fetchError.message : 'ネットワークエラー'}`
+          )
+        }
+      })(),
+    ]
+
+    // 並列アップロード実行
+    await Promise.all(uploadPromises)
+
+    const bucket = getEnv('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME')
+
+    if (!bucket) {
+      console.error('[画像アップロード] バケット名が設定されていません')
+      throw new Error('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME環境変数が設定されていません')
+    }
+
+    // GCS URLを構築
+    const originalGcsUrl = `${STORAGE_URL}/${bucket}/${originalFilePath}`
+    const thumbnailGcsUrl = `${STORAGE_URL}/${bucket}/${thumbFilePath}`
+
+    // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
+    const result = {
+      original: {
+        publicUrl: getCdnUrl(originalGcsUrl),
+        filePath: originalFilePath,
+      },
+      thumbnail: {
+        publicUrl: getCdnUrl(thumbnailGcsUrl),
+        filePath: thumbFilePath,
+      },
+    }
+    return result
+  } catch (error) {
+    throw error // 呼び出し元でハンドリングするためにエラーを再throw
+  }
 }
 
 /**

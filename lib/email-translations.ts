@@ -1,16 +1,24 @@
 import ja from '@/languages/ja.json'
 import en from '@/languages/en.json'
-
-export type SupportedLocale = 'ja' | 'en'
+import fr from '@/languages/fr.json'
+import ko from '@/languages/ko.json'
+import zh from '@/languages/zh.json'
+import type { SupportedLocale } from './dateLocale'
 
 interface Translations {
   ja: typeof ja
   en: typeof en
+  fr: typeof fr
+  ko: typeof ko
+  zh: typeof zh
 }
 
 const translations: Translations = {
   ja,
   en,
+  fr,
+  ko,
+  zh,
 }
 
 /**

@@ -21,7 +21,7 @@ export const TeamSection = () => {
     },
   ]
   return (
-    <section data-id="team-section">
+    <section data-testid="team-section">
       <div className="bg-background py-24 md:py-32">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-20 px-6 lg:px-8 xl:grid-cols-5">
           <motion.div
@@ -52,7 +52,7 @@ export const TeamSection = () => {
                   <Image
                     width={1200}
                     height={1200}
-                    alt=""
+                    alt="Fujimoto Kyohei"
                     src={person.imageUrl}
                     className="aspect-4/5 w-52 flex-none rounded-2xl object-cover object-center shadow-md"
                   />

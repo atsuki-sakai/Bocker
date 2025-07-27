@@ -1,7 +1,6 @@
 'use server'
 
 import { LandingPageClient } from './LandingPageClient'
-import { redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
@@ -12,7 +11,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'seo' })
-  
+
   const title = t('meta.title')
   const description = t('meta.description')
   const keywords = t('meta.keywords')
@@ -22,10 +21,10 @@ export async function generateMetadata({
   const ogImageAlt = t('ogp.imageAlt')
   const twitterTitle = t('twitter.title')
   const twitterDescription = t('twitter.description')
-  
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bocker.jp'
   const ogImage = `${baseUrl}/opengraph-image`
-  
+
   return {
     title,
     description,
@@ -90,7 +89,7 @@ export async function generateMetadata({
 async function generateStructuredData(locale: string) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bocker.jp'
   const t = await getTranslations({ locale, namespace: 'seo' })
-  
+
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -113,9 +112,7 @@ async function generateStructuredData(locale: string) {
       email: 'support@bocker.jp',
       url: `${baseUrl}/contact`,
     },
-    sameAs: [
-      'https://twitter.com/bocker_jp',
-    ],
+    sameAs: ['https://twitter.com/bocker_jp'],
   }
 
   const softwareApplicationSchema = {
@@ -179,46 +176,14 @@ async function generateStructuredData(locale: string) {
   return [organizationSchema, softwareApplicationSchema, websiteSchema]
 }
 
-export default async function Home({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ locale: string }>
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
+export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
-  const searchParamsData = await searchParams
-
-  // LINE認証のコールバックをチェック
-  if (searchParamsData['liff.state'] && searchParamsData.code && searchParamsData.state) {
-    console.log('[Home] LINE OAuth callback detected')
-    console.log('[Home] All search params:', searchParamsData)
-
-    // liff.stateから実際のリダイレクト先を抽出
-    const liffState = searchParamsData['liff.state'] as string
-    console.log('[Home] liff.state:', liffState)
-
-    if (liffState.includes('/reservation')) {
-      // LINE認証のコールバックを予約ページにリダイレクト
-      const redirectPath = `/${locale}/reservation`
-      const queryParams = new URLSearchParams({
-        state: searchParamsData.state as string,
-        code: searchParamsData.code as string,
-        liffClientId: (searchParamsData.liffClientId as string) || '',
-        liffRedirectUri: (searchParamsData.liffRedirectUri as string) || '',
-      })
-
-      console.log('[Home] Redirecting to:', `${redirectPath}?${queryParams.toString()}`)
-      redirect(`${redirectPath}?${queryParams.toString()}`)
-    }
-  }
 
   // 構造化データを生成
   const structuredData = await generateStructuredData(locale)
 
   return (
     <>
-      {/* Server-side構造化データ */}
       {structuredData.map((schema, index) => (
         <script
           key={index}
@@ -228,7 +193,7 @@ export default async function Home({
           }}
         />
       ))}
-      <LandingPageClient locale={locale} />
+      <LandingPageClient />
     </>
   )
 }
