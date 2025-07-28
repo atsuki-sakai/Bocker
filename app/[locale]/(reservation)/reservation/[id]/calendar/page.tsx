@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
-import { convertDayOfWeekToJa } from '@/lib/schedules'
+
 import { fetchQuery } from 'convex/nextjs'
 import { useMutation } from 'convex/react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
@@ -18,12 +18,13 @@ import {
   PaymentView,
   ConfirmView,
   CouponView,
+  SalonInfoSheet,
+  BottomBar,
 } from './_components'
 import { Button } from '@/components/ui/button'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from './_components/DynamicMotion'
 import { reservationFlexMessageTemplate } from '@/services/line/message_template/reservation_flex'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import Image from 'next/image'
+
 import { ReservationPaymentStatus, ActiveCustomerType } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { formatDateToYYYYMMDD } from '@/lib/formatDate'
@@ -39,7 +40,7 @@ import {
   Calendar,
   CreditCard,
   CheckCircle,
-  ChevronRight,
+
   Loader2,
   Ticket,
 } from 'lucide-react'
@@ -70,52 +71,15 @@ import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
 import { RowType } from '@/services/supabase/SupabaseService'
-
-// 曜日をソートするための順序を定義
-const dayOrder: Record<string, number> = {
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
-  sunday: 7, // 日曜日を最後にする場合は 7, 最初にする場合は 0
-}
+import { 
+  isValidPhoneNumber, 
+  countOptionOccurrences, 
+  groupOptionsByName, 
+  pageVariants 
+} from './_components/utils'
 
 // 予約ステップの定義
 type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'coupon' | 'confirm'
-
-// アニメーションバリアント
-const pageVariants = {
-  initial: (direction: number) => ({
-    x: direction > 0 ? '100%' : '-100%',
-    opacity: 0,
-  }),
-  animate: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      x: { type: 'spring', stiffness: 300, damping: 30 },
-      opacity: { duration: 0.2 },
-    },
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? '-100%' : '100%',
-    opacity: 0,
-    transition: {
-      x: { type: 'spring', stiffness: 300, damping: 30 },
-      opacity: { duration: 0.2 },
-    },
-  }),
-}
-
-// 電話番号バリデーション関数
-const isValidPhoneNumber = (phone: string | null): boolean => {
-  if (!phone) return false
-  // ハイフンあり・なし両対応の簡易的なバリデーション
-  const phoneRegex = /^\d{2,4}-?\d{2,4}-?\d{3,4}$/
-  return phoneRegex.test(phone)
-}
 
 interface OrganizationCompleteData {
   organization: Doc<'organization'>
@@ -124,50 +88,7 @@ interface OrganizationCompleteData {
   apiConfig: Doc<'api_config'> | null
 }
 
-// 複数選択されたオプションをカウントして配列にする関数を追加
-const countOptionOccurrences = (
-  options: Doc<'option'>[]
-): { id: Id<'option'>; quantity: number; name: string; price: number }[] => {
-  const counts = new Map<string, number>()
 
-  options.forEach((option) => {
-    counts.set(option._id, (counts.get(option._id) || 0) + 1)
-  })
-
-  return Array.from(counts.entries()).map(([optionId, quantity]) => ({
-    id: optionId as Id<'option'>,
-    quantity,
-    name: options.find((opt) => opt._id === optionId)?.name ?? '不明',
-    price: options.find((opt) => opt._id === optionId)?.sale_price ?? 0,
-  }))
-}
-
-// 同じオプションをグループ化する関数を追加
-const groupOptionsByName = (options: Doc<'option'>[]) => {
-  const groupedOptions = new Map<
-    string,
-    { name: string; count: number; unitPrice: number; salePrice?: number }
-  >()
-
-  options.forEach((option) => {
-    if (groupedOptions.has(option._id)) {
-      const current = groupedOptions.get(option._id)!
-      groupedOptions.set(option._id, {
-        ...current,
-        count: current.count + 1,
-      })
-    } else {
-      groupedOptions.set(option._id, {
-        name: option.name,
-        count: 1,
-        unitPrice: option.unit_price ?? 0,
-        salePrice: option.sale_price,
-      })
-    }
-  })
-
-  return Array.from(groupedOptions.values())
-}
 
 export default function CalendarPage() {
   const router = useRouter()
@@ -1680,112 +1601,12 @@ export default function CalendarPage() {
     <div className="container max-w-3xl mx-auto p-4" style={{ paddingBottom: bottomBarHeight }}>
       <div className="overflow-hidden flex items-center justify-between mb-2">
         <div>
-          {/* サロン情報を表示するSheet */}
-          <Sheet open={isSalonInfoSheetOpen} onOpenChange={setIsSalonInfoSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost">
-                <h1 className="text-xl font-bold text-primary hover:underline cursor-pointer break-words">
-                  {organizationComplete.organization.org_name}
-                </h1>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-full sm:max-w-lg overflow-y-auto p-6">
-              <SheetHeader className="mb-6">
-                <SheetTitle className="text-2xl font-bold">
-                  {organizationComplete.organization.org_name}
-                </SheetTitle>
-              </SheetHeader>
-              <div className="space-y-6">
-                {organizationComplete.config?.images &&
-                  organizationComplete.config.images.length > 0 && (
-                    <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden shadow-md">
-                      <Image
-                        src={organizationComplete.config?.images[0].original_url ?? ''}
-                        alt={organizationComplete.organization.org_name ?? ''}
-                        layout="fill"
-                        objectFit="cover"
-                      />
-                    </div>
-                  )}
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">店舗情報</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {organizationComplete.config?.description}
-                  </p>
-                </div>
-                <div className="flex flex-col justify-start items-start mb-4">
-                  <p className="text-lg text-primary font-bold">営業日</p>
-                  <div className="flex flex-col items-start gap-2 mt-2">
-                    {orgWeekSchedule
-                      ?.sort((a: Doc<'week_schedule'>, b: Doc<'week_schedule'>) => {
-                        const dayA = dayOrder[a.day_of_week!] ?? 8 // 未定義の曜日は最後に
-                        const dayB = dayOrder[b.day_of_week!] ?? 8 // 未定義の曜日は最後に
-                        return dayA - dayB
-                      })
-                      .map((schedule: Doc<'week_schedule'>, index: number) => (
-                        <div
-                          key={index}
-                          className="flex  items-center justify-start gap-1 border-b border-border pb-2"
-                        >
-                          <div className="flex  items-center justify-start gap-2 mr-3">
-                            <div
-                              className={`h-3 w-3 rounded-full border border-border ring-1 ring-offset-1 ${schedule.is_open ? 'bg-accent-2 ring-accent-2' : 'bg-destructive-foreground ring-destructive-foreground'}`}
-                            />
-                            <p className="text-sm text-muted-foreground text-nowrap">
-                              {convertDayOfWeekToJa(schedule.day_of_week!)}
-                            </p>
-                          </div>
-                          <p
-                            className={`text-sm text-center font-bold ${schedule.is_open ? 'text-muted-foreground' : 'text-destructive'}`}
-                          >
-                            {schedule.is_open
-                              ? `${schedule.start_hour} ~ ${schedule.end_hour}`
-                              : '休日'}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-foreground">連絡先</h3>
-                  <ul className="list-none space-y-1 text-sm text-muted-foreground">
-                    <li>
-                      <strong>住所:</strong> {organizationComplete.config?.postal_code}{' '}
-                      {organizationComplete.config?.address}
-                    </li>
-                    <li>
-                      <strong>電話:</strong>{' '}
-                      <a
-                        href={`tel:${organizationComplete.config?.phone}`}
-                        className="hover:underline text-blue-500"
-                      >
-                        {organizationComplete.config?.phone}
-                      </a>
-                    </li>
-                    <li>
-                      <strong>メール:</strong>{' '}
-                      <a
-                        href={`mailto:${organizationComplete.organization.org_email}`}
-                        className="hover:underline text-blue-500"
-                      >
-                        {organizationComplete.organization.org_email}
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-                {organizationComplete.config?.reservation_rules && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2 text-foreground">予約ルール</h3>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                      {organizationComplete.config?.reservation_rules}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+          <SalonInfoSheet
+            organizationComplete={organizationComplete}
+            orgWeekSchedule={orgWeekSchedule}
+            isOpen={isSalonInfoSheetOpen}
+            onOpenChange={setIsSalonInfoSheetOpen}
+          />
 
           {sessionCustomer?.customerName ? (
             <p className="text-sm flex items-center gap-2 mt-1">
@@ -1820,123 +1641,27 @@ export default function CalendarPage() {
       <div className="mb-6">{renderStepContent()}</div>
 
       {(selectedMenus.length > 0 || selectedStaffCompleted || selectedOptions.length > 0) && (
-        <motion.div
-          ref={bottomBarRef}
-          className="fixed bottom-0 left-0 right-0 z-20 px-4 py-2 bg-background border-t shadow-md"
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        >
-          <div className="container max-w-3xl mx-auto flex justify-between items-center">
-            <div className="flex flex-col items-start justify-between gap-2 w-5/7">
-              <motion.div className="text-xs text-muted-foreground">
-                {selectedMenus.length > 0 && (
-                  <div>
-                    <span className="font-bold">メニュー</span>
-                    <br />
-                    {selectedMenus.map((menu) => menu.name).join('、')}
-                  </div>
-                )}
-
-                {selectedStaffCompleted?.staff && (
-                  <div>
-                    <span className="font-bold">スタッフ</span>
-                    <br />
-                    {selectedStaffCompleted.staff === 'free' ||
-                    isAutoAssignedStaff(selectedStaffCompleted.staff)
-                      ? '指名フリー'
-                      : selectedStaffCompleted.staff?.name || '不明'}
-                  </div>
-                )}
-
-                {selectedOptions.length > 0 && (
-                  <div>
-                    <span className="font-bold">オプション</span>
-                    <br />
-                    {groupOptionsByName(selectedOptions).map((option, index) => (
-                      <span key={index}>
-                        {option.name}
-                        {option.count > 1 ? ` ×${option.count}` : ''}
-                        {index < groupOptionsByName(selectedOptions).length - 1 ? '、' : ''}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-              <motion.p
-                className="font-bold"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                合計: ¥{calculateTotal().toLocaleString()} / {calculateTotalMinutes()}分
-              </motion.p>
-            </div>
-            <div className="flex flex-col items-end justify-between gap-2 w-2/7">
-              {pointConfig?.is_active && (
-                <motion.p
-                  className="text-xs font-bold mb-2 border border-link-foreground text-link-foreground rounded-full px-2 py-1 text-nowrap"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  獲得予定のポイント:{' '}
-                  <span className="font-bold">
-                    {Math.floor(
-                      pointConfig?.is_fixed_point
-                        ? (pointConfig.fixed_point ?? 0)
-                        : calculateTotal() * ((pointConfig?.point_rate ?? 0) / 100)
-                    )}
-                  </span>
-                  P
-                </motion.p>
-              )}
-              <div className="flex space-x-2">
-                {currentStep !== 'menu' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Button
-                      variant="outline"
-                      onClick={goToPreviousStep}
-                      className="relative overflow-hidden"
-                    >
-                      <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        戻る
-                      </motion.span>
-                    </Button>
-                  </motion.div>
-                )}
-                {currentStep !== 'confirm' && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <Button
-                      onClick={goToNextStep}
-                      disabled={
-                        (currentStep === 'staff' && !selectedStaffCompleted) ||
-                        (currentStep === 'date' &&
-                          (!reservationStartDateTime ||
-                            !reservationEndDateTime ||
-                            !selectedDate)) ||
-                        (currentStep === 'payment' && !selectedPaymentMethod)
-                      }
-                      className="relative overflow-hidden"
-                    >
-                      <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        次へ
-                      </motion.span>
-                    </Button>
-                  </motion.div>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        <div ref={bottomBarRef}>
+          <BottomBar
+            currentStep={currentStep}
+            selectedMenus={selectedMenus}
+            selectedStaffCompleted={selectedStaffCompleted}
+            selectedOptions={selectedOptions}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            reservationStartDateTime={reservationStartDateTime}
+            reservationEndDateTime={reservationEndDateTime}
+            selectedPaymentMethod={selectedPaymentMethod}
+            calculateTotal={calculateTotal}
+            calculateTotalMinutes={calculateTotalMinutes}
+            pointConfig={pointConfig}
+            groupOptionsByName={groupOptionsByName}
+            isAutoAssignedStaff={isAutoAssignedStaff}
+            goToPreviousStep={goToPreviousStep}
+            goToNextStep={goToNextStep}
+            bottomBarHeight={bottomBarHeight}
+          />
+        </div>
       )}
       <Dialog open={isQuestionnaireOpen} onOpenChange={setIsQuestionnaireOpen}>
         <DialogContent className="overflow-y-auto h-[90vh] flex flex-col justify-start items-start">

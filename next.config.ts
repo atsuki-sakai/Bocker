@@ -1,7 +1,6 @@
 import {withSentryConfig} from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
-import { getEnv } from './lib/env-config';
 
 
 // 1. bundle-analyzerをrequireで読み込む
@@ -14,6 +13,21 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
 const nextConfig: NextConfig = {
   /* config options here */
+  
+  // Bundle size optimization
+  modularizeImports: {
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+      preventFullImport: true,
+    },
+    'date-fns': {
+      transform: 'date-fns/{{member}}',
+      preventFullImport: true,
+    },
+  },
+  
+
+  
   images: {
     remotePatterns: [
       {
@@ -44,16 +58,16 @@ const nextConfig: NextConfig = {
       },
       // CDNドメインのサポート（環境変数から動的に設定）
       ...((() => {
-        const cdnDomain = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
-        if (!cdnDomain) return [];
         try {
+          const cdnDomain = process.env.NEXT_PUBLIC_CDN_DOMAIN;
+          if (!cdnDomain) return [];
           const cdnUrl = new URL(cdnDomain);
           return [{
             protocol: 'https' as const,
             hostname: cdnUrl.hostname,
           }];
         } catch (e) {
-          console.warn('Invalid CDN domain:', cdnDomain);
+          console.warn('CDN domain not configured or invalid:', e);
           return [];
         }
       })()),
