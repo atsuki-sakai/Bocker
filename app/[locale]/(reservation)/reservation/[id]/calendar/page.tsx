@@ -83,7 +83,7 @@ const dayOrder: Record<string, number> = {
 }
 
 // 予約ステップの定義
-type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'coupon' | 'confirm'
+type ReservationStep = 'coupon' | 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'confirm'
 
 // アニメーションバリアント
 const pageVariants = {
@@ -214,7 +214,7 @@ export default function CalendarPage() {
   const [selectedTime, setSelectedTime] = useState<TimeRange | null>(null)
   const [reservationStartDateTime, setReservationStartDateTime] = useState<Date | null>(null)
   const [reservationEndDateTime, setReservationEndDateTime] = useState<Date | null>(null)
-  const [currentStep, setCurrentStep] = useState<ReservationStep>('menu')
+  const [currentStep, setCurrentStep] = useState<ReservationStep>('coupon')
   const [isLoading, setIsLoading] = useState(true)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -272,10 +272,77 @@ export default function CalendarPage() {
     }
   }, [selectedMenus, selectedStaffCompleted, selectedOptions])
 
+  // 割引額を再計算するuseEffect
+  useEffect(() => {
+    const recalculateDiscount = async () => {
+      if (!appliedDiscount.couponId) {
+        // クーポンが選択されていない場合は割引を0に
+        if (appliedDiscount.discount !== 0) {
+          setAppliedDiscount((prev) => ({ ...prev, discount: 0 }))
+        }
+        return
+      }
+
+      // メニューが選択されていない場合は、割引額の計算をスキップ（ただしIDは保持）
+      if (selectedMenus.length === 0) {
+        return
+      }
+
+      const coupon = await fetchQuery(api.coupon.query.findById, {
+        coupon_id: appliedDiscount.couponId,
+      })
+      if (!coupon || !organizationComplete) return
+
+      const exclusionMenus = await fetchQuery(api.coupon.exclusion_menu.query.list, {
+        tenant_id: organizationComplete.organization.tenant_id as Id<'tenant'>,
+        org_id: organizationComplete.organization._id as Id<'organization'>,
+        coupon_id: coupon._id,
+      })
+
+      const applicableMenus = selectedMenus.filter(
+        (menu) => !exclusionMenus.some((em) => em.menu_id === menu._id)
+      )
+
+      if (applicableMenus.length === 0) {
+        if (appliedDiscount.discount !== 0) {
+          setAppliedDiscount((prev) => ({ ...prev, discount: 0 }))
+        }
+        toast.info(`選択されたクーポン「${coupon.name}」は、選択中のメニューには適用できません。`)
+        return
+      }
+
+      const applicableTotal = applicableMenus.reduce(
+        (total, menu) => total + (menu.sale_price ?? menu.unit_price ?? 0),
+        0
+      )
+      let newDiscount = 0
+      if (coupon.discount_type === 'percentage') {
+        newDiscount = Math.floor((applicableTotal * (coupon.percentage_discount_value ?? 0)) / 100)
+      } else {
+        newDiscount = coupon.fixed_discount_value ?? 0
+      }
+
+      if (appliedDiscount.discount !== newDiscount) {
+        setAppliedDiscount((prev) => ({ ...prev, discount: newDiscount }))
+      }
+    }
+
+    recalculateDiscount()
+  }, [
+    selectedMenus,
+    appliedDiscount.couponId,
+    organizationComplete,
+    appliedDiscount.discount,
+    showErrorToast,
+  ])
+
   // 次のステップに進む
   const goToNextStep = async () => {
     setDirection(1) // 前進方向を設定
     switch (currentStep) {
+      case 'coupon':
+        setCurrentStep('menu')
+        break
       case 'menu':
         setCurrentStep('staff')
         break
@@ -343,9 +410,6 @@ export default function CalendarPage() {
         }
         break
       case 'payment':
-        setCurrentStep('coupon')
-        break
-      case 'coupon':
         setCurrentStep('confirm')
         break
       case 'confirm':
@@ -359,6 +423,12 @@ export default function CalendarPage() {
   const goToPreviousStep = () => {
     setDirection(-1) // 後退方向を設定
     switch (currentStep) {
+      case 'menu':
+        setCurrentStep('coupon')
+        // クーポン選択に戻るので、メニュー選択をクリア
+        setSelectedMenus([])
+        setAppliedDiscount({ discount: 0, couponId: null })
+        break
       case 'staff':
         setCurrentStep('menu')
         // スタッフの選択をクリア
@@ -385,11 +455,8 @@ export default function CalendarPage() {
         setCurrentStep('date')
         setSelectedPaymentMethod(null)
         break
-      case 'coupon':
-        setCurrentStep('payment')
-        break
       case 'confirm':
-        setCurrentStep('coupon')
+        setCurrentStep('payment')
         // ポイント使用をクリア
         setUsePoints(0)
         break
@@ -1195,6 +1262,12 @@ export default function CalendarPage() {
   const renderStepIndicator = () => {
     const steps = [
       {
+        key: 'coupon',
+        label: 'クーポン',
+        icon: Ticket,
+        color: 'bg-neon text-background',
+      },
+      {
         key: 'menu',
         label: 'メニュー',
         icon: ShoppingCart,
@@ -1223,12 +1296,6 @@ export default function CalendarPage() {
         label: '決済',
         icon: CreditCard,
         color: 'bg-chart-5 text-background',
-      },
-      {
-        key: 'coupon',
-        label: 'クーポン',
-        icon: Ticket,
-        color: 'bg-neon text-background',
       },
       {
         key: 'confirm',
@@ -1504,10 +1571,10 @@ export default function CalendarPage() {
                       orgId={organizationComplete.organization._id as Id<'organization'>}
                       selectedMenus={selectedMenus}
                       sessionCustomerType={sessionCustomer?.target_type as ActiveCustomerType}
-                      onSelectCoupon={(coupon, discountAmount) => {
+                      onSelectCoupon={(coupon) => {
                         if (coupon) {
                           setAppliedDiscount({
-                            discount: discountAmount,
+                            discount: 0, // Will be calculated in useEffect
                             couponId: coupon._id,
                             couponName: coupon.name,
                           })
@@ -1516,6 +1583,7 @@ export default function CalendarPage() {
                         }
                       }}
                       selectedCoupon={appliedDiscount?.couponId as Id<'coupon'> | null}
+                      appliedDiscount={appliedDiscount.discount}
                     />
                     <motion.div
                       className="mt-10 flex justify-center"
