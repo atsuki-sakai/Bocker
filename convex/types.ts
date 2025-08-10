@@ -307,6 +307,7 @@ export type StaffWithInvitationStatus = {
 export const MENU_CATEGORY_VALUES = [
   '人気メニュー',
   'カット',
+  'メンズ',
   'カラー',
   'パーマ',
   'トリートメント',
