@@ -1,7 +1,6 @@
 export const LANGUAGES = ['ja', 'en'] as const
 export type Languages = typeof LANGUAGES[number]
 
-
 import { getAppUrl, getEnv } from './env-config';
 
 // 環境変数が設定されていない場合のデフォルト値を追加

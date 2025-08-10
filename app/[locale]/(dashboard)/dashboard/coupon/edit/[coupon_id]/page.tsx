@@ -11,7 +11,7 @@ import { useZodForm } from '@/hooks/useZodForm'
 import { motion } from 'framer-motion'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTranslations, useLocale } from 'next-intl'
-import { formatDate } from '@/lib/formatDate'
+import { formatDate } from '@/lib/schedules'
 import type { SupportedLocale } from '@/lib/dateLocale'
 // コンポーネントのインポート
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'

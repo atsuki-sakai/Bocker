@@ -1,0 +1,63 @@
+{
+    "emails": {
+        "customerRegistration": {
+          "subject": "【{orgName}】会員登録完了のお知らせ",
+          "title": "会員登録完了",
+          "greeting": "{email} 様",
+          "welcomeMessage": "この度は、【{orgName}】にご登録いただき、誠にありがとうございます。",
+          "completionMessage": "会員登録が正常に完了いたしました。",
+          "loginMessage": "ご登録いただいたメールアドレスとパスワードで、いつでもログインいただけます。",
+          "loginButton": "ログインはこちら",
+          "disclaimer": "※このメールに心当たりがない場合は、お手数ですが削除してください。"
+        },
+        "passwordChanged": {
+          "subject": "【{orgName}】パスワード変更完了のお知らせ",
+          "title": "パスワード変更完了",
+          "greeting": "{email} 様",
+          "message": "【{orgName}】のアカウントのパスワードが正常に変更されました。",
+          "changeInfo": "変更完了情報：",
+          "changeDate": "変更日時：{date}",
+          "instruction": "新しいパスワードを使用して、次回からログインしてください。",
+          "securityNotice": "セキュリティに関するお知らせ：",
+          "unauthorizedWarning": "もしこの変更にお心当たりがない場合は、第三者によるアカウントへの不正アクセスの可能性があります。",
+          "contactSupport": "すぐにサポートまでご連絡ください。",
+          "contactSupportWithLink": "すぐに {link} ください。",
+          "supportLinkText": "サポートまでご連絡",
+          "securityTip": "アカウントのセキュリティを保つため、定期的にパスワードを変更することをお勧めします。"
+        },
+        "passwordReset": {
+          "subject": "【{orgName}】パスワードリセットのご案内",
+          "title": "パスワードリセット",
+          "greeting": "{email} 様",
+          "requestMessage": "【{orgName}】のパスワードリセットのご依頼を承りました。",
+          "instructionMessage": "以下のボタンをクリックして、新しいパスワードを設定してください。",
+          "resetButton": "パスワードを再設定する",
+          "importantNotice": "重要なお知らせ：",
+          "expirationNotice": "• このリンクの有効期限は {expiresAt} までです",
+          "singleUseNotice": "• リンクは一度のみ使用可能です",
+          "disclaimer": "※このメールに心当たりがない場合は、第三者がメールアドレスを間違って入力した可能性があります。その場合は、このメールを削除してください。"
+        },
+        "reservationConfirmation": {
+          "subject": "【{orgName}】ご予約内容の確認",
+          "title": "ご予約内容の確認",
+          "greeting": "{customerName} 様",
+          "thankYouMessage": "この度は、【{orgName}】にご予約いただき、誠にありがとうございます。",
+          "confirmationMessage": "以下の内容でご予約を承りました。",
+          "reservationDetails": "ご予約詳細",
+          "shopName": "店舗名:",
+          "reservationDateTime": "ご予約日時:",
+          "assignedStaff": "担当スタッフ:",
+          "selectedMenus": "選択されたメニュー",
+          "selectedOptions": "選択されたオプション",
+          "subtotal": "小計",
+          "pointsUsed": "使用ポイント",
+          "couponDiscount": "クーポン割引",
+          "totalAmount": "合計金額",
+          "thankYouVisit": "ご来店を心よりお待ちしております。",
+          "phone": "電話:",
+          "address": "住所:",
+          "reservationRules": "予約ルール:",
+          "reservationDetailsButton": "予約詳細・キャンセルはこちら"
+        }
+      }
+}

@@ -11,6 +11,7 @@ import type { RowType } from '@/services/supabase/SupabaseService'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { calcAgeFromBirthday } from '@/lib/utils'
 import {
   Accordion,
   AccordionContent,
@@ -227,25 +228,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
     }
   }, [customerUid, tenantId, orgId, isLoaded, fetchCustomerData])
 
-  // 日付フォーマット
-  const formatDate = (timestamp: number | null) => {
-    if (!timestamp) return '-'
-    return format(new Date(timestamp), 'yyyy年MM月dd日', {
-      locale: locale === 'ja' ? ja : enUS,
-    })
-  }
-
   // 年齢計算
   const calculateAge = (birthday: string) => {
-    const birthDate = new Date(birthday)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-
+    const age = calcAgeFromBirthday(birthday)
     return age
   }
 
@@ -1004,7 +989,9 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="w-4 h-4 text-muted-foreground" />
                                   <span className="font-medium">
-                                    {formatDate(item.startTimeUnix)}
+                                    {format(new Date(), 'yyyy年MM月dd日', {
+                                      locale: locale === 'ja' ? ja : enUS,
+                                    })}
                                   </span>
                                 </div>
                                 <div className="text-sm text-link-foreground font-semibold">

@@ -13,7 +13,8 @@ import {
   Column,
 } from '@react-email/components'
 import * as React from 'react'
-import { getEmailTemplateTranslations, type SupportedLocale } from '@/lib/email-translations'
+import { getEmailTemplateTranslations } from '@/lib/email-translations'
+import type { SupportedLocale } from '@/lib/dateLocale'
 
 interface ReservationConfirmationEmailProps {
   customerName?: string | null

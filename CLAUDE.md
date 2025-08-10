@@ -2,754 +2,224 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## プロジェクト概要
+## Development Commands
 
-Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
-
-
-  1. 不明な点は「わからない」と正直に言う
-  2. 推測や嘘は一切しない
-  3. 実際に確認してから回答する
-  4. 事実のみを報告する
-  5. カラーの指定は必ずはglobal.cssを使用する
-  6. 根本原因を正確に特定せずに、推測に基づいて修正を行う事を禁止します。
-
-
-## 利用可能なMCPツール
-gcp:　Google Cloud Platform(CloudStorage, Networking, CDN...)
-supabase: Bocker(本番)、DEV_Bocker(開発環境)
-convex: Production(本番環境), Development(開発環境)
-clerk:dev: 開発環境のClerk
-clerk:prod: 本番環境のClerk
-stripe:dev:　開発環境のStripe　
-stripe:prod:　本番環境のStripe
-
-上記のMCPを利用することで各プラットフォームの詳細な設定を確認できるので積極的に利用してください。
-
-## アーキテクチャ
-
-### 技術スタック
-- **フロントエンド**: Next.js 15.3.3 (App Router)、React 19、Tailwind CSS、shadcn/ui
-- **バックエンド**: 
-  - Convex 1.23.0: リアルタイムデータベース（アクティブなデータ）
-  - Supabase: PostgreSQL（履歴データ保存・分析用）
-- **認証**: Clerk（マルチ組織対応）
-- **決済**: Stripe, Stripe Connect（マーケットプレイス型）
-- **メッセージング**: LINE（LIFF対応） Resend(メール)
-- **ストレージ**: Google Cloud Storage
-
-### アーキテクチャ上の重要な設計思想
-
-1. **ハイブリッドデータベース設計**
-   - Convex: 未来の予約や現在のオペレーションデータ
-   - Supabase: 完了済みデータ、分析用データ、顧客マスターデータ
-   - 毎日午前2時にバッチ処理でConvexからSupabaseへデータ移行（本番環境では現在コメントアウト中）
-
-2. **マルチテナンシー**
-   - 全てのConvexテーブルに`tenant_id`と`org_id`を含む
-   - Clerkの組織機能を活用したアクセス制御
-
-3. **サービスレイヤーアーキテクチャ**
-   - Repositoryパターンによるデータアクセス層の抽象化
-   - 外部サービス連携はServiceクラスで実装
-   - Webhookは並列処理とべき等性を考慮した設計
-
-## 開発コマンド
-
-### 基本コマンド
+### Setup & Development
 ```bash
-# 開発環境起動（Next.js + Convex同時起動）
+# Install dependencies
+pnpm install
+
+# Start development server (Next.js + Convex)
 pnpm dev
 
-# 開発前準備（Convexダッシュボードを開く）
-pnpm predev
+# Start individual services
+pnpm dev:frontend     # Next.js only
+pnpm dev:backend      # Convex only
+pnpm predev          # Open Convex dashboard
 
-# ビルド
-pnpm build
-
-# リント
-pnpm lint
-
-# テスト（注：テストファイルは未実装）
-pnpm test
-pnpm test:watch
-pnpm test:coverage
-
-# Supabaseマイグレーション
-pnpm migrate:supabase
+# Environment management
+pnpm env:dev         # Set development environment and start
+pnpm env:staging     # Set staging environment
+pnpm env:prod        # Set production environment
+pnpm env:validate    # Validate environment variables
 ```
 
-### Convex関連コマンド
+### Build & Quality
 ```bash
-# 開発モード
-npx convex dev
+# Build
+pnpm build           # Production build
+pnpm build:t         # Build with Turbo
+pnpm start           # Start production server
 
-# 本番デプロイ
-npx convex deploy
+# Code quality
+pnpm lint            # ESLint
+pnpm analyze         # Bundle analyzer
 
-# 関数実行
-npx convex run <function-name>
+# Testing
+pnpm test            # Vitest unit tests
+pnpm test:unit       # Run unit tests once
+pnpm test:watch      # Watch mode
+pnpm test:coverage   # Coverage report
+pnpm test:e2e        # Playwright E2E tests
+pnpm test:e2e:ui     # E2E tests with UI
+pnpm test:e2e:headed # E2E tests in headed mode
+pnpm test:all        # Run all tests
 ```
 
-## 主要ディレクトリ構造と責務
-
-### フロントエンド (Next.js App Router)
-```
-app/
-├── (auth)/                    # 認証関連ページ群
-│   ├── sign-in/              # サインインページ・フォーム
-│   ├── sign-up/              # サインアップページ・フォーム
-│   └── staff/invite-accept/        # スタッフ招待受諾ページ
-├── (dashboard)/              # 管理画面（認証後）
-│   └── dashboard/
-│       ├── page.tsx          # ダッシュボードホーム
-│       ├── reservation/      # 予約管理（一覧・詳細・新規）
-│       ├── customer/         # 顧客管理（一覧・詳細・編集・新規）
-│       ├── menu/             # メニュー管理（一覧・詳細・編集・新規）
-│       ├── staff/            # スタッフ管理（一覧・詳細・編集・招待）
-│       ├── option/           # オプション管理
-│       ├── coupon/           # クーポン管理
-│       ├── point/            # ポイント管理
-│       ├── setting/          # 組織設定（営業時間・決済・API設定）
-│       ├── subscription/     # サブスクリプション管理
-│       └── staff-schedule/   # スタッフスケジュール管理
-├── (home)/                   # 公開ページ
-│   ├── page.tsx              # ランディングページ
-│   └── maintenance/          # メンテナンスページ
-└── api/                      # APIエンドポイント
-    ├── clerk/                # Clerk認証関連API
-    ├── stripe/               # Stripe決済・Connect API
-    ├── storage/              # ファイルアップロード署名付きURL
-    ├── webhook/              # 各種Webhook受信
-    └── generate/             # AI生成API（メニュー説明など）
-```
-
-### バックエンド (Convex)
-```
-convex/
-├── _generated/               # 自動生成ファイル（編集不可）
-├── schema.ts                 # 全テーブルスキーマ定義
-├── auth.config.ts           # Clerk認証設定
-├── constants.ts             # 共通定数
-├── types.ts                 # 共通型定義
-├── crons.ts                 # バッチ処理（データ移行）
-├── migrations.ts            # データマイグレーション
-├── utils/                   # ヘルパー関数
-│   ├── auth.ts              # 認証ユーティリティ
-│   ├── helpers.ts           # 共通ヘルパー
-│   └── validations.ts       # バリデーション関数
-└── [feature]/               # 機能別ディレクトリ
-    ├── query.ts             # データ取得関数
-    ├── mutation.ts          # データ更新関数
-    └── action.ts            # 外部API連携・複雑処理
-
-機能別ディレクトリ構成:
-├── organization/            # 組織・設定管理
-│   ├── config/              # 基本設定
-│   ├── api_config/          # API設定
-│   ├── reservation_config/   # 予約設定
-│   ├── week_schedule/       # 営業時間
-│   └── exception_schedule/  # 特別営業日
-├── staff/                   # スタッフ管理
-│   ├── auth/                # スタッフ認証
-│   ├── config/              # スタッフ設定
-│   ├── week_schedule/       # 勤務スケジュール
-│   └── exception_schedule/  # 特別勤務日
-├── reservation/             # 予約管理
-├── menu/                    # メニュー管理
-│   └── menu_exclusion_staff/ # スタッフ除外設定
-├── option/                  # オプション管理
-├── coupon/                  # クーポン管理
-│   ├── config/              # クーポン設定
-│   └── exclusion_menu/      # 除外メニュー
-├── point/                   # ポイント管理
-│   ├── exclusion_menu/      # 除外メニュー
-│   └── queue/               # ポイント処理キュー
-├── tenant/                  # テナント管理
-│   ├── plan/                # プラン管理
-│   ├── subscription/        # サブスクリプション
-│   └── referral/            # 紹介システム
-├── storage/                 # ファイル管理
-└── webhook_events/          # Webhook処理結果
-```
-
-### サービス層 (外部API連携)
-```
-services/
-├── gcp/                     # Google Cloud Platform
-│   └── cloud_storage/       # GCS画像アップロード・管理
-│       ├── GoogleStorageService.ts  # メインサービス
-│       ├── constants.ts     # GCS設定定数
-│       ├── helpers.ts       # ヘルパー関数
-│       └── types.ts         # 型定義
-├── line/                    # LINE Messaging API
-│   ├── LineService.ts       # メインサービス
-│   ├── repositories/        # LINE関連データアクセス
-│   ├── message_template/    # Flex Messageテンプレート
-│   ├── constants.ts         # LINE API設定
-│   └── types.ts             # LINE関連型定義
-├── stripe/                  # Stripe決済・マーケットプレイス
-│   ├── StripeService.ts     # メインサービス
-│   ├── repositories/        # Stripe関連データアクセス
-│   │   ├── StripeConnectRepository.ts    # Connect機能
-│   │   └── StripeSubscriptionRepository.ts # サブスクリプション
-│   ├── constants.ts         # Stripe設定
-│   └── types.ts             # Stripe関連型定義
-├── supabase/                # PostgreSQL（履歴データ・分析）
-│   ├── SupabaseService.ts   # メインサービス
-│   ├── repositories/        # データアクセス層
-│   │   ├── BaseRepository.ts          # 基底リポジトリ
-│   │   ├── ReservationRepository.ts   # 予約履歴
-│   │   ├── customer/        # 顧客マスター・ポイント
-│   │   ├── carte/           # カルテ
-│   │   ├── coupon/          # クーポン利用履歴
-│   │   ├── point/           # ポイント取引履歴
-│   │   └── tracking/        # アクセス解析
-│   └── utils/               # Supabase関連ユーティリティ
-└── webhook/                 # Webhook処理基盤
-    ├── BaseProcessor.ts     # 基底プロセッサ
-    ├── parallel.ts          # 並列処理ユーティリティ
-    ├── metrics.ts           # 処理メトリクス
-    ├── clerk/               # Clerk Webhook処理
-    └── stripe/              # Stripe Webhook処理
-```
-
-### 共通ライブラリ
-```
-lib/
-├── auth/                    # 認証関連
-│   └── getOrganizationAuth.ts # 組織認証取得
-├── errors/                  # エラーハンドリング
-│   ├── BaseError.ts         # 基底エラークラス
-│   ├── custom_errors.ts     # カスタムエラー定義
-│   ├── constants.ts         # エラーコード定数
-│   ├── helpers.ts           # エラーヘルパー
-│   ├── types.ts             # エラー関連型
-│   └── utils.ts             # エラーユーティリティ
-├── zod/                     # バリデーション
-│   └── helpers.ts           # Zodスキーマヘルパー
-├── email_templates/         # メールテンプレート
-├── constants.ts             # アプリ全体定数
-├── helpers.ts               # 共通ヘルパー関数
-├── schedules.ts             # スケジュール関連ロジック
-├── utils.ts                 # 汎用ユーティリティ
-└── types.ts                 # 共通型定義
-```
-
-### コンポーネント
-```
-components/
-├── ui/                      # shadcn/ui基本コンポーネント
-├── common/                  # 共通コンポーネント
-│   ├── Sidebar.tsx          # サイドバーナビゲーション
-│   ├── DashboardSection.tsx # ダッシュボードセクション
-│   ├── OrganizationForm.tsx # 組織情報フォーム
-│   ├── SingleImageDrop.tsx  # 単一画像アップロード
-│   ├── MultiImageDrop.tsx   # 複数画像アップロード
-│   ├── TagInput.tsx         # タグ入力
-│   ├── CalendarMultiSelect.tsx # カレンダー複数選択
-│   └── Loading.tsx          # ローディング表示
-├── providers/               # React Context Provider
-│   ├── ClerkProvider.tsx    # Clerk認証
-│   ├── ConvexClientProvider.tsx # Convex接続
-│   ├── ThemeProvider.tsx    # ダークモード
-│   └── LiffProvider.tsx     # LINE LIFF
-└── emails/                  # メールテンプレート
-    └── ReservationConfirmationEmail.tsx
-```
-
-### フック・ユーティリティ
-```
-hooks/
-├── useZodForm.ts            # Zod+React Hook Form統合
-├── useTenantAndOrganization.ts # テナント・組織情報取得
-├── useStablePaginatedQuery.tsx # 安定したページネーション
-├── useTimelineData.ts       # タイムライン表示用データ
-├── useErrorHandler.ts       # エラーハンドリング
-└── use-toast.ts            # トースト通知
-
-middleware.ts                # Clerk認証ミドルウェア
-instrumentation.ts           # Sentry監視設定
-```
-
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
----
-
-## プロジェクト概要
-
-Bocker（ブッカー）は美容サロン向けの予約・顧客管理SaaSプラットフォームです。マルチテナント設計で、サロンオーナー・スタッフが効率的に予約管理や顧客管理を行えるよう設計されています。
-
----
-
-## アーキテクチャ
-
-### 技術スタック
-
-* **フロントエンド**: Next.js 15.3.3 (App Router)、React 19、Tailwind CSS、shadcn/ui
-* **バックエンド**:
-
-  * Convex 1.23.0: リアルタイムデータベース（アクティブなデータ）
-  * Supabase: PostgreSQL（履歴データ保存・分析用）
-* **認証**: Clerk（マルチ組織対応）
-* **決済**: Stripe, Stripe Connect（マーケットプレイス型）
-* **メッセージング**: LINE（LIFF対応）
-* **ストレージ**: Google Cloud Storage
-* **モニタリング**: Sentry（Vercel統合）
-
-### アーキテクチャ上の重要な設計思想
-
-1. **ハイブリッドデータベース設計**
-
-   * Convex: 未来の予約や現在のオペレーションデータ
-   * Supabase: 完了済みデータ、分析用データ、顧客マスターデータ
-   * 毎日午前2時にバッチ処理でConvexからSupabaseへデータ移行（本番環境では現在コメントアウト中）
-
-2. **マルチテナンシー**
-
-   * 全てのConvexテーブルに`tenant_id`と`org_id`を含む
-   * Clerkの組織機能を活用したアクセス制御
-
-3. **サービスレイヤーアーキテクチャ**
-
-   * Repositoryパターンによるデータアクセス層の抽象化
-   * 外部サービス連携はServiceクラスで実装
-   * Webhookは並列処理とべき等性を考慮した設計
-
----
-
-## 開発コマンド
-
-### 基本コマンド
-
+### Database & Infrastructure
 ```bash
-# 開発環境起動（Next.js + Convex同時起動）
-pnpm dev
+# Convex
+npx convex dev       # Start Convex development
+npx convex deploy    # Deploy to production
 
-# 開発前準備（Convexダッシュボードを開く）
-pnpm predev
+# Supabase
+pnpm migrate:supabase # Run Supabase migrations
 
-# ビルド
-pnpm build
-
-# リント
-pnpm lint
-
-# テスト（注：テストファイルは未実装）
-pnpm test
-pnpm test:watch
-pnpm test:coverage
-
-# Supabaseマイグレーション
-pnpm migrate:supabase
+# Internationalization
+pnpm sync-lang-en    # Sync English language files
 ```
 
-### Convex関連コマンド
+## Architecture Overview
 
+**Bocker** is a comprehensive SaaS reservation management platform for beauty salons built with a hybrid database architecture optimized for both real-time operations and long-term analytics.
+
+### Tech Stack
+- **Frontend**: Next.js 15.3.3 + React 19 + TypeScript (strict mode)
+- **UI**: shadcn/ui + Tailwind CSS + Framer Motion
+- **Real-time DB**: Convex 1.23.0 (active data - future reservations, staff, menus)
+- **Analytics DB**: Supabase PostgreSQL (historical data - completed reservations, customer history)
+- **Auth**: Clerk 6.11.2 (multi-tenant with organization management)
+- **Payments**: Stripe Connect (marketplace-style payments)
+- **External APIs**: LINE Bot SDK, Google Cloud Storage, Google Gemini AI
+
+### Hybrid Database Design
+The application uses a unique dual-database architecture:
+- **Convex**: Handles real-time data (future reservations, staff schedules, menus, settings)
+- **Supabase**: Stores historical data (completed reservations, customer analytics, long-term metrics)
+- **Nightly Batch Jobs**: Migrate old data from Convex to Supabase for cost optimization
+
+### Directory Structure
+
+#### Frontend (`/app/[locale]/`)
+- `(auth)/` - Authentication flows (sign-in, sign-up, staff invitations)
+- `(dashboard)/` - Admin panel (reservation management, customer/staff management, analytics)
+- `(reservation)/` - Customer-facing booking system with LINE integration
+- `(customer)/` - Customer portal (profile, history, points)
+- `(home)/` - Marketing pages and landing
+- `api/` - Next.js API routes (auth, payments, AI, webhooks)
+
+#### Backend
+- `/convex/` - Real-time database functions (queries, mutations, actions)
+- `/services/` - External service integrations (Stripe, LINE, GCP, Supabase)
+- `/components/` - Reusable UI components
+- `/lib/` - Utilities, validation schemas, helpers
+- `/hooks/` - Custom React hooks
+
+## Multi-tenant Architecture
+
+All database entities follow strict multi-tenant design:
+- Every table has `tenant_id` and `org_id` fields
+- Complete data isolation between tenants
+- All queries MUST include tenant/org filters
+- Soft deletes using `is_archive` flag
+
+## Key Convex Patterns
+
+### Function Definition (New Syntax)
+```typescript
+// Use the new Convex function syntax
+export const createReservation = mutation({
+  args: { /* validator */ },
+  handler: async (ctx, args) => {
+    // Implementation
+  }
+})
+```
+
+### Multi-tenant Queries
+```typescript
+// Always include tenant/org filters
+const reservations = await ctx.db
+  .query("reservations")
+  .withIndex("by_tenant_org", (q) => 
+    q.eq("tenant_id", args.tenant_id).eq("org_id", args.org_id)
+  )
+  .filter((q) => q.eq(q.field("is_archive"), false))
+  .collect()
+```
+
+## Testing Setup
+
+### Vitest (Unit Tests)
+- Environment: jsdom with React Testing Library
+- Coverage: 70% thresholds for branches, functions, lines, statements
+- Fork-based execution for isolation
+- Setup file: `vitest.setup.ts`
+
+### Playwright (E2E Tests)
+- Multi-browser: Chrome, Firefox, Safari, Mobile
+- Test environment setup with `.env.test`
+- Retry policies and parallel execution
+- Rich reporting (HTML, JUnit, JSON)
+
+### Running Single Tests
 ```bash
-# 開発モード
-npx convex dev
+# Vitest single test
+pnpm test -- filename.test.tsx
 
-# 本番デプロイ
-npx convex deploy
-
-# 関数実行
-npx convex run <function-name>
+# Playwright single test
+pnpm test:e2e -- tests/specific-test.spec.ts
 ```
 
----
+## External Service Integration
 
-## Next.js 15 App Router + TypeScript 5.5 開発ガイド
+### Stripe Connect
+- Marketplace-style payments for multi-tenant SaaS
+- Webhook handling with proper idempotency
+- Subscription management (Lite/Pro plans)
 
-この章では **Next.js v15 (App Router) と TypeScript を使用する際の最新ベストプラクティスをまとめます。プロジェクト固有のディレクトリ規約やキャッシュ戦略を定義し、Claude Code が安全かつ効率的にコード生成・修正を行えるようにします。
+### LINE Integration
+- LIFF (LINE Front-end Framework) for customer authentication
+- Flex Messages for rich notifications
+- Bot messaging for reservation confirmations
 
-### 1. ディレクトリ & ルーティング規約
+### AI Features
+- Google Gemini API for menu description generation
+- Proper rate limiting and error handling
 
-| 種別            | 規約                                                      | 補足                                         |
-| ------------- | ------------------------------------------------------- | ------------------------------------------ |
-| **セグメント**     | `(public)/`, `(auth)/`, `(dashboard)/` など **()** でグループ化 | **動的パラメータ**は`[id]`、**キャッチオール**は`[...slug]` |
-| **エラー境界**     | `error.tsx` をページと同階層に配置                                 | 500 系例外をセグメント単位でキャッチ                       |
-| **ローディング UI** | `loading.tsx` をページと同階層に配置                               | ストリーミング表示を活用                               |
-| **クライアント専用**  | `"use client"` を最上部に 1 行                                | 依存性: Zustand, React Hook Form など           |
+## Development Best Practices
 
-### 2. `next.config.ts` 推奨設定
+### Code Style
+- TypeScript strict mode is enforced
+- Use new Convex function syntax (`export const func = query({...})`)
+- Prefer Server Components, minimize "use client"
+- Follow existing shadcn/ui patterns
 
-```ts
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  experimental: {
-    turbo: true,              // Turbopack Dev
-    reactCompiler: true,      // React Compiler（実験）
-    after: true,              // \nEXT15 の after() API
-  },
-  images: {
-    domains: ["storage.googleapis.com"],
-    formats: ["image/webp"],
-  },
-  redirects: async () => [
-    { source: "/", destination: "/(home)", permanent: false },
-  ],
-};
-export default nextConfig;
+### Error Handling
+```typescript
+// Use structured error handling
+import { ValidationError } from '@/lib/errors'
+throw new ValidationError('Invalid input', { field: 'email' })
 ```
 
-### 3. フェッチ & キャッシュ戦略
+### Security
+- All customer data MUST include tenant/org isolation
+- Use HTTPOnly cookies for session management
+- Validate all inputs with Zod schemas
+- Never expose internal IDs to frontend
 
-| シナリオ         | 設定例                                                             | 説明                    |
-| ------------ | --------------------------------------------------------------- | --------------------- |
-| ほぼ静的         | `export const dynamic = 'force-static'`                         | CDN 配信・ビルド時生成         |
-| PPR（部分プリレンダ） | `export const dynamic = 'auto'` + `fetchCache: 'default-cache'` | 上部を先行描画、動的部はストリーミング合成 |
-| 最新データ必須      | `revalidate = 0`                                                | SSR・Route Cache 無効化   |
+## Known Issues & Limitations
 
-> **Tips**: `GET` Route Handlers は v15 から既定でキャッシュ無効。静的化する場合は `force-static` を明示。
+### Critical Issue: Stripe Webhook Handler
+The Stripe `checkout.session.completed` event handler is not fully implemented. Credit card payments will remain in "pending" status until this is resolved.
 
-### 4. Server Actions パターン
-
-```ts
-// app/(dashboard)/reservation/actions.ts
-"use server";
-import { z } from "zod";
-import { db } from "@/lib/db";
-const schema = z.object({ start: z.string(), end: z.string() });
-
-export async function createReservation(formData: FormData) {
-  const parsed = schema.parse(Object.fromEntries(formData));
-  await db.reservation.insert({
-    ...parsed,
-    tenant_id: getTenantId(),
-  });
-  revalidatePath("/(dashboard)/reservation");
+**Required Implementation**: `/services/webhook/stripe/handlers.connect.ts`
+```typescript
+export async function handleCheckoutSessionCompleted(
+  evt: Stripe.CheckoutSessionCompletedEvent,
+  eventId: string,
+  deps: WebhookDependencies,
+  metrics: WebhookMetricsCollector
+): Promise<EventProcessingResult> {
+  // 1. Extract reservation ID from metadata
+  // 2. Update reservation status to 'confirmed' in Convex
+  // 3. Update payment_status to 'completed'
+  // 4. Send confirmation email/LINE message
+  // 5. Create point reward queue entry
 }
 ```
 
-* **入力バリデーション**はサーバー側で必須 (Zod)
-* **戻り値**は JSON か `redirect()` / `revalidatePath()` を使用
-* **エッジ** 実行したい場合は `export const runtime = "edge"` を追加
+### Performance Notes
+- Batch processes are currently disabled in production
+- Consider enabling cron jobs in `convex/crons.ts` for data migration
+- Large datasets should use Supabase for analytics queries
 
-### 5. クライアントコンポーネント指針
+## Business Context
 
-* RSC で渡せない関数や `useState` が必要なら `"use client"` を宣言
-* Props は **serializable** かつ **small** に保つ
-* なるべく **Server Components** でデータ取得し、クライアントは表示ロジックに集中
+This is a commercial SaaS product targeting Japanese beauty salons with:
+- **Pricing**: Lite (¥8,000/month), Pro (¥12,000/month)
+- **Target Scale**: 3,000+ concurrent salon operations
+- **Revenue Model**: Monthly subscriptions with 30-day trials
+- **Market Focus**: LINE integration for Japanese market penetration
 
-### 6. TypeScript 5.5 特有設定
-
-```jsonc
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "exactOptionalPropertyTypes": true,
-    "verbatimModuleSyntax": true,
-    "importsNotUsedAsValues": "error",
-    "strict": true
-  },
-  "include": ["app", "lib", "components", "hooks"]
-}
-```
-
-* **推論型述語**: `function isMenu(x: Menu | Option): x is Menu { … }` で安全な型絞り込み
-* **定数キーアクセスのナローイング**: `obj[key]` の安全性向上
-* **正規表現型チェック**: 短い CI でパターンミスを検出
-
-### 7. ESLint / Prettier
-
-* `eslint-config-next` v15 使用。App Router 用ルール自動適用。
-* 独自ルール例
-
-```jsonc
-{
-  "@next/next/no-img-element": "off",
-  "react-hooks/exhaustive-deps": "error",
-  "import/order": ["error", { "newlines-between": "always" }]
-}
-```
-
-### 8. Turbopack & ビルド最適化
-
-| 項目            | 対策                                            |
-| ------------- | --------------------------------------------- |
-| Dev 起動時間      | `turbo: true` + `.turbopack` キャッシュを gitignore |
-| First Load JS | 動的 import／`next/dynamic` で分割                  |
-| 画像最適化         | `next/image` + WebP                           |
-
-### 責務分離の原則
-
-1. **フロントエンド**: UIコンポーネント・ユーザー操作・状態管理
-2. **Convex**: リアルタイムデータ・ビジネスロジック・認証
-3. **Services**: 外部API連携・データ変換・エラーハンドリング
-4. **Supabase**: 履歴データ・分析用データ・顧客マスター
-5. **Components**: 再利用可能UI・フォーム・表示ロジック
-6. **Lib**: 共通関数・型定義・定数・エラークラス
-
-## 開発時の重要なパターン
-
-### Convex関数の実装パターン
-`.cursor/rules/convex_rules.mdc`に詳細なルールがあります。主なポイント：
-- 新しい関数構文を使用（`export const functionName = query(...)` の形式）
-- 厳格な型定義とバリデーション
-- ファイルベースのAPI設計
-
-### エラーハンドリング
-```typescript
-// lib/errors/custom_errors.ts のカスタムエラーを使用
-throw new ValidationError('Invalid input', { field: 'email' });
-```
-
-### フォームバリデーション
-- React Hook Form + Zod を使用
-- `useZodForm` フックでフォーム初期化
-- サーバーサイドとクライアントサイドで同じZodスキーマを使用
-
-### 画像処理フロー
-1. ブラウザ側で画像圧縮（browser-image-compression）
-2. GCS署名付きURLを取得
-3. 直接GCSにアップロード
-4. Convexにメタデータ保存
-
-### Webhook処理パターン
-- BaseProcessorクラスを継承
-- べき等性キーによる重複処理防止
-- 並列処理による高速化
-
-## 環境変数
-
-主要な環境変数（.env.localに設定）：
-- `NEXT_PUBLIC_CONVEX_URL`: Convexエンドポイント
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk公開キー
-- `CLERK_SECRET_KEY`: Clerkシークレットキー
-- `STRIPE_SECRET_KEY`: Stripeシークレットキー
-- `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET`: Stripe Webhookシークレット
-- `NEXT_PUBLIC_SUPABASE_URL`: Supabase URL
-- `SUPABASE_SERVICE_ROLE_KEY`: Supabaseサービスロールキー
-
-## 注意事項
-
-1. **バッチ処理**: 本番環境でConvexのデータ肥大化を防ぐため、バッチ処理の有効化が必要
-2. **テスト**: Jestは設定済みだが、テストファイルは未実装（技術的負債）
-3. **型安全性**: TypeScript strictモード有効。型エラーは必ず解消すること
-4. **マルチテナンシー**: 全てのクエリでtenant_idとorg_idの条件を忘れずに
-
-## Claude Code 作業時の重要な注意点
-
-**絶対に守るべきルール**:
-
-1. **プロセス管理の徹底**
-   - 開発サーバー等を実行する場合は、必ず終了処理も行う
-   - バックグラウンドプロセスの起動時は、作業完了後に `kill` コマンドで停止
-   - 長時間実行されるプロセス（`pnpm dev`, `npx convex dev`等）は要注意
-   - プロセス実行前に `lsof -i :ポート番号` でポート使用状況を確認
-
-2. **事前確認・相談の徹底**
-   - 問題点を必ず整理してユーザーに報告
-   - 実装方針を提案し、ユーザーの承認を得てから作業開始
-   - 勝手な解釈や修正は行わない
-   - 推測で回答せず、不明な点は素直に「わからない」と伝える
-
-3. **許可されている作業**
-   - ファイルの読み取り・編集・作成
-   - リント実行（`pnpm lint`）
-   - 静的解析・コード検索
-   - 環境変数やconfig文件の確認
-
-4. **問題発生時の対応**
-   - 嘘や推測での回答を避ける
-   - 事実を正確に報告
-   - 解決策は必ずユーザーに確認してから実行
-
-## 最近の重要な変更
-
-- 年齢(age)を生年月日(birthday)から自動算出するようリファクタリング
-- プラン毎のメニュー、スタッフ、オプションの作成上限を追加
-- ConvexからSupabaseへのデータマイグレーション機能追加
-- Clerkスタッフ招待・メタデータ管理・削除機能の実装
-- Convexクエリの最適化実施（2025年1月）
-  - `ctx.runQuery`呼び出しを削減し、直接データベースアクセスに変更
-  - 並列データフェッチング（Promise.all）の活用
-  - Map構造を使用したO(n²)からO(n)への計算量削減
-  - 共通ヘルパー関数による重複ロジックの統合
-
-## Convexガイドライン
-
-### 関数ガイドライン
-
-#### 新しい関数構文
-- Convex関数には**常に**新しい関数構文を使用：
-```typescript
-import { query } from "./_generated/server";
-import { v } from "convex/values";
-export const f = query({
-    args: {},
-    returns: v.null(),
-    handler: async (ctx, args) => {
-        // 関数の本体
-    },
-});
-```
-
-#### HTTPエンドポイント構文
-- HTTPエンドポイントは`convex/http.ts`で定義し、`httpAction`デコレータが必要：
-```typescript
-import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
-const http = httpRouter();
-http.route({
-    path: "/echo",
-    method: "POST",
-    handler: httpAction(async (ctx, req) => {
-        const body = await req.bytes();
-        return new Response(body, { status: 200 });
-    }),
-});
-```
-
-#### バリデータ
-- 配列バリデータの例：
-```typescript
-export default mutation({
-    args: {
-        simpleArray: v.array(v.union(v.string(), v.number())),
-    },
-    handler: async (ctx, args) => {
-        //...
-    },
-});
-```
-
-- 判別共用体型の例：
-```typescript
-export default defineSchema({
-    results: defineTable(
-        v.union(
-            v.object({
-                kind: v.literal("error"),
-                errorMessage: v.string(),
-            }),
-            v.object({
-                kind: v.literal("success"),
-                value: v.number(),
-            }),
-        ),
-    )
-});
-```
-
-- null値を返す際は常に`v.null()`バリデータを使用
-
-#### 関数登録
-- 内部関数：`internalQuery`、`internalMutation`、`internalAction`を使用
-- パブリック関数：`query`、`mutation`、`action`を使用
-- **重要**: すべてのConvex関数に引数と戻り値のバリデータを含める
-
-#### 関数呼び出し
-- クエリ呼び出し：`ctx.runQuery`
-- ミューテーション呼び出し：`ctx.runMutation`
-- アクション呼び出し：`ctx.runAction`
-- 同じファイル内の関数を呼び出す場合は戻り値に型注釈を指定
-
-#### 関数参照
-- パブリック関数：`api.example.f`（`convex/example.ts`の`f`関数）
-- 内部関数：`internal.example.g`（`convex/example.ts`の`g`関数）
-- ネストしたディレクトリ：`api.messages.access.h`
-
-### データベースガイドライン
-
-#### スキーマ定義
-- 常に`convex/schema.ts`でスキーマを定義
-- インデックス名にはすべてのフィールドを含める（例：`by_field1_and_field2`）
-- インデックスフィールドは定義順序でクエリする必要あり
-
-#### クエリガイドライン
-- `filter`は使用せず、インデックスを定義して`withIndex`を使用
-- `.delete()`はサポートされない。`.collect()`してから個別に削除
-- 単一ドキュメント取得には`.unique()`を使用
-- デフォルトは昇順の`_creationTime`順
-
-#### ミューテーションガイドライン
-- 完全置換：`ctx.db.replace`
-- 部分更新：`ctx.db.patch`
-
-### TypeScriptガイドライン
-- テーブルIDの型：`Id<'users'>`を使用
-- 判別共用体の文字列リテラルには`as const`を使用
-- 配列定義：`const array: Array<T> = [...];`
-- レコード定義：`const record: Record<KeyType, ValueType> = {...};`
-
-### その他のガイドライン
-
-#### アクション
-- Node.js組み込みモジュール使用時は先頭に`"use node";`を追加
-- アクション内で`ctx.db`は使用不可
-
-#### スケジューリング
-- cronジョブ：`crons.interval`または`crons.cron`のみ使用
-- `crons.hourly`、`crons.daily`、`crons.weekly`は使用しない
-
-#### ファイルストレージ
-- `ctx.storage.getUrl()`で署名付きURL取得
-- メタデータは`_storage`システムテーブルをクエリ
-- すべてのアイテムを`Blob`オブジェクトとして処理
-
-#### ページネーション
-```typescript
-export const listWithExtraArg = query({
-    args: { paginationOpts: paginationOptsValidator, author: v.string() },
-    handler: async (ctx, args) => {
-        return await ctx.db
-            .query("messages")
-            .filter((q) => q.eq(q.field("author"), args.author))
-            .order("desc")
-            .paginate(args.paginationOpts);
-    },
-});
-```
-
-## データ量・ストレージ設計（3,000店舗規模）
-
-### スケール想定
-
-3,000店舗での運用を前提とした年間データ増分とストレージコスト試算：
-
-- **年間データ増分**: 24-38 TB（画像97%、テキスト3%）
-- **GCSコスト**: 年額約45万円（Lifecycle管理適用時）
-- **1店舗/日データ**: 22.1-35.4 MB（主にカルテ画像）
-
-### ストレージアーキテクチャ
-
-```
-gs://Bocker-prod-images/
-├── yyyy/mm/dd/<uuid>.webp  # 原画像
-└── yyyy/mm/dd/<uuid>_thumb.webp  # サムネイル
-```
-
-**Lifecycle管理**:
-- 30日後: Standard → Coldline（$0.023 → $0.006/GB）
-- 365日後: Coldline → Archive（$0.006 → $0.0025/GB）
-
-### 実装時の注意点
-
-1. **画像アップロード処理**:
-   ```typescript
-   // services/gcp/cloud_storage/GoogleStorageService.ts
-   // WebP変換は品質80%で実装済み
-   // サムネイル生成はCloud Functions側で非同期処理
-   ```
-
-2. **パフォーマンス考慮**:
-   - Cloud CDN有効化（30日キャッシュ）
-   - 画像読み込みはサムネイル優先
-   - Retrieval Fee軽減のため頻繁なアクセスは避ける
-
-### データ生成パターン
-
-| データ種別 | 生成頻度 | サイズ | 保存期間 |
-|-----------|---------|--------|---------|
-| カルテ画像 | 4枚/予約 | 175KB/枚 | 永続 |
-| ヘア参考画像 | 1枚/予約 | 175KB | 永続 |
-| スタッフ画像 | 1枚/スタッフ | 170KB | 永続 |
-| メニュー画像 | 3枚/メニュー | 175KB/枚 | 永続 |
-| ログデータ | 継続的 | 可変 | 30日（ロールアップ後削除） |
+The codebase is production-ready for small to medium deployments and designed to scale to enterprise levels with planned optimizations.

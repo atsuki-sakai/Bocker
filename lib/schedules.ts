@@ -1,10 +1,13 @@
-// スケジュール関連の関数
-// /app/lib/schedule.ts
+// app/lib/schedule.ts
 
-
-const DAYS_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-const DAYS_JA = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'] as const;
-type DayOfWeekEN = typeof DAYS_EN[number];
+import {
+  DAY_OF_WEEK_VALUES,
+  DAY_OF_WEEK_VALUES_JA,
+  DayOfWeek,
+  DayOfWeekJA,
+} from './../convex/types'
+import { format, formatDistance, formatDistanceToNow, formatRelative } from 'date-fns'
+import { getDateFnsLocale, SupportedLocale } from './dateLocale'
 
 /**
  * 現在の Unix タイムスタンプ（ミリ秒単位）を取得する
@@ -14,27 +17,68 @@ type DayOfWeekEN = typeof DAYS_EN[number];
  */
 export function getCurrentUnixTime(addHours?: number): number {
   // Date.now() はすでにミリ秒単位のタイムスタンプを返す
-  const currentTimeMs = Date.now();
+  const currentTimeMs = Date.now()
   // addHours が指定されていれば、その分だけミリ秒に変換して加算
-  return addHours !== undefined
-    ? currentTimeMs + addHours * 3600 * 1000
-    : currentTimeMs;
+  return addHours !== undefined ? currentTimeMs + addHours * 3600 * 1000 : currentTimeMs
+}
+export function convertDayOfWeek(week: DayOfWeek, locale?: SupportedLocale): string {
+  const _locale = locale ? locale : 'ja'
+  if (_locale === 'ja') {
+    switch (week) {
+      case 'monday':
+        return '月曜日'
+      case 'tuesday':
+        return '火曜日'
+      case 'wednesday':
+        return '水曜日'
+      case 'thursday':
+        return '木曜日'
+      case 'friday':
+        return '金曜日'
+      case 'saturday':
+        return '土曜日'
+      case 'sunday':
+        return '日曜日'
+      default:
+        throw new Error(`Invalid day of week: ${week}`)
+    }
+  } else {
+    switch (week) {
+      case 'monday':
+        return 'Monday'
+      case 'tuesday':
+        return 'Tuesday'
+      case 'wednesday':
+        return 'Wednesday'
+      case 'thursday':
+        return 'Thursday'
+      case 'friday':
+        return 'Friday'
+      case 'saturday':
+        return 'Saturday'
+      case 'sunday':
+        return 'Sunday'
+      default:
+        throw new Error(`Invalid day of week: ${week}`)
+    }
+  }
 }
 
 // タイムスタンプを日付の文字列に変換する関数
 // 使用例:
 // const dateString = convertTimestampToDateString(1717334400000);
 // console.log(dateString); // 2024-06-01
-// const dateString = convertTimestampToDateString(1717334400000, 'Asia/Tokyo');
-// console.log(dateString); // 2024-06-01
-
 export function convertTimestampToDateString(timestampMs: number, timeZone?: string): string {
-  const date = new Date(timestampMs);
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timeZone ?? 'Asia/Tokyo' };
-  const formatted = date.toLocaleDateString('ja-CA', options).replace(/\//g, '-');
-  return formatted;
+  const date = new Date(timestampMs)
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: timeZone ?? 'Asia/Tokyo',
+  }
+  const formatted = date.toLocaleDateString('ja-CA', options).replace(/\//g, '-')
+  return formatted
 }
-
 
 /**
  * 指定された日付の曜日を英語または日本語で取得する
@@ -42,21 +86,10 @@ export function convertTimestampToDateString(timestampMs: number, timeZone?: str
  * @param ja - 日本語で取得する場合はtrue、英語の場合はfalse（デフォルト）
  * @returns 曜日の文字列（英語: 'sunday', 'monday'等、日本語: '日曜日', '月曜日'等）
  */
-export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeekEN | typeof DAYS_JA[number] {
-  const idx = date.getDay();
-  return ja ? DAYS_JA[idx] : DAYS_EN[idx];
+export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeek | DayOfWeekJA {
+  const idx = date.getDay()
+  return ja ? DAY_OF_WEEK_VALUES_JA[idx] : DAY_OF_WEEK_VALUES[idx]
 }
-
-/**
- * 英語の曜日名を日本語に変換する
- * @param dayOfWeek - 英語の曜日名（'sunday', 'monday'等）
- * @returns 日本語の曜日名（'日曜日', '月曜日'等）
- */
-export function convertDayOfWeekToJa(dayOfWeek: DayOfWeekEN): typeof DAYS_JA[number] {
-  const idx = DAYS_EN.indexOf(dayOfWeek);
-  return idx >= 0 ? DAYS_JA[idx] : DAYS_JA[0];
-}
-
 
 /**
  * ミリ秒タイムスタンプをフォーマットして返します。
@@ -68,24 +101,24 @@ export function convertDayOfWeekToJa(dayOfWeek: DayOfWeekEN): typeof DAYS_JA[num
 export function formatTimestamp(
   timestampMs: number,
   options: {
-    useJST?: boolean;
-    includeDate?: boolean;
+    useJST?: boolean
+    includeDate?: boolean
   } = {}
 ): string {
-  const { useJST = true, includeDate = false } = options;
-  const locale = 'ja-JP';
-  const timeZone = useJST ? 'Asia/Tokyo' : 'UTC';
-  const date = new Date(timestampMs);
+  const { useJST = true, includeDate = false } = options
+  const locale = 'ja-JP'
+  const timeZone = useJST ? 'Asia/Tokyo' : 'UTC'
+  const date = new Date(timestampMs)
 
   // 時刻部分のみ HH:mm 形式
   const timeStr = date.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
     timeZone,
-  });
+  })
 
   if (!includeDate) {
-    return timeStr; // 例: "09:00"
+    return timeStr // 例: "09:00"
   }
 
   // 日付部分のみ YYYY/MM/DD 形式
@@ -94,10 +127,10 @@ export function formatTimestamp(
     month: '2-digit',
     day: '2-digit',
     timeZone,
-  });
+  })
 
   // 結合して "YYYY/MM/DD HH:mm"
-  return `${dateStr} ${timeStr}`;
+  return `${dateStr} ${timeStr}`
 }
 
 /**
@@ -108,15 +141,14 @@ export function formatTimestamp(
  * 使用例:
  * console.log(getMinuteMultiples(30, 360)); // 例: [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360]
  */
-
 export function getMinuteMultiples(interval: number, maxMinute?: number): number[] {
-  const max = maxMinute ?? 180;
+  const max = maxMinute ?? 180
   const step = interval > 0 ? interval : 5 // 0や負なら5分刻み
   const result: number[] = []
   for (let min = 0; min <= max; min += step) {
     result.push(min)
   }
-  return result;
+  return result
 }
 
 /**
@@ -133,19 +165,18 @@ export function getMinuteMultiples(interval: number, maxMinute?: number): number
  */
 
 export function convertHourToTimestamp(hour: string, targetDate?: string): number | null {
-  if (!hour) return null;
-  const baseDate = targetDate ? new Date(targetDate) : new Date();
-  const year = baseDate.getFullYear();
-  const month = baseDate.getMonth();
-  const date = baseDate.getDate();
-  const [h, m] = hour.split(':').map(Number);
+  if (!hour) return null
+  const baseDate = targetDate ? new Date(targetDate) : new Date()
+  const year = baseDate.getFullYear()
+  const month = baseDate.getMonth()
+  const date = baseDate.getDate()
+  const [h, m] = hour.split(':').map(Number)
   // 1. Construct UTC timestamp for the same Y/M/D H:M as if in UTC
-  const utcMs = Date.UTC(year, month, date, h, m, 0);
+  const utcMs = Date.UTC(year, month, date, h, m, 0)
   // 2. Subtract 9 hours (Tokyo offset) so that when formatted in Asia/Tokyo, it shows the intended H:M
-  const jstMs = utcMs - 9 * 60 * 60 * 1000;
-  return jstMs;
+  const jstMs = utcMs - 9 * 60 * 60 * 1000
+  return jstMs
 }
-
 
 /**
  * UNIXタイムスタンプ（ミリ秒）をHH:mm形式の時刻文字列に変換する
@@ -158,59 +189,10 @@ export function convertTimestampToHour(
   timeZone: string = 'Asia/Tokyo'
 ): string {
   return new Date(unixTimestampMs).toLocaleTimeString('ja-JP', {
-    hour:   '2-digit',
-    minute: '2-digit',
-    timeZone,
-  });
-}
-
-
-/**
- * タイムスタンプの時刻のみを "HH:mm" 形式の文字列に変換する関数
- * @param unixTimestamp - タイムスタンプ（ミリ秒単位）
- * @returns "HH:mm" 形式の文字列
- *
- * 使用例:
- * const hour = formatHourFromTimestamp(1680000000);
- * console.log(hour); // 例: "09:00"
- */
-export function formatHourFromTimestamp(unixMs: number): string {
-  return new Date(unixMs).toLocaleTimeString('ja-JP', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
-    timeZone: 'Asia/Tokyo',
-  });
-}
-
-/**
- * 既存のスタッフ予約から新規予約の作成が可能かチェックする関数
- * @param existingStaffReservations 既存の予約の配列
- * @param newStaffReservation 新規に予約したい時間帯
- * @returns 重複がなければ true、重複している場合は false を返す
- *
- * 重複の条件:
- * 2つの時間帯 [a, b] と [c, d] が重ならないための条件は、
- *   b <= c または d <= a
- * したがって、重なっている場合は !(b <= c || d <= a) として検出できます。
- */
-
-/**
- * 既存のスタッフ予約から新規予約の作成が可能かチェックする関数
- * @param existingStaffReservations - 既存の予約の配列（start, endはタイムスタンプ）
- * @param newStaffReservation - 新規に予約したい時間帯（start, endはタイムスタンプ）
- * @returns 重複がなければtrue、重複している場合はfalse
- */
-export function canStaffReservation(
-  existingStaffReservations: { start: number; end: number }[],
-  newStaffReservation: { start: number; end: number }
-): boolean {
-  for (const reservation of existingStaffReservations) {
-    if (newStaffReservation.start < reservation.end && newStaffReservation.end > reservation.start) {
-      return false;
-    }
-  }
-  return true;
+    timeZone,
+  })
 }
 
 /**
@@ -223,14 +205,14 @@ export function canStaffReservation(
  * @returns 分単位の数値（例: 120）
  */
 export function hourToMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
 }
 
 /**
- * 
+ *
  * 分 → "HH:mm" 形式
- * hourToMinutes(120) = "02:00" 
+ * hourToMinutes(120) = "02:00"
  */
 /**
  * 分単位の数値をHH:mm形式の時刻文字列に変換する
@@ -240,10 +222,55 @@ export function hourToMinutes(hhmm: string): number {
 export function toHourString(min: number): string {
   const h = Math.floor(min / 60)
     .toString()
-    .padStart(2, '0');
-  const m = (min % 60).toString().padStart(2, '0');
-  return `${h}:${m}`;
+    .padStart(2, '0')
+  const m = (min % 60).toString().padStart(2, '0')
+  return `${h}:${m}`
 }
 
+export async function formatDate(
+  date: Date,
+  fmt: string,
+  localeCode: SupportedLocale
+): Promise<string> {
+  const locale = await getDateFnsLocale(localeCode)
+  return format(date, fmt, { locale })
+}
 
+/**
+ * 日付をYYYY-MM-DD形式の文字列に変換（日本時間）
+ * @param date 変換する日付
+ * @returns YYYY-MM-DD形式の文字列
+ */
+export function formatDateToYYYYMMDD(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
+export async function formatDateDistance(
+  date: Date,
+  baseDate: Date,
+  localeCode: SupportedLocale
+): Promise<string> {
+  const locale = await getDateFnsLocale(localeCode)
+  return formatDistance(date, baseDate, { locale })
+}
+
+export async function formatDateDistanceToNow(
+  date: Date,
+  localeCode: SupportedLocale,
+  options?: { addSuffix?: boolean }
+): Promise<string> {
+  const locale = await getDateFnsLocale(localeCode)
+  return formatDistanceToNow(date, { locale, ...options })
+}
+
+export async function formatDateRelative(
+  date: Date,
+  baseDate: Date,
+  localeCode: SupportedLocale
+): Promise<string> {
+  const locale = await getDateFnsLocale(localeCode)
+  return formatRelative(date, baseDate, { locale })
+}

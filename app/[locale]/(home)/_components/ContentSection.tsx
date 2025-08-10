@@ -11,6 +11,7 @@ export function ContentSection() {
   const t = useTranslations('landing.content')
   return (
     <motion.div
+      data-testid="content-section"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -45,7 +46,7 @@ export function ContentSection() {
           className="-mt-12 -ml-12 p-12 lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:overflow-hidden"
         >
           <Image
-            alt=""
+            alt="bocker dashboard"
             src="/assets/mockup/pc/dashboard.png"
             width={1000}
             height={1000}

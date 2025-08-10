@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
   const currentLocale = locales.find((l) => l.value === locale)
 
   return (
-    <Select value={locale} onValueChange={handleLocaleChange}>
+    <Select data-testid="language-switch" value={locale} onValueChange={handleLocaleChange}>
       <SelectTrigger className="w-auto min-w-[120px] h-9">
         <div className="flex items-center gap-2">
           <SelectValue>

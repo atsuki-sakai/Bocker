@@ -151,11 +151,12 @@ export function Pricing() {
   }
 
   return (
-    <form className="group/tiers isolate overflow-hidden">
+    <form data-testid="pricing" className="group/tiers isolate overflow-hidden">
       <div className="flow-root bg-background pt-24 pb-16 sm:pt-32 lg:pb-0">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="relative z-10">
             <motion.h2
+              role="heading"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
@@ -202,6 +203,7 @@ export function Pricing() {
                     {t('type.monthly')}
                   </span>
                   <Switch
+                    role="checkbox"
                     id="frequency"
                     name="frequency"
                     value="monthly"
@@ -230,6 +232,7 @@ export function Pricing() {
             {tiers.map((tier, idx) => (
               <motion.div
                 key={tier.id}
+                role="plan"
                 data-featured={tier.featured ? 'true' : undefined}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -284,6 +287,7 @@ export function Pricing() {
                       {tier.highlights.map((mainFeature: string) => (
                         <li key={mainFeature} className="flex gap-x-3 py-2">
                           <CheckIcon
+                            data-testid="check-icon"
                             aria-hidden="true"
                             className="h-6 w-5 flex-none text-muted-foreground group-data-featured/tier:text-primary"
                           />
@@ -386,6 +390,7 @@ export function Pricing() {
                                               />
                                             ) : (
                                               <XMarkIcon
+                                                data-testid="x-mark-icon"
                                                 aria-hidden="true"
                                                 className="mx-auto size-5 text-muted-foreground"
                                               />
@@ -419,7 +424,6 @@ export function Pricing() {
               ))}
             </div>
           </section>
-
           {/* Feature comparison (lg+) */}
           <motion.section
             initial={{ opacity: 0, y: 30 }}
@@ -527,6 +531,7 @@ export function Pricing() {
                                             />
                                           ) : (
                                             <XMarkIcon
+                                              data-testid="x-mark-icon"
                                               aria-hidden="true"
                                               className="mx-auto size-5 text-muted-foreground"
                                             />

@@ -3258,6 +3258,12 @@
       "description": "With an investment starting at ¥8,000/month, achieve ¥100,000 monthly labor cost savings. Automated reservation management lets your staff focus on treatments, simultaneously achieving increased sales and cost reduction.",
       "industryProblem": "79.9% of beauty salons struggle with declining customer numbers. Bocker solves this with 24/7 online booking and automated systems for improving repeat rates."
     },
+    "cta": {
+      "title": "Start Your Free Trial",
+      "title2": "Let's Start Free Trial Now",
+      "button": "Start Free Trial",
+      "button2": "More Details"
+    },
     "headerSection": {
       "title": "Bocker Support Center",
       "description": "Bocker is a SaaS platform designed to support salon operations. If you have any questions or concerns, please feel free to contact us at any time.",
@@ -3733,7 +3739,8 @@
     "meta": {
       "title": "Bocker - Next-Generation Reservation Management System for Beauty Salons",
       "description": "Digitize your beauty salon management with real-time reservations, customer management, LINE integration, and payment systems. Next-generation SaaS platform for hair salons. 30-day free trial. Starting from $60/month.",
-      "keywords": "beauty salon,hair salon,reservation management system,SaaS,digital transformation,LINE booking,online reservation,Bocker,salon management,customer management,POS system,credit card payment,point management,staff management,sales analytics,booking system,salon operations,beauty industry,cloud service,real-time booking"
+      "keywords": "beauty salon,hair salon,reservation management system,SaaS,digital transformation,LINE booking,online reservation,Bocker,salon management,customer management,POS system,credit card payment,point management,staff management,sales analytics,booking system,salon operations,beauty industry,cloud service,real-time booking",
+      "siteName": "Bocker"
     },
     "structuredData": {
       "organization": {
@@ -3741,9 +3748,13 @@
         "alternateName": "Bocker",
         "description": "Next-generation SaaS platform for digitizing beauty salon and hair salon reservation management",
         "industry": "Software as a Service (SaaS)",
-        "contactType": "customer service"
+        "contactType": "customer service",
+        "address": {
+          "locality": "Tokyo",
+          "region": "Kanto Region"
+        }
       },
-      "softwareApplication": {
+      "application": {
         "name": "Bocker",
         "description": "Next-generation SaaS platform integrating reservation management, customer management, LINE integration, and payment systems for beauty salons and hair salons",
         "applicationCategory": "BusinessApplication",
@@ -3798,6 +3809,10 @@
       "description": "Digitize your beauty salon management with real-time reservations, customer management, and LINE integration. Next-generation SaaS platform. 30-day free trial.",
       "siteName": "Bocker",
       "imageAlt": "Bocker - Next-Generation Reservation Management System for Beauty Salons"
+    },
+    "twitter": {
+      "title": "Bocker - Next-Generation Reservation Management System for Beauty Salons",
+      "description": "Digitize your beauty salon management with real-time reservations, customer management, and LINE integration. Next-generation SaaS platform. 30-day free trial."
     }
   }
 }

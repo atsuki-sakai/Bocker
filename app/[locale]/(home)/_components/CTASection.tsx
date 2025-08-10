@@ -2,9 +2,13 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
+
 export function CTASection() {
+  const t = useTranslations('landing.cta')
   return (
     <motion.div
+      data-testid="cta-section"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
@@ -19,9 +23,9 @@ export function CTASection() {
           viewport={{ once: true, amount: 0.2 }}
           className="max-w-2xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
         >
-          ご利用を開始する
+          {t('title')}
           <br />
-          今すぐ無料トライアルを開始
+          {t('title2')}
         </motion.h2>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -31,14 +35,15 @@ export function CTASection() {
           className="mt-10 flex items-center gap-x-6 lg:mt-0 lg:shrink-0"
         >
           <Link
-            href="#"
+            href="/sign-up"
+            role="button"
             className="rounded-md bg-background border border-neon px-3.5 py-2.5 text-sm font-semibold text-neon shadow-xs hover:bg-neon-foreground/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link-foreground"
           >
             {' '}
-            無料トライアルを開始{' '}
+            {t('button')}
           </Link>
-          <Link href="#" className="text-sm/6 font-semibold text-neon">
-            詳細を見る
+          <Link href="/features" role="button2" className="text-sm/6 font-semibold text-neon">
+            {t('button2')}
             <span aria-hidden="true">→</span>
           </Link>
         </motion.div>

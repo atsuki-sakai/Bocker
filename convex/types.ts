@@ -6,6 +6,15 @@ export const CommonFields = {
   updated_at: v.optional(v.number()), // 更新日時 (UNIXタイム)
   deleted_at: v.optional(v.number()), // 論理削除日時 (UNIXタイム)
 }
+export const DAY_OF_WEEK_VALUES_JA = [
+  '日曜日',
+  '月曜日',
+  '火曜日',
+  '水曜日',
+  '木曜日',
+  '金曜日',
+  '土曜日',
+] as const
 
 // 曜日の型定義
 export const DAY_OF_WEEK_VALUES = [
@@ -18,7 +27,10 @@ export const DAY_OF_WEEK_VALUES = [
   'sunday',
 ] as const
 export const dayOfWeekType = v.union(...DAY_OF_WEEK_VALUES.map((day) => v.literal(day)))
+export const dayOfWeekTypeJA = v.union(...DAY_OF_WEEK_VALUES_JA.map((day) => v.literal(day)))
+
 export type DayOfWeek = Infer<typeof dayOfWeekType>
+export type DayOfWeekJA = Infer<typeof dayOfWeekTypeJA>
 
 export const imageType = v.object({
   original_url: v.string(),

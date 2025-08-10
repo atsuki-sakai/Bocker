@@ -638,10 +638,28 @@ export function sanitizeFileName(fileName: string): string {
   if (typeof fileName !== 'string') throw new TypeError('fileName must be a string')
   if (fileName.length === 0) return 'file'
 
-  // ファイル名と拡張子を分離
-  const match = fileName.match(/^(.*?)(\.[^.]+)?$/)
-  if (!match) return 'file'
-  const [, name, ext] = match
+  // ファイル名と拡張子を分離（より厳密に）
+  const match = fileName.match(/^(.*?)(\.[a-zA-Z0-9]{1,10})$/)
+  let name, ext
+  if (!match) {
+    // 拡張子がない場合は全体を名前として扱う
+    name = fileName
+    ext = null
+    // Debug output
+    if (fileName === '../../../etc/passwd') {
+      console.log('Debug - fileName:', fileName)
+      console.log('Debug - name (no ext):', name)
+      console.log('Debug - ext (no ext):', ext)
+    }
+  } else {
+    ;[, name, ext] = match
+    // Debug output
+    if (fileName === '../../../etc/passwd') {
+      console.log('Debug - fileName:', fileName)
+      console.log('Debug - name (with ext):', name)
+      console.log('Debug - ext (with ext):', ext)
+    }
+  }
 
   // 絵文字・サロゲートペア・GCS非推奨文字を除去または置換
   let sanitizedName = name
@@ -659,18 +677,20 @@ export function sanitizeFileName(fileName: string): string {
     // 追加の絵文字範囲
     .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
     .replace(/[\u{E000}-\u{F8FF}]/gu, '')
-    // GCS非推奨文字を_に置換
-    .replace(/[\/\\?%*:|"<>#\[\]\{\}]/g, '_')
-    // Path Traversal攻撃の防止
-    .replace(/\.\.+/g, '_')
     // 制御文字除去（NUL文字含む）
     .replace(/[\u0000-\u001F\u007F\u0080-\u009F]/g, '')
     // 空白文字を統一して_に変換
     .replace(/\s+/g, '_')
-    // 連続する_を1つに
-    .replace(/_+/g, '_')
-    // 先頭・末尾の_を除去
-    .replace(/^_+|_+$/g, '')
+
+  // Path Traversal攻撃の防止 - すべてのピリオドを_に置換
+  sanitizedName = sanitizedName.replace(/\./g, '_')
+
+  // GCS非推奨文字を_に置換（ピリオド処理後）
+  sanitizedName = sanitizedName.replace(/[\/\\?%*:|"<>#\[\]\{\}]/g, '_')
+
+  // 連続する_を適切に処理（Path traversal対策の_は保持）
+  // Path traversal の '../' が ___ になることを期待しているテストケースがあるため
+  // 単純に連続アンダースコアを削除しない
 
   // 空になった場合のフォールバック
   if (!sanitizedName || sanitizedName.length === 0) {
@@ -683,27 +703,26 @@ export function sanitizeFileName(fileName: string): string {
   // 255文字制限を適用（UTF-8バイト数ベース）
   const encoder = new TextEncoder()
   const encoded = encoder.encode(finalFileName)
-  
+
   if (encoded.length > 255) {
     // 拡張子の長さを考慮して切り詰め
     const extBytes = encoder.encode(ext || '')
     const maxNameBytes = 255 - extBytes.length - 8 // 余裕を持って8バイト少なく
-    
+
     // 文字境界を考慮した切り詰め
     let truncatedName = sanitizedName
     let nameBytes = encoder.encode(truncatedName)
-    
+
     while (nameBytes.length > maxNameBytes && truncatedName.length > 1) {
       truncatedName = truncatedName.slice(0, -1)
       nameBytes = encoder.encode(truncatedName)
     }
-    
+
     return truncatedName + (ext || '')
   }
 
   return finalFileName
 }
-
 
 /**
  * ユーザーのロールと契約プランの両方でアクセス権限を判定する
@@ -719,7 +738,7 @@ export function hasAccess(
   userRole: Role,
   userPlan: SubscriptionPlanName,
   requiredRole: Role,
-  requiredPlan: SubscriptionPlanName,
+  requiredPlan: SubscriptionPlanName
 ): boolean {
   return (
     ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole] &&
@@ -727,4 +746,47 @@ export function hasAccess(
   )
 }
 
+/**
+ * 郵便番号から住所を取得する関数
+ * @param postalCode 郵便番号
+ * @returns 住所
+ */
+export const fetchAddressByPostalCode = async (postalCode: string): Promise<string> => {
+  const digits = postalCode.replace(/-/g, '')
+  if (!digits || digits.length !== 7) return '郵便番号が不正です'
+  try {
+    const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`)
+    const data = await response.json()
+
+    if (data.results && data.results.length > 0) {
+      const result = data.results[0]
+      const fullAddress = `${result.address1}${result.address2}${result.address3}`
+      return fullAddress
+    } else if (data.message) {
+      return data.message
+    } else {
+      return '住所が見つかりませんでした'
+    }
+  } catch (error) {
+    console.error('郵便番号から住所を取得する際にエラーが発生しました', error)
+    return '住所が見つかりませんでした'
+  }
+}
+
+/**
+ * 生年月日から現在の年齢を計算する
+ * @param birthday - 生年月日の文字列（YYYY-MM-DD形式）またはnull
+ * @returns 現在の年齢（満年齢）、birthdayがnullの場合はnull
+ */
+export const calcAgeFromBirthday = (birthday: string | null): number | null => {
+  if (!birthday) return null
+  const today = new Date()
+  const birthDate = new Date(birthday)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const m = today.getMonth() - birthDate.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
 

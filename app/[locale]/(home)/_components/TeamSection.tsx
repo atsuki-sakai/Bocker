@@ -21,7 +21,7 @@ export const TeamSection = () => {
     },
   ]
   return (
-    <section>
+    <section data-testid="team-section">
       <div className="bg-background py-24 md:py-32">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-20 px-6 lg:px-8 xl:grid-cols-5">
           <motion.div
@@ -34,9 +34,7 @@ export const TeamSection = () => {
             <h2 className="text-4xl font-semibold tracking-tight text-pretty text-primary sm:text-5xl">
               {t('team.title')}
             </h2>
-            <p className="mt-6 text-sm md:text-base text-primary">
-              {t('team.description')}
-            </p>
+            <p className="mt-6 text-sm md:text-base text-primary">{t('team.description')}</p>
           </motion.div>
           <ul role="list" className="divide-y divide-border xl:col-span-3">
             {people.map((person) => (
@@ -54,7 +52,7 @@ export const TeamSection = () => {
                   <Image
                     width={1200}
                     height={1200}
-                    alt=""
+                    alt="Fujimoto Kyohei"
                     src={person.imageUrl}
                     className="aspect-4/5 w-52 flex-none rounded-2xl object-cover object-center shadow-md"
                   />
@@ -69,12 +67,8 @@ export const TeamSection = () => {
                   <h3 className="text-lg/8 font-semibold tracking-tight text-primary">
                     {person.name}
                   </h3>
-                  <p className="text-base/7 text-primary">
-                    {person.role}
-                  </p>
-                  <p className="text-base/7 text-primary mt-6">
-                    {person.bio}
-                  </p>
+                  <p className="text-base/7 text-primary">{person.role}</p>
+                  <p className="text-base/7 text-primary mt-6">{person.bio}</p>
                   <ul role="list" className="mt-6 flex gap-x-6">
                     <li>
                       <Link href={person.xUrl} className="text-accent hover:text-accent">

@@ -14,7 +14,7 @@ import {
   Footer,
 } from './_components'
 
-export function LandingPageClient({ locale }: { locale: string }) {
+export function LandingPageClient() {
   const [showSplash, setShowSplash] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
 
@@ -23,15 +23,20 @@ export function LandingPageClient({ locale }: { locale: string }) {
     setIsHydrated(true)
 
     // 1時間でリフレッシュする初回表示制御
-    const lastShown = localStorage.getItem('bockerLastSplash')
-    const now = Date.now()
-    const oneHour = 60 * 60 * 1000
+    try {
+      const lastShown = localStorage.getItem('bockerLastSplash')
+      const now = Date.now()
+      const oneHour = 60 * 60 * 1000
 
-    if (!lastShown || now - parseInt(lastShown) > oneHour) {
-      setShowSplash(true)
-      localStorage.setItem('bockerLastSplash', now.toString())
-      // 初期表示時にスクロールを無効化
-      document.body.style.overflow = 'hidden'
+      if (!lastShown || now - parseInt(lastShown) > oneHour) {
+        setShowSplash(true)
+        localStorage.setItem('bockerLastSplash', now.toString())
+        // 初期表示時にスクロールを無効化
+        document.body.style.overflow = 'hidden'
+      }
+    } catch (error) {
+      // LocalStorageエラー時はスプラッシュスクリーンを表示しない
+      console.error('LocalStorage error:', error)
     }
   }, [])
 
@@ -61,7 +66,7 @@ export function LandingPageClient({ locale }: { locale: string }) {
   }
 
   return (
-    <>
+    <div data-testid="landing-page-client">
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       <div
         style={{
@@ -70,17 +75,20 @@ export function LandingPageClient({ locale }: { locale: string }) {
         }}
       >
         <Header />
-        <main className="flex flex-col min-h-screen bg-background text-foreground">
+        <main
+          data-testid="main"
+          className="flex flex-col min-h-screen bg-background text-foreground"
+        >
           <HeroSection />
           <FeatureSection />
           <Pricing />
           <ContentSection />
           <CTASection />
-          <FAQ locale={locale} />
+          <FAQ />
           <HeaderSection />
         </main>
         <Footer />
       </div>
-    </>
+    </div>
   )
 }
