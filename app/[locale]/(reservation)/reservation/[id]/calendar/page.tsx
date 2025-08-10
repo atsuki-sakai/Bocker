@@ -1374,6 +1374,7 @@ export default function CalendarPage() {
                         isMultipleSelection={
                           organizationComplete.reservationConfig?.is_multiple_select_category
                         }
+                        couponId={appliedDiscount.couponId}
                       />
                     </motion.div>
 

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { usePaginatedQuery } from 'convex/react'
+import { usePaginatedQuery, useQuery } from 'convex/react'
 import { convertPaymentMethod, MENU_CATEGORY_VALUES, MenuCategory } from '@/convex/types'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,6 +31,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Command, CommandInput, CommandList, CommandItem } from '@/components/ui/command'
 import { Check } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import {
   Carousel,
@@ -48,6 +49,7 @@ interface MenuViewProps {
   onChangeMenusAction: (menus: Doc<'menu'>[]) => void
   targetType?: ActiveCustomerType | null | undefined
   isMultipleSelection?: boolean
+  couponId?: Id<'coupon'> | null
 }
 
 type MenuCategoryWithSet = MenuCategory | 'セットメニュー'
@@ -59,6 +61,7 @@ export const MenuView = ({
   onChangeMenusAction,
   targetType,
   isMultipleSelection,
+  couponId,
 }: MenuViewProps) => {
   // STATES
   const [currentCategory, setCurrentCategory] = useState<MenuCategoryWithSet | null>(null)
@@ -136,20 +139,51 @@ export const MenuView = ({
     }
   )
 
+  const { data: excludedMenus } = useQuery(
+    api.coupon.exclusion_menu.query.list,
+    couponId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+          coupon_id: couponId,
+        }
+      : 'skip'
+  )
+
+  // クーポンによってメニューが除外されているかを判定する関数
+  const isMenuExcludedByCoupon = useCallback(
+    (menu: Doc<'menu'>): boolean => {
+      if (!couponId || !excludedMenus) return false
+      return excludedMenus.some((ex) => ex.menu_id === menu._id)
+    },
+    [couponId, excludedMenus]
+  )
+
   // セットメニューかどうかを判定する関数
   const isSetMenu = useCallback((menu: Doc<'menu'>): boolean => {
     return Array.isArray(menu.categories) && menu.categories.length > 1
   }, [])
 
   // メニューがブロックされているかどうかを判定する関数
-  const menuBlocked = (menu: Doc<'menu'>): boolean => {
+  const menuBlocked = (menu: Doc<'menu'>): { isBlocked: boolean; reason: string | null } => {
+    // クーポンによって除外されているか
+    if (isMenuExcludedByCoupon(menu)) {
+      return { isBlocked: true, reason: '選択中のクーポンでは利用できません' }
+    }
+
     // セットメニューはブロックされない
-    if (isSetMenu(menu)) return false
+    if (isSetMenu(menu)) return { isBlocked: false, reason: null }
 
     // メニューのカテゴリが一つでもブロックされていればtrue
-    return menu.categories
+    const isBlockedByCategory = menu.categories
       ? menu.categories.some((cat) => blockedCategories.includes(cat))
       : blockedCategories.includes('その他')
+
+    if (isBlockedByCategory) {
+      return { isBlocked: true, reason: 'セットメニューと競合しています' }
+    }
+
+    return { isBlocked: false, reason: null }
   }
 
   // FUNCTIONS
@@ -516,122 +550,142 @@ export const MenuView = ({
           >
             <CarouselContent className="-ml-2 md:-ml-4">
               {getRecommendedMenus.map((menu: Doc<'menu'>) => {
-                const isBlocked = menuBlocked(menu)
+                const { isBlocked, reason } = menuBlocked(menu)
                 const isCurrentlySelected = isMenuSelected(menu)
+
+                const cardContent = (
+                  <Card
+                    className={`transition-all p-2 h-full ${
+                      isCurrentlySelected
+                        ? 'border-2 border-accent-2 shadow-md cursor-pointer'
+                        : isBlocked
+                          ? 'opacity-50 border-2 border-transparent cursor-not-allowed'
+                          : 'hover:shadow-md border-2 border-transparent cursor-pointer'
+                    }`}
+                    onClick={() => !isBlocked && handleMenuSelect(menu, isMultipleSelection)}
+                  >
+                    <div className=" px-2 pt-6 flex justify-between items-center relative ">
+                      <div className="absolute -top-2 -right-2 z-10">
+                        {isBlocked && (
+                          <span className="bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
+                            選択不可
+                          </span>
+                        )}
+                        {menu.categories?.includes('人気メニュー' as MenuCategory) && (
+                          <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
+                            人気メニュー
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
+                        <p className="pl-1">{convertGender(menu.target_gender as Gender)}</p>
+                      </div>
+                      {menu.tags && menu.tags.length > 0 && (
+                        <div className="flex justify-end flex-wrap gap-0.5 scale-95">
+                          {menu.tags.slice(0, 2).map((tag: string, idx: number) => (
+                            <p
+                              key={idx}
+                              className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
+                            >
+                              {tag}
+                            </p>
+                          ))}
+                          {menu.tags.length > 2 && (
+                            <p className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full">
+                              +{menu.tags.length - 2}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="p-2">
+                      <div className="flex items-start gap-3">
+                        {menu.images && menu.images.length > 0 && (
+                          <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                            <Image
+                              src={menu.images[0].thumbnail_url || ''}
+                              alt={menu.name || ''}
+                              fill
+                              className="object-cover"
+                              quality={90}
+                              priority
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-medium text-base line-clamp-2">{menu.name}</h3>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs scale-90 -ml-2 text-warning-foreground">
+                              {convertPaymentMethod(menu.payment_method as PaymentMethod)}
+                            </p>
+                            {isSetMenu(menu) && (
+                              <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                セット
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                {menu.duration_min}分
+                              </span>
+                            </div>
+                            {menu.sale_price ? (
+                              <div className="flex items-center gap-1">
+                                <span className="line-through text-xs text-muted-foreground">
+                                  ¥{menu.unit_price?.toLocaleString()}
+                                </span>
+                                <span className="font-bold text-accent-2">
+                                  ¥{menu.sale_price?.toLocaleString()}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="font-medium">
+                                ¥{menu.unit_price?.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              variant="ghost"
+                              className="z-10 text-xs underline text-link-foreground tracking-widest"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleShowMenuDetails(menu)
+                              }}
+                            >
+                              詳細を見る
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
 
                 return (
                   <CarouselItem
                     key={menu._id}
                     className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/2 mb-4 "
                   >
-                    <Card
-                      className={`transition-all p-2 h-full ${
-                        isCurrentlySelected
-                          ? 'border-2 border-accent-2 shadow-md cursor-pointer'
-                          : isBlocked
-                            ? 'opacity-50 border-2 border-transparent'
-                            : 'hover:shadow-md border-2 border-transparent cursor-pointer'
-                      }`}
-                      onClick={() => !isBlocked && handleMenuSelect(menu, isMultipleSelection)}
-                    >
-                      <div className=" px-2 pt-6 flex justify-between items-center relative ">
-                        <div className="absolute -top-2 -right-2 z-10">
-                          {menu.categories?.includes('人気メニュー' as MenuCategory) && (
-                            <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
-                              人気メニュー
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-1 divide-x divide-border text-xs text-muted-foreground text-nowrap">
-                          <p className="pl-1">{convertGender(menu.target_gender as Gender)}</p>
-                        </div>
-                        {menu.tags && menu.tags.length > 0 && (
-                          <div className="flex justify-end flex-wrap gap-0.5 scale-95">
-                            {menu.tags.slice(0, 2).map((tag: string, idx: number) => (
-                              <p
-                                key={idx}
-                                className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full"
-                              >
-                                {tag}
-                              </p>
-                            ))}
-                            {menu.tags.length > 2 && (
-                              <p className="text-xs px-2 py-0.5 bg-muted border border-border text-muted-foreground rounded-full">
-                                +{menu.tags.length - 2}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <CardContent className="p-2">
-                        <div className="flex items-start gap-3">
-                          {menu.images && menu.images.length > 0 && (
-                            <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                              <Image
-                                src={menu.images[0].thumbnail_url || ''}
-                                alt={menu.name || ''}
-                                fill
-                                className="object-cover"
-                                quality={90}
-                                priority
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h3 className="font-medium text-base line-clamp-2">{menu.name}</h3>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-xs scale-90 -ml-2 text-warning-foreground">
-                                {convertPaymentMethod(menu.payment_method as PaymentMethod)}
-                              </p>
-                              {isSetMenu(menu) && (
-                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
-                                  セット
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between gap-2 mt-1">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">
-                                  {menu.duration_min}分
-                                </span>
-                              </div>
-                              {menu.sale_price ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="line-through text-xs text-muted-foreground">
-                                    ¥{menu.unit_price?.toLocaleString()}
-                                  </span>
-                                  <span className="font-bold text-accent-2">
-                                    ¥{menu.sale_price?.toLocaleString()}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="font-medium">
-                                  ¥{menu.unit_price?.toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex justify-end">
-                              <Button
-                                variant="ghost"
-                                className="z-10 text-xs underline text-link-foreground tracking-widest"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleShowMenuDetails(menu)
-                                }}
-                              >
-                                詳細を見る
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {isBlocked ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+                          <TooltipContent>
+                            <p>{reason}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      cardContent
+                    )}
                   </CarouselItem>
                 )
               })}
@@ -1073,17 +1127,16 @@ export const MenuView = ({
                           return 0
                         })
                         .map((menu) => {
-                          const isBlocked = menuBlocked(menu)
+                          const { isBlocked, reason } = menuBlocked(menu)
                           const isCurrentlySelected = isMenuSelected(menu)
 
-                          return (
+                          const cardContent = (
                             <Card
-                              key={menu._id}
                               className={`relative transition-all p-2 h-full ${
                                 isCurrentlySelected
                                   ? 'border-2 border-accent-2 shadow-md cursor-pointer'
                                   : isBlocked
-                                    ? 'opacity-50 border-2 border-transparent'
+                                    ? 'opacity-50 border-2 border-transparent cursor-not-allowed'
                                     : 'hover:shadow-md border-2 border-transparent cursor-pointer'
                               }`}
                               onClick={() =>
@@ -1091,6 +1144,11 @@ export const MenuView = ({
                               }
                             >
                               <div className="absolute -top-4 -right-4 z-10">
+                                {isBlocked && (
+                                  <span className="bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
+                                    選択不可
+                                  </span>
+                                )}
                                 {menu.categories?.includes('人気メニュー' as MenuCategory) && (
                                   <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
                                     人気メニュー
@@ -1198,6 +1256,23 @@ export const MenuView = ({
                                 </div>
                               </CardContent>
                             </Card>
+                          )
+
+                          return (
+                            <div key={menu._id}>
+                              {isBlocked ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{reason}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : (
+                                cardContent
+                              )}
+                            </div>
                           )
                         })}
                     </div>

@@ -38,7 +38,7 @@ test.describe('予約フロー', () => {
 
     // B-2. いずれかのメニューを選択
     // This assumes a card-based layout for menus. Adjust selector if needed.
-    await page.locator('.group.cursor-pointer').first().click()
+    await page.locator('div.group.cursor-pointer').first().click()
     await expect(page.getByRole('button', { name: '次へ進む' })).not.toBeDisabled()
 
     // B-3. 「次へ」をクリック
@@ -53,7 +53,7 @@ test.describe('予約フロー', () => {
     await page.getByRole('button', { name: '次へ進む' }).click()
 
     // B-2. メニューを選択
-    await page.locator('.group.cursor-pointer').first().click()
+    await page.locator('div.group.cursor-pointer').first().click()
     await page.getByRole('button', { name: '次へ進む' }).click()
 
     // C-2. スタッフを選択 (指名フリー)
@@ -106,7 +106,7 @@ test.describe('予約フロー', () => {
     await page.getByRole('button', { name: '次へ進む' }).click()
 
     // B-2. メニューを選択
-    await page.locator('.group.cursor-pointer').first().click()
+    await page.locator('div.group.cursor-pointer').first().click()
 
     // B-3. 割引が適用されていることを確認
     // The total amount is displayed in the bottom bar.
@@ -132,5 +132,32 @@ test.describe('予約フロー', () => {
     const discountRow = page.locator('dl > div', { hasText: 'クーポン割引' })
     await expect(discountRow).toBeVisible()
     await expect(discountRow).not.toContainText('¥0')
+  })
+
+  test('クーポン選択後に利用不可メニューが非活性化される', async ({ page }) => {
+    // This test assumes a specific coupon exists that excludes certain menus.
+    // You may need to seed your test database with appropriate data.
+    // For this example, we assume a coupon exists that makes some menus disabled.
+
+    // A-3. Find and select a coupon.
+    // We'll just click the first one for this test.
+    const couponCard = page.locator('div.space-y-4 > .cursor-pointer').first()
+    await expect(couponCard).toBeVisible()
+    await couponCard.click()
+    await page.getByRole('button', { name: '次へ進む' }).click()
+
+    // B-1. On the menu page, verify that at least one menu is disabled.
+    const disabledMenu = page.locator('.cursor-not-allowed').first()
+    await expect(disabledMenu).toBeVisible()
+
+    // B-2. Verify that the tooltip with the reason is shown on hover.
+    await disabledMenu.hover()
+    await expect(page.getByRole('tooltip', { name: '選択中のクーポンでは利用できません' })).toBeVisible()
+
+    // B-3. Verify that a non-disabled menu can still be selected.
+    const enabledMenu = page.locator('.cursor-pointer').first()
+    await expect(enabledMenu).toBeVisible()
+    await enabledMenu.click()
+    await expect(page.getByText('選択中のメニュー')).toBeVisible()
   })
 })
