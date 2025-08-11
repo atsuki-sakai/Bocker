@@ -1002,12 +1002,8 @@ export const MenuView = ({
       <div className="mt-4 space-y-8">
         {Object.entries(filteredMenusToDisplay)
           .sort(([catA], [catB]) => {
-            // 'セットメニュー' を最後に表示するためのソートロジック
-            const order: MenuCategoryWithSet[] = [
-              ...MENU_CATEGORY_VALUES,
-              'その他',
-              'セットメニュー',
-            ]
+            // 'セットメニュー' を最初に表示するためのソートロジック
+            const order: MenuCategoryWithSet[] = ['セットメニュー', ...MENU_CATEGORY_VALUES]
             const indexA = order.indexOf(catA as MenuCategoryWithSet)
             const indexB = order.indexOf(catB as MenuCategoryWithSet)
             if (indexA === -1 && indexB === -1) return 0 // 両方とも順序配列になければそのまま
