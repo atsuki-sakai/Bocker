@@ -55,6 +55,7 @@ const orgReservationConfigFormSchema = z.object({
     .string()
     .max(MAX_TEXT_LENGTH, { message: '最大文字数を超えています' })
     .optional(),
+  allow_today_reservation: z.boolean().optional().default(true),
   is_multiple_select_category: z.boolean().optional().default(true),
 })
 
@@ -65,6 +66,7 @@ const defaultReservationConfig = {
   reservation_interval_minutes: '30',
   available_sheet: '1',
   today_first_later_minutes: '30',
+  allow_today_reservation: true,
   is_multiple_select_category: true,
 }
 
@@ -92,6 +94,7 @@ export default function OrgReservationConfigForm() {
   const reservationIntervalMinutesValue = watch('reservation_interval_minutes')
   const availableSheetValue = watch('available_sheet')
   const todayFirstLaterMinutesValue = watch('today_first_later_minutes')
+  const allowTodayReservationValue = watch('allow_today_reservation')
   const isMultipleSelectCategoryValue = watch('is_multiple_select_category')
   // スケジュール設定が変更されたらフォームをリセット
   useEffect(() => {
@@ -102,6 +105,7 @@ export default function OrgReservationConfigForm() {
       const scheduleIntervalMinutes = reservationConfig.reservation_interval_minutes
       const scheduleAvailableSheet = reservationConfig.available_sheet
       const scheduleTodayFirstLaterMinutes = reservationConfig.today_first_later_minutes
+      const scheduleAllowTodayReservation = reservationConfig.allow_today_reservation
       const scheduleIsMultipleSelectCategory = reservationConfig.is_multiple_select_category
       // データ型の整合性を確保するために明示的に文字列型に変換
       const limitDays =
@@ -129,6 +133,11 @@ export default function OrgReservationConfigForm() {
           ? String(scheduleTodayFirstLaterMinutes)
           : defaultReservationConfig.today_first_later_minutes
 
+      const allowTodayReservation =
+        scheduleAllowTodayReservation !== undefined && scheduleAllowTodayReservation !== null
+          ? scheduleAllowTodayReservation
+          : defaultReservationConfig.allow_today_reservation
+
       const isMultipleSelectCategory =
         scheduleIsMultipleSelectCategory !== undefined && scheduleIsMultipleSelectCategory !== null
           ? scheduleIsMultipleSelectCategory
@@ -146,6 +155,7 @@ export default function OrgReservationConfigForm() {
         setValue('reservation_interval_minutes', intervalMinutes)
         setValue('available_sheet', availableSheet)
         setValue('today_first_later_minutes', todayFirstLaterMinutes)
+        setValue('allow_today_reservation', allowTodayReservation)
         setValue('is_multiple_select_category', isMultipleSelectCategory)
       }, 0)
     } else {
@@ -190,6 +200,7 @@ export default function OrgReservationConfigForm() {
         const todayFirstLaterMinutes = Number(
           data.today_first_later_minutes || defaultReservationConfig.today_first_later_minutes
         )
+        const allowTodayReservation = data.allow_today_reservation ?? true
         const isMultipleSelectCategory = data.is_multiple_select_category ?? true
         await upsertReservationConfig({
           tenant_id: tenantId!,
@@ -199,6 +210,7 @@ export default function OrgReservationConfigForm() {
           reservation_interval_minutes: intervalMinutes,
           available_sheet: availableSheet,
           today_first_later_minutes: todayFirstLaterMinutes,
+          allow_today_reservation: allowTodayReservation,
           is_multiple_select_category: isMultipleSelectCategory,
         })
 
@@ -212,6 +224,7 @@ export default function OrgReservationConfigForm() {
             reservation_interval_minutes: data.reservation_interval_minutes,
             available_sheet: data.available_sheet,
             today_first_later_minutes: data.today_first_later_minutes,
+            allow_today_reservation: data.allow_today_reservation,
           },
           { keepDirty: false }
         )
@@ -268,6 +281,26 @@ export default function OrgReservationConfigForm() {
               {errors.reservation_limit_days && (
                 <p className="text-xs text-destructive mt-1">
                   {errors.reservation_limit_days.message}
+                </p>
+              )}
+            </div>
+            <div className="w-full md:w-1/2"></div>
+          </div>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/2">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold">{t('allowTodayReservation')}</h4>
+                <Switch
+                  checked={allowTodayReservationValue}
+                  onCheckedChange={(checked) => {
+                    setValue('allow_today_reservation', checked, { shouldDirty: true })
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{t('allowTodayReservationHelp')}</p>
+              {errors.allow_today_reservation && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.allow_today_reservation.message}
                 </p>
               )}
             </div>

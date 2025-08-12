@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { ja } from 'date-fns/locale'
-import { startOfToday, format, addDays } from 'date-fns'
+import { startOfToday, format, addDays, isSameDay } from 'date-fns'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { TimeRange } from '@/lib/types'
@@ -271,8 +271,6 @@ export const DateView = ({
 
   // 過去の日付とサロン・スタッフの例外日および曜日の休みを無効化する日付/曜日配列を作成
   const disabledDates = [
-    // 当日以前を選択不可
-    { before: startOfToday() },
     // 予約制限日以降を選択不可
     { after: maxReservationDate },
     ...organizationExceptionDates.map((e) => parseISO(e.date!)),
@@ -280,6 +278,25 @@ export const DateView = ({
     ...(selectedStaff === 'free' ? [] : staffExceptionDates.map((e) => parseISO(e.date!))),
     { dayOfWeek: uniqueClosedDayIndices },
   ]
+
+  // 当日予約が許可されていない場合は、当日も無効化
+  if (reservationConfig?.allow_today_reservation === false) {
+    disabledDates.push(startOfToday())
+  } else {
+    // 許可されている場合は、過去の日付のみ無効化
+    disabledDates.push({ before: startOfToday() })
+  }
+
+  // ガード: フラグがfalseかつ selectedDate が今日ならリセット
+  useEffect(() => {
+    if (
+      reservationConfig?.allow_today_reservation === false &&
+      selectedDate &&
+      isSameDay(selectedDate, startOfToday())
+    ) {
+      onChangeDateAction(undefined as any)
+    }
+  }, [reservationConfig, selectedDate, onChangeDateAction])
 
   if (isLoading) {
     return (
@@ -315,6 +332,11 @@ export const DateView = ({
             onMonthChange={setCurrentMonth}
             className="border rounded-md p-3"
           />
+          {reservationConfig?.allow_today_reservation === false && (
+            <p className="text-sm text-center text-red-500 mt-2">
+              当日予約はお電話にてお問い合わせください。
+            </p>
+          )}
         </div>
 
         {selectedDate && (
