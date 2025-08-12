@@ -2499,6 +2499,8 @@
       "shortestReservationTimeHelp": "Set how many minutes after the current time reservations can be accepted on the same day if there are available slots",
       "isMultipleSelectCategory": "Allow multiple menu selections in the same category",
       "isMultipleSelectCategoryHelp": "Set whether to allow multiple menu selections in the same category. If OFF, only one menu in the same category can be selected.",
+      "allowTodayReservation": "Allow same-day reservations",
+      "allowTodayReservationHelp": "Enable or disable same-day reservations through the web interface. When enabled, customers can make reservations for the current day if there are available time slots.",
       "saving": "Saving...",
       "save": "Save Reservation Acceptance Settings",
       "saved": "Reservation acceptance settings saved",

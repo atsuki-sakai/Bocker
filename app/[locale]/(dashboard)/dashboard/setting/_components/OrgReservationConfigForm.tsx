@@ -284,50 +284,32 @@ export default function OrgReservationConfigForm() {
                 </p>
               )}
             </div>
-            <div className="w-full md:w-1/2"></div>
-          </div>
-          <div className="flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-1/2">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold">{t('allowTodayReservation')}</h4>
-                <Switch
-                  checked={allowTodayReservationValue}
-                  onCheckedChange={(checked) => {
-                    setValue('allow_today_reservation', checked, { shouldDirty: true })
-                  }}
-                />
+              <div className="w-full">
+                <Select
+                  value={availableCancelDaysValue || defaultReservationConfig.available_cancel_days}
+                  onValueChange={(value) =>
+                    setValue('available_cancel_days', value, { shouldDirty: true })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('cancelDays')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESERVATION_CANCEL_LIMIT_DAYS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {value}日
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t('cancelDaysHelp')}</p>
+                {errors.available_cancel_days && (
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.available_cancel_days.message}
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">{t('allowTodayReservationHelp')}</p>
-              {errors.allow_today_reservation && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.allow_today_reservation.message}
-                </p>
-              )}
-            </div>
-            <div className="w-full md:w-1/2">
-              <Select
-                value={availableCancelDaysValue || defaultReservationConfig.available_cancel_days}
-                onValueChange={(value) =>
-                  setValue('available_cancel_days', value, { shouldDirty: true })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('cancelDays')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESERVATION_CANCEL_LIMIT_DAYS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}日
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">{t('cancelDaysHelp')}</p>
-              {errors.available_cancel_days && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.available_cancel_days.message}
-                </p>
-              )}
             </div>
           </div>
 
@@ -416,6 +398,27 @@ export default function OrgReservationConfigForm() {
                   {errors.today_first_later_minutes.message}
                 </p>
               )}
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/2">
+              <div className="w-full">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold">{t('allowTodayReservation')}</h4>
+                  <Switch
+                    checked={allowTodayReservationValue}
+                    onCheckedChange={(checked) => {
+                      setValue('allow_today_reservation', checked, { shouldDirty: true })
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{t('allowTodayReservationHelp')}</p>
+                {errors.allow_today_reservation && (
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.allow_today_reservation.message}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="w-full md:w-1/2">
               <div className="flex items-center gap-2">

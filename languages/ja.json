@@ -1770,6 +1770,8 @@
       "shortestReservationTimeHelp": "当日予約で空き枠がある場合、現在時刻から何分後の予約を受付可能にするかを設定",
       "isMultipleSelectCategory": "同一カテゴリのメニューの複数選択を許可する",
       "isMultipleSelectCategoryHelp": "カットとカットのように、同一カテゴリのメニューを複数選択できるようにするかどうかを設定します。OFFにすると、同一カテゴリのメニューは1つしか選択できません。",
+      "allowTodayReservation": "当日予約を許可する",
+      "allowTodayReservationHelp": "お客様がWebサイトから当日の予約をできるようにするかどうかを設定します。ONにすると、空き枠があれば当日の予約が可能になります。",
       "saving": "保存中...",
       "save": "予約受付設定を保存",
       "saved": "予約受付設定を保存しました",
