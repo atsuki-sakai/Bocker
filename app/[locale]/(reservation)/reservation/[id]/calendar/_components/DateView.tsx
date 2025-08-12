@@ -15,6 +15,7 @@ import { useQuery, usePaginatedQuery } from 'convex/react'
 import { Loading } from '@/components/common'
 import { parseISO } from 'date-fns'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 type DateViewProps = {
   tenantId: Id<'tenant'>
@@ -22,6 +23,7 @@ type DateViewProps = {
   selectedDate: Date | null
   selectedStaff: Doc<'staff'> | 'free' | null
   totalMinutes: number
+  orgPhoneNumber: string
   selectedTime: TimeRange | null
   selectedMenuIds: Id<'menu'>[]
   selectedOptionIds: Id<'option'>[]
@@ -35,6 +37,7 @@ export const DateView = ({
   selectedDate,
   selectedStaff,
   totalMinutes,
+  orgPhoneNumber,
   selectedTime,
   selectedMenuIds,
   selectedOptionIds,
@@ -229,6 +232,17 @@ export const DateView = ({
     selectedOptionIds,
   ])
 
+  // ガード: フラグがfalseかつ selectedDate が今日ならリセット
+  useEffect(() => {
+    if (
+      reservationConfig?.allow_today_reservation === false &&
+      selectedDate &&
+      isSameDay(selectedDate, startOfToday())
+    ) {
+      onChangeDateAction(undefined as unknown as Date)
+    }
+  }, [reservationConfig, selectedDate, onChangeDateAction])
+
   // フリー指名の場合はstaffExceptionDatesLoadingを無視
   const isActuallyLoading =
     (selectedStaff !== 'free' && staffExceptionDatesLoading) ||
@@ -271,6 +285,8 @@ export const DateView = ({
 
   // 過去の日付とサロン・スタッフの例外日および曜日の休みを無効化する日付/曜日配列を作成
   const disabledDates = [
+    // 過去の日付を選択不可
+    { before: startOfToday() },
     // 予約制限日以降を選択不可
     { after: maxReservationDate },
     ...organizationExceptionDates.map((e) => parseISO(e.date!)),
@@ -282,21 +298,7 @@ export const DateView = ({
   // 当日予約が許可されていない場合は、当日も無効化
   if (reservationConfig?.allow_today_reservation === false) {
     disabledDates.push(startOfToday())
-  } else {
-    // 許可されている場合は、過去の日付のみ無効化
-    disabledDates.push({ before: startOfToday() })
   }
-
-  // ガード: フラグがfalseかつ selectedDate が今日ならリセット
-  useEffect(() => {
-    if (
-      reservationConfig?.allow_today_reservation === false &&
-      selectedDate &&
-      isSameDay(selectedDate, startOfToday())
-    ) {
-      onChangeDateAction(undefined as any)
-    }
-  }, [reservationConfig, selectedDate, onChangeDateAction])
 
   if (isLoading) {
     return (
@@ -333,9 +335,17 @@ export const DateView = ({
             className="border rounded-md p-3"
           />
           {reservationConfig?.allow_today_reservation === false && (
-            <p className="text-sm text-center text-red-500 mt-2">
-              当日予約はお電話にてお問い合わせください。
-            </p>
+            <div className="mt-2 text-start">
+              <p className="text-xs text-destructive mb-2 font-bold">
+                当日予約はお電話にてお問い合わせください。
+              </p>
+              <Link
+                className=" text-base text-link-foreground tracking-wider underline"
+                href={`tel:${orgPhoneNumber}`}
+              >
+                {orgPhoneNumber}
+              </Link>
+            </div>
           )}
         </div>
 
