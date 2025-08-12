@@ -1526,6 +1526,7 @@ export default function CalendarPage() {
                       selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | 'free' | null}
                       selectedTime={selectedTime}
                       totalMinutes={calculateTotalMinutes()}
+                      orgPhoneNumber={organizationComplete.config?.phone ?? ''}
                       selectedMenuIds={selectedMenus.map((menu) => menu._id)}
                       selectedOptionIds={selectedOptions.map((option) => option._id)}
                       onChangeDateAction={(date) => {
