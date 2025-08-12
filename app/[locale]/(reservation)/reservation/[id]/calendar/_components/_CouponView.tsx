@@ -237,16 +237,21 @@ const CouponViewInner = ({
                   <p className="text-xs text-neon/80">割引額はメニュー選択後に確定します</p>
                 )}
                 {selectedMenus.length > 0 &&
-                  availableCoupons.find((c) => c.coupon._id === selectCoupon._id)
-                    ?.applicableMenus.length > 0 && (
-                    <p className="text-xs text-neon/80">
-                      適用対象:{' '}
-                      {availableCoupons
-                        .find((c) => c.coupon._id === selectCoupon._id)
-                        ?.applicableMenus.map((menu) => menu.name)
-                        .join(', ')}
-                    </p>
-                  )}
+                  selectCoupon &&
+                  (() => {
+                    const selectedCouponData = availableCoupons.find(
+                      (c) => c.coupon._id === selectCoupon._id
+                    )
+                    return (
+                      selectedCouponData?.applicableMenus &&
+                      selectedCouponData.applicableMenus.length > 0 && (
+                        <p className="text-xs text-neon/80">
+                          適用対象:{' '}
+                          {selectedCouponData.applicableMenus.map((menu) => menu.name).join(', ')}
+                        </p>
+                      )
+                    )
+                  })()}
               </div>
             </CardContent>
           </Card>

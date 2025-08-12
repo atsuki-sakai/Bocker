@@ -139,7 +139,7 @@ export const MenuView = ({
     }
   )
 
-  const { data: excludedMenus } = useQuery(
+  const excludedMenus = useQuery(
     api.coupon.exclusion_menu.query.list,
     couponId
       ? {

@@ -2729,6 +2729,10 @@
     "adding": "Adding...",
     "hasChanges": "There are changes. Don't forget to save.",
     "backToList": "Back to Coupon List",
+    "expired": "Expired",
+    "alerts": {
+      "expired": "The coupon has expired."
+    },
     "description": {
       "intro": "You can create a new coupon by entering its information. Please proceed step by step.",
       "editIntro": "You can edit coupon information and change its content.",

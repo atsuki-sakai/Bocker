@@ -2431,6 +2431,10 @@
       "editActiveStatus": "無効にするとクーポンは利用できなくなります。",
       "targetCustomer": "クーポンを利用できる対象顧客属性を選択してください。"
     },
+    "expired": "有効期限切れ",
+    "alerts": {
+      "expired": "クーポンの有効期限が切れました。"
+    },
     "placeholder": {
       "couponName": "例: 初回限定20%OFF",
       "couponCode": "例: CODE12345",
