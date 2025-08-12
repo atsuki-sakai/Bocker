@@ -33,6 +33,7 @@ import {
   AlertCircle,
   Save,
   User,
+  AlertTriangle,
 } from 'lucide-react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Switch } from '@/components/ui/switch'
@@ -42,6 +43,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import type { Id } from '@/convex/_generated/dataModel'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -79,6 +81,14 @@ interface CouponEditPageProps {
 function CouponEditPage({ params }: CouponEditPageProps) {
   const unwrappedParams = React.use(params)
   const { coupon_id } = unwrappedParams
+
+  return (
+    <CouponEditWrapper couponId={coupon_id} />
+  )
+}
+
+// アラート表示機能付きラッパーコンポーネント
+function CouponEditWrapper({ couponId }: { couponId: Id<'coupon'> }) {
   const t = useTranslations('coupon')
 
   return (
@@ -93,7 +103,7 @@ function CouponEditPage({ params }: CouponEditPageProps) {
           <Separator className="my-2" />
         </div>
 
-        <CouponForm couponId={coupon_id} />
+        <CouponForm couponId={couponId} />
       </div>
     </DashboardSection>
   )
@@ -123,6 +133,13 @@ function CouponPreview({
   selectedMenuIds: Id<'menu'>[]
   locale: SupportedLocale
 }) {
+  // 適用外メニューの詳細情報を取得
+  const exclusionMenusDetails = useQuery(
+    api.menu.query.getDisplayByIds,
+    selectedMenuIds.length > 0 
+      ? { menu_ids: selectedMenuIds, option_ids: [] }
+      : 'skip'
+  )
   const t = useTranslations('coupon')
   const [formattedStartDate, setFormattedStartDate] = useState('')
   const [formattedEndDate, setFormattedEndDate] = useState('')
@@ -204,16 +221,63 @@ function CouponPreview({
             </div>
           </div>
         </CardContent>
+        {/* 適用外メニューリスト */}
+        {selectedMenuIds.length > 0 && (
+          <CardContent className="pt-0 pb-2 border-t">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <AlertTriangle size={14} />
+                {t('excludedMenus')} ({selectedMenuIds.length})
+              </div>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {exclusionMenusDetails?.menus?.map((menu) => (
+                  <div key={menu._id} className="flex justify-between items-center text-xs bg-muted/50 p-2 rounded">
+                    <span className="font-medium truncate flex-1">{menu.name}</span>
+                    <span className="text-muted-foreground ml-2">
+                      ¥{(menu.sale_price && menu.sale_price > 0 ? menu.sale_price : menu.unit_price)?.toLocaleString()}
+                    </span>
+                  </div>
+                )) || (
+                  // データ読み込み中の表示
+                  selectedMenuIds.map((id) => (
+                    <div key={id} className="flex justify-between items-center text-xs bg-muted/50 p-2 rounded animate-pulse">
+                      <div className="h-3 bg-muted rounded flex-1"></div>
+                      <div className="h-3 bg-muted rounded w-16 ml-2"></div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </CardContent>
+        )}
+        
         <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
           <div className="text-xs text-muted-foreground">
-            {t('excludedMenus')}: {selectedMenuIds.length || 0}
+            {selectedMenuIds.length === 0 ? t('noExcludedMenus') : `${t('excludedMenus')}: ${selectedMenuIds.length}`}
           </div>
-          <Badge
-            variant={data.is_active ? 'default' : 'destructive'}
-            className={`h-6 ${data.is_active ? 'bg-accent-2-foreground text-accent-2' : 'bg-destructive text-destructive-foreground'}`}
-          >
-            {data.is_active ? t('active') : t('inactive')}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {/* 期限切れの場合は警告アイコンを表示 */}
+            {data.end_date && new Date(data.end_date) <= new Date() && (
+              <AlertTriangle size={16} className="text-destructive" />
+            )}
+            <Badge
+              variant={data.is_active ? 'default' : 'destructive'}
+              className={`h-6 ${
+                data.end_date && new Date(data.end_date) <= new Date()
+                  ? 'bg-destructive text-destructive-foreground' // 期限切れの場合は赤色
+                  : data.is_active 
+                    ? 'bg-accent-2-foreground text-accent-2' 
+                    : 'bg-destructive text-destructive-foreground'
+              }`}
+            >
+              {data.end_date && new Date(data.end_date) <= new Date() 
+                ? t('expired') 
+                : data.is_active 
+                  ? t('active') 
+                  : t('inactive')
+              }
+            </Badge>
+          </div>
         </CardFooter>
       </Card>
     </div>
@@ -342,12 +406,18 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     reset,
     watch,
     setValue,
+    trigger,
     formState: { isSubmitting, errors, isDirty },
   } = useZodForm(couponSchema, { shouldUnregister: false })
 
   // フォームの値を監視
   const formValues = watch()
   const discountType = watch('discount_type')
+  const endDate = watch('end_date')
+
+  // 有効期限切れかどうかをチェック
+  const isExpired = endDate && endDate <= new Date()
+  const isExpiringSoon = endDate && endDate > new Date() && endDate <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7日以内
 
   // フォーム送信ハンドラー
   const onSubmit = async (data: z.infer<typeof couponSchema>) => {
@@ -435,17 +505,60 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     selectedMenus: selectedMenuIds,
   }
 
-  // 配列の内容が変更されたか比較
-  const menuIdsChanged =
-    JSON.stringify(selectedMenuIds.sort()) !== JSON.stringify(initialSelectedMenuIds.sort())
+  // 配列の内容が変更されたか比較（非破壊的な方法）
+  const menuIdsChanged = (() => {
+    // 空配列や undefined の場合の安全な処理
+    const current = selectedMenuIds || []
+    const initial = initialSelectedMenuIds || []
+    
+    // 長さが異なる場合は確実に変更されている
+    if (current.length !== initial.length) return true
+    
+    // ソート済みのコピーを作成して比較（元の配列は変更しない）
+    const sortedCurrent = [...current].sort()
+    const sortedInitial = [...initial].sort()
+    
+    return JSON.stringify(sortedCurrent) !== JSON.stringify(sortedInitial)
+  })()
 
   if (isSaving) return <Loading />
   if (!tenantId || !orgId || coupon === undefined || couponConfig === undefined) {
     return <Loading />
   }
 
+  // デバッグ用：更新ボタンの状態を監視
+  console.log('=== 更新ボタン状態デバッグ ===', {
+    isDirty,
+    menuIdsChanged,
+    isSubmitting,
+    buttonEnabled: !(isSubmitting || !(isDirty || menuIdsChanged)),
+    selectedMenuIds: selectedMenuIds.length,
+    initialMenuIds: initialSelectedMenuIds.length,
+  })
   console.log('errors', errors)
+  
   return (
+    <div className="space-y-6">
+      {/* 有効期限アラート */}
+      {isExpired && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-destructive font-medium">
+            {t('alerts.expired')}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {isExpiringSoon && !isExpired && (
+        <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700 dark:text-orange-400 font-medium">
+            {t('alerts.expiringSoon')}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+    <div className="space-y-8">
     <form
       onSubmit={handleSubmit(onSubmit)}
       onKeyDown={(e) => {
@@ -637,16 +750,20 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
                         )}
                       />
                       {errors.end_date && (
-                        <motion.p
+                        <motion.div
                           initial="hidden"
                           animate="visible"
                           exit="exit"
                           variants={fadeIn}
-                          className="mt-1 text-sm text-destructive flex items-center gap-1"
+                          className="mt-2"
                         >
-                          <AlertCircle size={14} />
-                          {errors.end_date?.message}
-                        </motion.p>
+                          <Alert className="border-destructive bg-destructive/10">
+                            <AlertCircle className="h-4 w-4 text-destructive" />
+                            <AlertDescription className="text-destructive font-medium">
+                              {errors.end_date?.message}
+                            </AlertDescription>
+                          </Alert>
+                        </motion.div>
                       )}
                     </div>
                   </div>
@@ -759,9 +876,14 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
             <ExclusionMenu
               title={t('excludedMenuDescription')}
               selectedMenuIds={selectedMenuIds}
-              setSelectedMenuIdsAction={(menuIds: Id<'menu'>[]) => {
+              setSelectedMenuIdsAction={async (menuIds: Id<'menu'>[]) => {
                 setSelectedMenuIds(menuIds)
-                setValue('selected_menu_ids', menuIds, { shouldValidate: true, shouldDirty: true })
+                // フォーム状態を強制的に dirty にするため、名前フィールドを一時的に触る
+                const currentName = watch('name')
+                setValue('name', currentName + ' ', { shouldDirty: true })
+                setValue('name', currentName, { shouldDirty: true })
+                // バリデーションをトリガー
+                await trigger()
               }}
             />
           </TabsContent>
@@ -799,6 +921,8 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         </div>
       </div>
     </form>
+    </div>
+    </div>
   )
 }
 
