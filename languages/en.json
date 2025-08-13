@@ -3119,11 +3119,11 @@
             "2": "Customer Management (basic info, booking/purchase history, points, customer portal)",
             "3": "Customer Records (automatic treatment details, allergies, hair quality management)",
             "4": "Staff Management (account creation, basic scheduling) ※Up to 1 staff",
-            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 1 items",
-            "6": "Options & Retail (add options, option selection) ※Up to 1 items",
-            "7": "Points & Coupons (customizable point system, coupon management) ※Up to 1 items",
+            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 50 items",
+            "6": "Options & Retail (add options, option selection) ※Up to 25 items",
+            "7": "Points & Coupons (customizable point system, coupon management) ※Up to 10 items",
             "8": "Automatic Reminders & Notifications (LINE)",
-            "9": "Staff (1), Menus (1), Options (1), Coupons (1), Reservations (1/month)"
+            "9": "Staff (1), Menus (50), Options (25), Coupons (10), Reservations (150/month)"
           }
         },
         "lite": {
@@ -3167,7 +3167,7 @@
             {
               "name": "Max Reservations/Month",
               "tiers": {
-                "MICRO": "1",
+                "MICRO": "150",
                 "LITE": "500",
                 "PRO": "Unlimited"
               }
@@ -3175,7 +3175,7 @@
             {
               "name": "Max Customer Registration",
               "tiers": {
-                "MICRO": "1",
+                "MICRO": "1000",
                 "LITE": "1000",
                 "PRO": "Unlimited"
               }
@@ -3191,7 +3191,7 @@
             {
               "name": "Menu Settings",
               "tiers": {
-                "MICRO": "1 item",
+                "MICRO": "50 items",
                 "LITE": "50 items",
                 "PRO": "100 items"
               }
@@ -3199,7 +3199,7 @@
             {
               "name": "Options & Retail",
               "tiers": {
-                "MICRO": "1 item",
+                "MICRO": "25 items",
                 "LITE": "25 items",
                 "PRO": "50 items"
               }
@@ -3207,7 +3207,7 @@
             {
               "name": "Points & Coupons",
               "tiers": {
-                "MICRO": "1 item",
+                "MICRO": "10 items",
                 "LITE": "25 items",
                 "PRO": "100 items"
               }
