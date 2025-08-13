@@ -15,6 +15,7 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -43,23 +44,25 @@ const nextConfig: NextConfig = {
         hostname: 'tailwindcss.com',
       },
       // CDNドメインのサポート（環境変数から動的に設定）
-      ...((() => {
-        const cdnDomain = getEnv('NEXT_PUBLIC_CDN_DOMAIN');
-        if (!cdnDomain) return [];
+      ...(() => {
+        const cdnDomain = getEnv('NEXT_PUBLIC_CDN_DOMAIN')
+        if (!cdnDomain) return []
         try {
-          const cdnUrl = new URL(cdnDomain);
-          return [{
-            protocol: 'https' as const,
-            hostname: cdnUrl.hostname,
-          }];
+          const cdnUrl = new URL(cdnDomain)
+          return [
+            {
+              protocol: 'https' as const,
+              hostname: cdnUrl.hostname,
+            },
+          ]
         } catch (e) {
-          console.warn('Invalid CDN domain:', cdnDomain);
-          return [];
+          console.warn('Invalid CDN domain:', cdnDomain)
+          return []
         }
-      })()),
+      })(),
     ],
-  }
-};
+  },
+}
 
 
 export default withSentryConfig(withBundleAnalyzer(withNextIntl(nextConfig)), {

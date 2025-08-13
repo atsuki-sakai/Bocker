@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { ja } from 'date-fns/locale'
-import { startOfToday, format, addDays } from 'date-fns'
+import { startOfToday, format, addDays, isSameDay } from 'date-fns'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { TimeRange } from '@/lib/types'
@@ -15,6 +15,7 @@ import { useQuery, usePaginatedQuery } from 'convex/react'
 import { Loading } from '@/components/common'
 import { parseISO } from 'date-fns'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 type DateViewProps = {
   tenantId: Id<'tenant'>
@@ -22,6 +23,7 @@ type DateViewProps = {
   selectedDate: Date | null
   selectedStaff: Doc<'staff'> | 'free' | null
   totalMinutes: number
+  orgPhoneNumber: string
   selectedTime: TimeRange | null
   selectedMenuIds: Id<'menu'>[]
   selectedOptionIds: Id<'option'>[]
@@ -35,6 +37,7 @@ export const DateView = ({
   selectedDate,
   selectedStaff,
   totalMinutes,
+  orgPhoneNumber,
   selectedTime,
   selectedMenuIds,
   selectedOptionIds,
@@ -229,6 +232,17 @@ export const DateView = ({
     selectedOptionIds,
   ])
 
+  // ガード: フラグがfalseかつ selectedDate が今日ならリセット
+  useEffect(() => {
+    if (
+      reservationConfig?.allow_today_reservation === false &&
+      selectedDate &&
+      isSameDay(selectedDate, startOfToday())
+    ) {
+      onChangeDateAction(undefined as unknown as Date)
+    }
+  }, [reservationConfig, selectedDate, onChangeDateAction])
+
   // フリー指名の場合はstaffExceptionDatesLoadingを無視
   const isActuallyLoading =
     (selectedStaff !== 'free' && staffExceptionDatesLoading) ||
@@ -271,7 +285,7 @@ export const DateView = ({
 
   // 過去の日付とサロン・スタッフの例外日および曜日の休みを無効化する日付/曜日配列を作成
   const disabledDates = [
-    // 当日以前を選択不可
+    // 過去の日付を選択不可
     { before: startOfToday() },
     // 予約制限日以降を選択不可
     { after: maxReservationDate },
@@ -280,6 +294,11 @@ export const DateView = ({
     ...(selectedStaff === 'free' ? [] : staffExceptionDates.map((e) => parseISO(e.date!))),
     { dayOfWeek: uniqueClosedDayIndices },
   ]
+
+  // 当日予約が許可されていない場合は、当日も無効化
+  if (reservationConfig?.allow_today_reservation === false) {
+    disabledDates.push(startOfToday())
+  }
 
   if (isLoading) {
     return (
@@ -315,6 +334,19 @@ export const DateView = ({
             onMonthChange={setCurrentMonth}
             className="border rounded-md p-3"
           />
+          {reservationConfig?.allow_today_reservation === false && (
+            <div className="mt-2 text-start">
+              <p className="text-xs text-destructive mb-2 font-bold">
+                当日予約はお電話にてお問い合わせください。
+              </p>
+              <Link
+                className=" text-base text-link-foreground tracking-wider underline"
+                href={`tel:${orgPhoneNumber}`}
+              >
+                {orgPhoneNumber}
+              </Link>
+            </div>
+          )}
         </div>
 
         {selectedDate && (

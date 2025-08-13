@@ -1,48 +1,53 @@
 # Bocker Documentation
 
-**Last Updated**: 2025-07-25  
-**Documentation Version**: 2.0 (Consolidated)
+Welcome to the Bocker documentation. This documentation is organized according to the [Diátaxis framework](https://diataxis.fr/), which is designed to help you find the information you need as quickly as possible.
 
-## 📁 Structure
+## 🚀 Quick Start
 
-### 🚀 [Quick Start](./quickstart.md)
-Essential setup and first steps for developers and users
+If you're new to Bocker, the best place to start is the **[QUICKSTART.md](./QUICKSTART.md)** guide. It will walk you through the essential steps to get up and running.
 
-### 💼 [Business](./business/)
-- **[Overview](./business/overview.md)** - Product, pricing, market analysis
-- **[User Guide](./business/user-guide.md)** - End-user manual and FAQ
+## 📚 Documentation Sections
 
-### 🏗️ [Architecture](./architecture/)
-- **[System Design](./architecture/system-design.md)** - Database, scaling, security
-- **[API Reference](./architecture/api-reference.md)** - Endpoints and authentication flows
+The documentation is divided into four sections:
 
-### 🔧 [Implementation](./implementation/)
-- **[Core Features](./implementation/core-features.md)** - Reservation, payment, inventory systems
-- **[Infrastructure](./implementation/infrastructure.md)** - CDN, i18n, performance optimizations
-- **[Migration Guide](./implementation/migration-guide.md)** - Convex to Supabase migration
-
-### ⚙️ [Operations](./operations/)
-- **[Setup Guide](./operations/setup.md)** - Environment, system, deployment
-- **[Monitoring](./operations/monitoring.md)** - Cost analysis, performance monitoring
-
-### 📚 [Feature Guides](./guides/)
-- **[Admin Manual](./guides/admin-manual.md)** - Complete admin functionality guide
-- **[Customer Manual](./guides/customer-manual.md)** - Customer-facing features
-
-## 🎯 Key Improvements (v2.0)
-
-- **90% reduction** in file count (45 → 12 files)
-- **Eliminated duplicates** - Single source of truth for each topic
-- **Logical hierarchy** - Easy navigation and discovery
-- **Information density** - 3x more content per document
-- **Consistent formatting** - Standardized structure across all docs
-
-## 📊 Stats
-- **Files**: 12 (previously 45)
-- **Core sections**: 6
-- **Average content density**: ~500 lines per file
-- **Maintenance overhead**: 75% reduction
+- **[Tutorials](./tutorials/)**: Learning-oriented guides that will help you get started with Bocker's features.
+- **[How-to Guides](./guides/)**: Task-oriented guides that provide step-by-step instructions on how to perform specific tasks.
+- **[Reference](./reference/)**: Information-oriented documentation that provides detailed information about the technical aspects of Bocker.
+- **[Explanation](./explanation/)**: Understanding-oriented documentation that provides context and explanation about the architecture and design of Bocker.
 
 ---
 
-*This documentation structure is optimized for developer productivity and information discovery.*
+### 📖 How-to Guides
+
+- **[Carte Manual](./guides/carte-manual.md)**
+- **[Coupon Manual](./guides/coupon-manual.md)**
+- **[Customer Manual](./guides/customer-manual.md)**
+- **[Environment Setup](./guides/environment.md)**
+- **[Migration Execution Guide](./guides/execution-guide.md)**
+- **[Home Test Guide](./guides/home.md)**
+- **[Migration Implementation Plan](./guides/implementation-plan.md)**
+- **[Menu Guide](./guides/menu-guide.md)**
+- **[Option Manual](./guides/option-manual.md)**
+- **[Migration Overview](./guides/overview.md)**
+- **[Point Manual](./guides/point-manual.md)**
+- **[Reservation Manual](./guides/reservation-manual.md)**
+- **[Staff Management Guide](./guides/staff-management-guide.md)**
+- **[Store Basic Settings Manual](./guides/store-basic-settings-manual.md)**
+- **[System Setup](./guides/system.md)**
+- **[Migration Test Plan](./guides/test-plan.md)**
+- **[Vercel Setup](./guides/vercel.md)**
+- **[Webhooks Setup](./guides/webhooks.md)**
+
+### 🧠 Explanation
+
+- **[Business Overview](./explanation/overview.md)**
+- **[Scaling Analysis](./explanation/scaling-analysis.md)**
+- **[System Design](./explanation/system-design.md)**
+
+### 🔧 Reference
+
+- **[Supabase](./reference/supabase.md)**
+
+### 🎓 Tutorials
+
+*This section is currently empty and will be populated with tutorials in the future.*

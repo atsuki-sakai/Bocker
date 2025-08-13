@@ -17,13 +17,13 @@ export type PlanLimits = {
 export const SUBSCRIPTION_PLAN_LIMITS: Record<SubscriptionPlanName, PlanLimits> = {
     'MICRO': {
         maxStaffCount: 1,
-        maxMenuCount: 20,
-        maxOptionCount: 10,
-        maxCouponCount: 10,
-        maxCustomerCount: 500,
+        maxMenuCount: 1,
+        maxOptionCount: 1,
+        maxCouponCount: 1,
+        maxCustomerCount: 1,
         maxMenuImageCount: 1,
         maxSalonImageCount: 1,
-        monthlyReservationLimit: 100,
+        monthlyReservationLimit: 1,
     },
     'LITE': {
         maxStaffCount: 5,

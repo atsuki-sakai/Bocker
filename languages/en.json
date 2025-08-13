@@ -2499,6 +2499,8 @@
       "shortestReservationTimeHelp": "Set how many minutes after the current time reservations can be accepted on the same day if there are available slots",
       "isMultipleSelectCategory": "Allow multiple menu selections in the same category",
       "isMultipleSelectCategoryHelp": "Set whether to allow multiple menu selections in the same category. If OFF, only one menu in the same category can be selected.",
+      "allowTodayReservation": "Allow same-day reservations",
+      "allowTodayReservationHelp": "Enable or disable same-day reservations through the web interface. When enabled, customers can make reservations for the current day if there are available time slots.",
       "saving": "Saving...",
       "save": "Save Reservation Acceptance Settings",
       "saved": "Reservation acceptance settings saved",
@@ -2729,6 +2731,10 @@
     "adding": "Adding...",
     "hasChanges": "There are changes. Don't forget to save.",
     "backToList": "Back to Coupon List",
+    "expired": "Expired",
+    "alerts": {
+      "expired": "The coupon has expired."
+    },
     "description": {
       "intro": "You can create a new coupon by entering its information. Please proceed step by step.",
       "editIntro": "You can edit coupon information and change its content.",
@@ -3105,19 +3111,19 @@
           "title": "MICRO",
           "description": "One-person owner plan",
           "price": {
-            "monthly": "¥3,980",
-            "annually": "¥39,800"
+            "monthly": "¥4,000",
+            "annually": "¥40,000"
           },
           "features": {
             "1": "Reservation Management (timeline, staff scheduling, confirmation/cancellation, 24/7 online booking)",
             "2": "Customer Management (basic info, booking/purchase history, points, customer portal)",
             "3": "Customer Records (automatic treatment details, allergies, hair quality management)",
             "4": "Staff Management (account creation, basic scheduling) ※Up to 1 staff",
-            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 30 items",
-            "6": "Options & Retail (add options, option selection) ※Up to 15 items",
-            "7": "Points & Coupons (customizable point system, coupon management)",
+            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 1 items",
+            "6": "Options & Retail (add options, option selection) ※Up to 1 items",
+            "7": "Points & Coupons (customizable point system, coupon management) ※Up to 1 items",
             "8": "Automatic Reminders & Notifications (LINE)",
-            "9": "Staff (1), Menus (30), Options (15), Coupons (15), Reservations (100/month)"
+            "9": "Staff (1), Menus (1), Options (1), Coupons (1), Reservations (1/month)"
           }
         },
         "lite": {
@@ -3161,7 +3167,7 @@
             {
               "name": "Max Reservations/Month",
               "tiers": {
-                "MICRO": "100",
+                "MICRO": "1",
                 "LITE": "500",
                 "PRO": "Unlimited"
               }
@@ -3169,7 +3175,7 @@
             {
               "name": "Max Customer Registration",
               "tiers": {
-                "MICRO": "500",
+                "MICRO": "1",
                 "LITE": "1000",
                 "PRO": "Unlimited"
               }
@@ -3185,7 +3191,7 @@
             {
               "name": "Menu Settings",
               "tiers": {
-                "MICRO": "30 items",
+                "MICRO": "1 item",
                 "LITE": "50 items",
                 "PRO": "100 items"
               }
@@ -3193,7 +3199,7 @@
             {
               "name": "Options & Retail",
               "tiers": {
-                "MICRO": "15 items",
+                "MICRO": "1 item",
                 "LITE": "25 items",
                 "PRO": "50 items"
               }
@@ -3201,7 +3207,7 @@
             {
               "name": "Points & Coupons",
               "tiers": {
-                "MICRO": "15 items",
+                "MICRO": "1 item",
                 "LITE": "25 items",
                 "PRO": "100 items"
               }

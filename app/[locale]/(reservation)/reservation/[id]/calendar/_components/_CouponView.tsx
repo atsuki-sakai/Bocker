@@ -17,8 +17,9 @@ type CouponViewProps = {
   orgId: Id<'organization'>
   selectedMenus: Doc<'menu'>[]
   sessionCustomerType: ActiveCustomerType
-  onSelectCoupon: (coupon: Doc<'coupon'> | null, discountAmount: number) => void
+  onSelectCoupon: (coupon: Doc<'coupon'> | null) => void
   selectedCoupon: Id<'coupon'> | null
+  appliedDiscount: number
 }
 
 type CouponWithApplicableMenus = {
@@ -33,6 +34,7 @@ const CouponViewInner = ({
   sessionCustomerType,
   onSelectCoupon,
   selectedCoupon,
+  appliedDiscount,
 }: CouponViewProps) => {
   const [availableCoupons, setAvailableCoupons] = useState<CouponWithApplicableMenus[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,11 +56,13 @@ const CouponViewInner = ({
     active_only: true,
   })
 
-
   // 適用可能メニューを特定するヘルパー関数
-  const getApplicableMenus = (selectedMenus: Doc<'menu'>[], exclusionMenus: Doc<'coupon_exclusion_menu'>[]) => {
-    return selectedMenus.filter((menu) => 
-      !exclusionMenus.some((exclusion) => exclusion.menu_id === menu._id)
+  const getApplicableMenus = (
+    selectedMenus: Doc<'menu'>[],
+    exclusionMenus: Doc<'coupon_exclusion_menu'>[]
+  ) => {
+    return selectedMenus.filter(
+      (menu) => !exclusionMenus.some((exclusion) => exclusion.menu_id === menu._id)
     )
   }
 
@@ -94,9 +98,11 @@ const CouponViewInner = ({
 
               // 適用可能メニューを特定
               const applicableMenus = getApplicableMenus(selectedMenus, exclusionMenus)
-              
-              // 適用可能メニューが1つもない場合は無効
-              if (applicableMenus.length === 0) return { coupon, isValid: false, applicableMenus }
+
+              // メニューが選択されている場合のみ、適用可能メニューのチェックを行う
+              if (selectedMenus.length > 0 && applicableMenus.length === 0) {
+                return { coupon, isValid: false, applicableMenus }
+              }
 
               if (!couponConfigData) return { coupon, isValid: false, applicableMenus }
 
@@ -158,11 +164,9 @@ const CouponViewInner = ({
     }
   }
 
-
-  const handleCouponSelect = (coupon: Doc<'coupon'>, applicableMenus: Doc<'menu'>[]) => {
+  const handleCouponSelect = (coupon: Doc<'coupon'>) => {
     try {
-      const discountAmount = calculateDiscount(coupon, applicableMenus)
-      onSelectCoupon(coupon, discountAmount)
+      onSelectCoupon(coupon)
     } catch (error) {
       console.error('クーポン選択でエラーが発生しました:', error)
     }
@@ -170,7 +174,7 @@ const CouponViewInner = ({
 
   const handleCouponDeselect = () => {
     try {
-      onSelectCoupon(null, 0)
+      onSelectCoupon(null)
     } catch (error) {
       console.error('クーポン選択解除でエラーが発生しました:', error)
     }
@@ -206,47 +210,52 @@ const CouponViewInner = ({
         </div>
 
         {/* 選択中のクーポン表示 */}
-        {selectCoupon && (() => {
-          // 選択中のクーポンの適用可能メニューを取得
-          const selectedCouponData = availableCoupons.find(
-            item => item.coupon._id === selectCoupon._id
-          )
-          const applicableMenus = selectedCouponData?.applicableMenus || []
-          
-          return (
-            <Card className="border-neon bg-neon-foreground">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center text-neon">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    選択中のクーポン
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCouponDeselect}
-                    className="text-neon"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="font-medium text-neon">{selectCoupon.name}</p>
-                  <p className="text-sm text-neon">
-                    ¥ {calculateDiscount(selectCoupon, applicableMenus).toLocaleString()} - OFF
-                  </p>
-                  {applicableMenus.length > 0 && (
-                    <p className="text-xs text-neon/80">
-                      適用対象: {applicableMenus.map(menu => menu.name).join(', ')}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })()}
+        {selectCoupon && (
+          <Card className="border-neon bg-neon-foreground">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center text-neon">
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  選択中のクーポン
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCouponDeselect}
+                  className="text-neon"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="font-medium text-neon">{selectCoupon.name}</p>
+                {selectedMenus.length > 0 ? (
+                  <p className="text-sm text-neon">¥ {appliedDiscount.toLocaleString()} - OFF</p>
+                ) : (
+                  <p className="text-xs text-neon/80">割引額はメニュー選択後に確定します</p>
+                )}
+                {selectedMenus.length > 0 &&
+                  selectCoupon &&
+                  (() => {
+                    const selectedCouponData = availableCoupons.find(
+                      (c) => c.coupon._id === selectCoupon._id
+                    )
+                    return (
+                      selectedCouponData?.applicableMenus &&
+                      selectedCouponData.applicableMenus.length > 0 && (
+                        <p className="text-xs text-neon/80">
+                          適用対象:{' '}
+                          {selectedCouponData.applicableMenus.map((menu) => menu.name).join(', ')}
+                        </p>
+                      )
+                    )
+                  })()}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 利用可能なクーポン一覧 */}
         {availableCoupons.length === 0 ? (
@@ -263,7 +272,6 @@ const CouponViewInner = ({
               利用可能なクーポン ({availableCoupons.length}件)
             </p>
             {availableCoupons.map(({ coupon, applicableMenus }) => {
-              const discountAmount = calculateDiscount(coupon, applicableMenus)
               const isSelected = selectCoupon?._id === coupon._id
 
               return (
@@ -272,7 +280,7 @@ const CouponViewInner = ({
                   className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
                     isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
                   }`}
-                  onClick={() => handleCouponSelect(coupon, applicableMenus)}
+                  onClick={() => handleCouponSelect(coupon)}
                 >
                   <CardContent className=" p-4">
                     <div className="flex items-center justify-between">
@@ -286,12 +294,19 @@ const CouponViewInner = ({
                               : `¥${(coupon.fixed_discount_value ?? 0).toLocaleString()}割引`}
                           </span>
                         </div>
-                        <p className="text-sm text-primary font-medium mt-2">
-                          この注文での割引額: ¥{discountAmount.toLocaleString()}
-                        </p>
+                        {selectedMenus.length > 0 ? (
+                          <p className="text-sm text-primary font-medium mt-2">
+                            この注文での割引額: ¥
+                            {calculateDiscount(coupon, applicableMenus).toLocaleString()}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            割引額はメニュー選択後に確定します
+                          </p>
+                        )}
                         {applicableMenus.length > 0 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            適用対象: {applicableMenus.map(menu => menu.name).join(', ')}
+                            適用対象: {applicableMenus.map((menu) => menu.name).join(', ')}
                           </p>
                         )}
                       </div>

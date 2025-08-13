@@ -11,13 +11,12 @@ import { Loading } from '@/components/common'
 import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
 import {
-  MenuView,
+  CouponMenuView,
   StaffView,
   OptionView,
   DateView,
   PaymentView,
   ConfirmView,
-  CouponView,
 } from './_components'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -41,7 +40,6 @@ import {
   CheckCircle,
   ChevronRight,
   Loader2,
-  Ticket,
 } from 'lucide-react'
 import type { StaffDisplay, SessionPayload } from '@/lib/types'
 
@@ -83,7 +81,7 @@ const dayOrder: Record<string, number> = {
 }
 
 // 予約ステップの定義
-type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'coupon' | 'confirm'
+type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'confirm'
 
 // アニメーションバリアント
 const pageVariants = {
@@ -272,8 +270,113 @@ export default function CalendarPage() {
     }
   }, [selectedMenus, selectedStaffCompleted, selectedOptions])
 
+  // 割引額を再計算するuseEffect
+  useEffect(() => {
+    const recalculateDiscount = async () => {
+      if (!appliedDiscount.couponId) {
+        // クーポンが選択されていない場合は割引を0に
+        if (appliedDiscount.discount !== 0) {
+          setAppliedDiscount((prev) => ({ ...prev, discount: 0 }))
+        }
+        return
+      }
+
+      // メニューが選択されていない場合は、割引額の計算をスキップ（ただしIDは保持）
+      if (selectedMenus.length === 0) {
+        return
+      }
+
+      const coupon = await fetchQuery(api.coupon.query.findById, {
+        coupon_id: appliedDiscount.couponId,
+      })
+      if (!coupon || !organizationComplete) return
+
+      const exclusionMenus = await fetchQuery(api.coupon.exclusion_menu.query.list, {
+        tenant_id: organizationComplete.organization.tenant_id as Id<'tenant'>,
+        org_id: organizationComplete.organization._id as Id<'organization'>,
+        coupon_id: coupon._id,
+      })
+
+      const applicableMenus = selectedMenus.filter(
+        (menu) => !exclusionMenus.some((em) => em.menu_id === menu._id)
+      )
+
+      if (applicableMenus.length === 0) {
+        if (appliedDiscount.discount !== 0) {
+          setAppliedDiscount((prev) => ({ ...prev, discount: 0 }))
+        }
+        toast.info(`選択されたクーポン「${coupon.name}」は、選択中のメニューには適用できません。`)
+        return
+      }
+
+      // 適用外メニューがある場合は自動で選択解除
+      const excludedMenus = selectedMenus.filter(
+        (menu) => !applicableMenus.some((applicable) => applicable._id === menu._id)
+      )
+      if (excludedMenus.length > 0) {
+        const remainingMenus = selectedMenus.filter((menu) =>
+          applicableMenus.some((applicable) => applicable._id === menu._id)
+        )
+        setSelectedMenus(remainingMenus)
+        toast.warning(
+          `クーポン「${coupon.name}」に適用できない${excludedMenus.length}件のメニューが選択から外されました。`
+        )
+      }
+
+      const applicableTotal = applicableMenus.reduce(
+        (total, menu) => total + (menu.sale_price ?? menu.unit_price ?? 0),
+        0
+      )
+      let newDiscount = 0
+      if (coupon.discount_type === 'percentage') {
+        newDiscount = Math.floor((applicableTotal * (coupon.percentage_discount_value ?? 0)) / 100)
+      } else {
+        newDiscount = coupon.fixed_discount_value ?? 0
+      }
+
+      if (appliedDiscount.discount !== newDiscount) {
+        setAppliedDiscount((prev) => ({ ...prev, discount: newDiscount }))
+      }
+    }
+
+    recalculateDiscount()
+  }, [
+    selectedMenus,
+    appliedDiscount.couponId,
+    organizationComplete,
+    appliedDiscount.discount,
+    showErrorToast,
+  ])
+
   // 次のステップに進む
   const goToNextStep = async () => {
+    // メニュー選択ステップでクーポンが選択されている場合のバリデーション
+    if (currentStep === 'menu' && appliedDiscount.couponId && organizationComplete) {
+      try {
+        // クーポン適用外メニューがないかチェック
+        const exclusionMenus = await fetchQuery(api.coupon.exclusion_menu.query.list, {
+          tenant_id: organizationComplete.organization.tenant_id as Id<'tenant'>,
+          org_id: organizationComplete.organization._id as Id<'organization'>,
+          coupon_id: appliedDiscount.couponId,
+        })
+
+        const hasExcludedMenus = selectedMenus.some((menu) =>
+          exclusionMenus.some((em) => em.menu_id === menu._id)
+        )
+
+        if (hasExcludedMenus) {
+          toast.error(
+            '選択中のクーポンでは利用できないメニューがあります。メニューの選択を確認してください。'
+          )
+          return
+        }
+      } catch (error) {
+        console.error('クーポン適用チェックでエラーが発生しました:', error)
+        toast.error('クーポンの確認中にエラーが発生しました。')
+        return
+      }
+    }
+
     setDirection(1) // 前進方向を設定
     switch (currentStep) {
       case 'menu':
@@ -343,9 +446,6 @@ export default function CalendarPage() {
         }
         break
       case 'payment':
-        setCurrentStep('coupon')
-        break
-      case 'coupon':
         setCurrentStep('confirm')
         break
       case 'confirm':
@@ -359,6 +459,9 @@ export default function CalendarPage() {
   const goToPreviousStep = () => {
     setDirection(-1) // 後退方向を設定
     switch (currentStep) {
+      case 'menu':
+        // 最初のステップなので何もしない
+        return
       case 'staff':
         setCurrentStep('menu')
         // スタッフの選択をクリア
@@ -385,11 +488,8 @@ export default function CalendarPage() {
         setCurrentStep('date')
         setSelectedPaymentMethod(null)
         break
-      case 'coupon':
-        setCurrentStep('payment')
-        break
       case 'confirm':
-        setCurrentStep('coupon')
+        setCurrentStep('payment')
         // ポイント使用をクリア
         setUsePoints(0)
         break
@@ -1171,10 +1271,13 @@ export default function CalendarPage() {
         ? 0
         : selectedStaffCompleted?.staff?.extra_charge || 0
 
-    // 割引額
+    // 割引額（クーポン割引は appliedDiscount.discount で既に適用可能メニューのみから計算済み）
     const discount = appliedDiscount.discount + usePoints
 
-    return menuTotal + optionTotal + extraChargeTotal - discount
+    const total = menuTotal + optionTotal + extraChargeTotal - discount
+
+    // 合計金額が負の値にならないようにする
+    return Math.max(0, total)
   }
 
   const calculateTotalMinutes = () => {
@@ -1225,12 +1328,6 @@ export default function CalendarPage() {
         color: 'bg-chart-5 text-background',
       },
       {
-        key: 'coupon',
-        label: 'クーポン',
-        icon: Ticket,
-        color: 'bg-neon text-background',
-      },
-      {
         key: 'confirm',
         label: '確認',
         icon: CheckCircle,
@@ -1241,7 +1338,7 @@ export default function CalendarPage() {
     return (
       <div className="relative mb-4 w-full max-w-3xl mx-auto">
         {/* ② ステップ丸要素群 */}
-        <div className="relative grid grid-cols-7 gap-2">
+        <div className="relative grid grid-cols-6 gap-2">
           {steps.map((step, index) => {
             const isActive = currentStep === step.key
             const isCompleted = index < steps.findIndex((s) => s.key === currentStep)
@@ -1298,11 +1395,20 @@ export default function CalendarPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
                     >
-                      <MenuView
+                      <CouponMenuView
                         tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
                         orgId={organizationComplete.organization._id as Id<'organization'>}
-                        selectedMenuIds={selectedMenus.map((menu) => menu._id)}
-                        onChangeMenusAction={(menus) => setSelectedMenus(menus)}
+                        sessionCustomerType={sessionCustomer?.target_type as ActiveCustomerType}
+                        onCouponChange={(coupon) => {
+                          setAppliedDiscount((prev) => ({
+                            ...prev,
+                            couponId: coupon?._id || null,
+                          }))
+                        }}
+                        onMenuChange={(menus) => setSelectedMenus(menus)}
+                        selectedCoupon={appliedDiscount.couponId}
+                        selectedMenus={selectedMenus}
+                        appliedDiscount={appliedDiscount.discount}
                         targetType={sessionCustomer?.target_type as ActiveCustomerType}
                         isMultipleSelection={
                           organizationComplete.reservationConfig?.is_multiple_select_category
@@ -1420,6 +1526,7 @@ export default function CalendarPage() {
                       selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | 'free' | null}
                       selectedTime={selectedTime}
                       totalMinutes={calculateTotalMinutes()}
+                      orgPhoneNumber={organizationComplete.config?.phone ?? ''}
                       selectedMenuIds={selectedMenus.map((menu) => menu._id)}
                       selectedOptionIds={selectedOptions.map((option) => option._id)}
                       onChangeDateAction={(date) => {
@@ -1485,45 +1592,6 @@ export default function CalendarPage() {
                         disabled={!selectedPaymentMethod}
                         className="relative overflow-hidden w-full"
                       >
-                        <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                          次へ進む
-                        </motion.span>
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                )
-              case 'coupon':
-                return (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <CouponView
-                      tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
-                      orgId={organizationComplete.organization._id as Id<'organization'>}
-                      selectedMenus={selectedMenus}
-                      sessionCustomerType={sessionCustomer?.target_type as ActiveCustomerType}
-                      onSelectCoupon={(coupon, discountAmount) => {
-                        if (coupon) {
-                          setAppliedDiscount({
-                            discount: discountAmount,
-                            couponId: coupon._id,
-                            couponName: coupon.name,
-                          })
-                        } else {
-                          setAppliedDiscount({ discount: 0, couponId: null })
-                        }
-                      }}
-                      selectedCoupon={appliedDiscount?.couponId as Id<'coupon'> | null}
-                    />
-                    <motion.div
-                      className="mt-10 flex justify-center"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Button onClick={goToNextStep} className="relative overflow-hidden w-full">
                         <motion.span whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           次へ進む
                         </motion.span>

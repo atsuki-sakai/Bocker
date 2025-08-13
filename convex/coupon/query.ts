@@ -11,24 +11,25 @@ export const list = query({
     org_id: v.id('organization'),
     paginationOpts: paginationOptsValidator,
     include_archive: v.optional(v.boolean()),
+    target_type: v.optional(v.union(v.literal('all'), v.literal('customer'), v.literal('staff'))),
     active_only: v.optional(v.boolean()),
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    
-    
-    let query = ctx.db.query('coupon').withIndex('by_tenant_org_archive', (q) =>
-      q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
-    );
+    let query = ctx.db
+      .query('coupon')
+      .withIndex('by_tenant_org_archive', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+      )
 
     // active_onlyフラグが指定されている場合は有効なクーポンのみ取得
     if (args.active_only) {
-      query = query.filter((q) => q.eq(q.field('is_active'), true));
+      query = query.filter((q) => q.eq(q.field('is_active'), true))
     }
 
-    return await query.paginate(args.paginationOpts);
+    return await query.paginate(args.paginationOpts)
   },
-});
+})
 
 export const findByCouponUid = query({
   args: {

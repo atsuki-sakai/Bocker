@@ -17,6 +17,27 @@ export function Pricing() {
 
   const tiers = [
     {
+      id: 'micro',
+      name: t('subscription.micro.title'),
+      description: t('subscription.micro.description'),
+      price: {
+        monthly: t('subscription.micro.price.monthly'),
+        annually: t('subscription.micro.price.annually'),
+      },
+      highlights: [
+        t('subscription.micro.features.1'),
+        t('subscription.micro.features.2'),
+        t('subscription.micro.features.3'),
+        t('subscription.micro.features.4'),
+        t('subscription.micro.features.5'),
+        t('subscription.micro.features.6'),
+        t('subscription.micro.features.7'),
+        t('subscription.micro.features.8'),
+        t('subscription.micro.features.9'),
+      ],
+      featured: false,
+    },
+    {
       id: 'lite',
       name: t('subscription.lite.title'),
       description: t('subscription.lite.description'),
@@ -35,7 +56,7 @@ export function Pricing() {
         t('subscription.lite.features.8'),
         t('subscription.lite.features.9'),
       ],
-      featured: false,
+      featured: true,
     },
     {
       id: 'pro',
@@ -51,7 +72,7 @@ export function Pricing() {
         t('subscription.pro.features.3'),
         t('subscription.pro.features.4'),
       ],
-      featured: true,
+      featured: false,
     },
   ]
 
@@ -62,6 +83,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.0.name'),
           tiers: {
+            MICRO: t('section.basic.features.0.tiers.MICRO'),
             LITE: t('section.basic.features.0.tiers.LITE'),
             PRO: t('section.basic.features.0.tiers.PRO'),
           },
@@ -69,6 +91,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.1.name'),
           tiers: {
+            MICRO: t('section.basic.features.1.tiers.MICRO'),
             LITE: t('section.basic.features.1.tiers.LITE'),
             PRO: t('section.basic.features.1.tiers.PRO'),
           },
@@ -76,6 +99,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.2.name'),
           tiers: {
+            MICRO: t('section.basic.features.2.tiers.MICRO'),
             LITE: t('section.basic.features.2.tiers.LITE'),
             PRO: t('section.basic.features.2.tiers.PRO'),
           },
@@ -83,6 +107,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.3.name'),
           tiers: {
+            MICRO: t('section.basic.features.3.tiers.MICRO'),
             LITE: t('section.basic.features.3.tiers.LITE'),
             PRO: t('section.basic.features.3.tiers.PRO'),
           },
@@ -90,6 +115,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.4.name'),
           tiers: {
+            MICRO: t('section.basic.features.4.tiers.MICRO'),
             LITE: t('section.basic.features.4.tiers.LITE'),
             PRO: t('section.basic.features.4.tiers.PRO'),
           },
@@ -97,6 +123,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.5.name'),
           tiers: {
+            MICRO: t('section.basic.features.5.tiers.MICRO'),
             LITE: t('section.basic.features.5.tiers.LITE'),
             PRO: t('section.basic.features.5.tiers.PRO'),
           },
@@ -104,6 +131,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.6.name'),
           tiers: {
+            MICRO: t('section.basic.features.6.tiers.MICRO'),
             LITE: t('section.basic.features.6.tiers.LITE'),
             PRO: t('section.basic.features.6.tiers.PRO'),
           },
@@ -116,6 +144,7 @@ export function Pricing() {
         {
           name: t('section.customer.features.0.name'),
           tiers: {
+            MICRO: t('section.customer.features.0.tiers.MICRO'),
             LITE: t('section.customer.features.0.tiers.LITE'),
             PRO: t('section.customer.features.0.tiers.PRO'),
           },
@@ -123,6 +152,7 @@ export function Pricing() {
         {
           name: t('section.customer.features.1.name'),
           tiers: {
+            MICRO: t('section.customer.features.1.tiers.MICRO'),
             LITE: t('section.customer.features.1.tiers.LITE'),
             PRO: t('section.customer.features.1.tiers.PRO'),
           },
@@ -135,6 +165,7 @@ export function Pricing() {
         {
           name: t('section.support.features.0.name'),
           tiers: {
+            MICRO: t('section.support.features.0.tiers.MICRO'),
             LITE: t('section.support.features.0.tiers.LITE'),
             PRO: t('section.support.features.0.tiers.PRO'),
           },
@@ -224,7 +255,7 @@ export function Pricing() {
               </fieldset>
             </motion.div>
           </div>
-          <div className="relative mx-auto mt-10 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:-mb-14 lg:max-w-none lg:grid-cols-2">
+          <div className="relative mx-auto mt-10 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:-mb-14 lg:max-w-none lg:grid-cols-3">
             <div
               aria-hidden="true"
               className="hidden lg:absolute lg:inset-x-px lg:top-4 lg:bottom-0 lg:block lg:rounded-t-2xl lg:bg-neon lg:ring-1 lg:ring-border"
@@ -233,6 +264,7 @@ export function Pricing() {
               <motion.div
                 key={tier.id}
                 role="plan"
+                data-testid={`plan-${tier.id}`}
                 data-featured={tier.featured ? 'true' : undefined}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}

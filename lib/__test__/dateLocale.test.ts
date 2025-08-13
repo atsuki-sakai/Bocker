@@ -4,9 +4,9 @@ import type { Locale } from 'date-fns'
 
 // Mock date-fns locale imports
 const mockJaLocale = { code: 'ja' } as Locale
-const mockEnLocale = { code: 'en-US' } as Locale
+const mockEnLocale = { code: 'en' } as Locale
 const mockFrLocale = { code: 'fr' } as Locale
-const mockZhLocale = { code: 'zh-CN' } as Locale
+const mockZhLocale = { code: 'zh' } as Locale
 const mockKoLocale = { code: 'ko' } as Locale
 
 vi.mock('date-fns/locale/ja', () => ({ ja: mockJaLocale }))

@@ -98,7 +98,7 @@ export const PLAN_DURATION_MONTHS = {
 }
 
 export const PLAN_MONTHLY_PRICES = {
-  MICRO: 3980,
+  MICRO: 4000,
   LITE: 8000,
   PRO: 12000,
 }
