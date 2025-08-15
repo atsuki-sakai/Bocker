@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react'
 import Cookies from 'js-cookie'
 import { v4 as uuidv4 } from 'uuid'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { sha256 } from '@/lib/crypto'
 
 const SESSION_COOKIE_NAME = 'bcker_tracking_session'
 const UTM_PARAMS_KEY = 'bcker_utm_params'
@@ -97,19 +98,38 @@ export const useAnalytics = () => {
     })
   }, [pathname])
 
-  const trackConversion = useCallback((conversionType: string, customData?: object) => {
-    const sessionId = getSessionId()
-    const utmParams = getUtmParams()
+  const trackConversion = useCallback(
+    async (conversionType: string, customData?: Record<string, any>) => {
+      const sessionId = getSessionId()
+      const utmParams = getUtmParams()
+      let processedCustomData = { ...customData }
 
-    sendTrackingEvent({
-      session_id: sessionId,
-      event_type: 'conversion',
-      conversion_type: conversionType,
-      page_url: pathname,
-      ...utmParams,
-      custom_data_json: customData,
-    })
-  }, [pathname])
+      // Hash email if it exists
+      if (processedCustomData?.email && typeof processedCustomData.email === 'string') {
+        const salt = process.env.NEXT_PUBLIC_PII_SALT
+        if (!salt) {
+          console.warn(
+            'NEXT_PUBLIC_PII_SALT is not defined. Email will not be tracked.'
+          )
+          delete processedCustomData.email
+        } else {
+          const email = processedCustomData.email
+          delete processedCustomData.email
+          processedCustomData.email_hash = await sha256(`${salt}:${email}`)
+        }
+      }
+
+      sendTrackingEvent({
+        session_id: sessionId,
+        event_type: 'conversion',
+        conversion_type: conversionType,
+        page_url: pathname,
+        ...utmParams,
+        custom_data_json: processedCustomData,
+      })
+    },
+    [pathname]
+  )
 
   return { trackPageView, trackConversion }
 }
