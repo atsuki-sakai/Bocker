@@ -44,4 +44,11 @@ crons.interval(
   internal.reservation.action.sendHourlyReminders
 )
 
+// トラッキングデータ集計（毎日17:15 UTCに実行）
+crons.cron(
+  'aggregate tracking data',
+  '15 17 * * *', // 日本時間の毎日午前2時15分（UTC 17:15）
+  internal.tracking.action.aggregateDailyTrackingData
+)
+
 export default crons
