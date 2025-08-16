@@ -143,9 +143,9 @@ const CouponMenuViewInner = ({
   const excludedMenuDetails = useQuery(
     api.menu.query.getDisplayByIds,
     excludedMenus && excludedMenus.length > 0
-      ? { 
-          menu_ids: excludedMenus.map(em => em.menu_id), 
-          option_ids: [] 
+      ? {
+          menu_ids: excludedMenus.map(em => em.menu_id),
+          option_ids: []
         }
       : 'skip'
   )
@@ -229,7 +229,7 @@ const CouponMenuViewInner = ({
 
               // より厳密なクーポン顧客タイプの検証
               let isValidCustomerType = false
-              
+
               if (!sessionCustomerType) {
                 // セッション顧客タイプが不明な場合は、'all'のクーポンのみ表示
                 isValidCustomerType = activeCustomerType === 'all'
@@ -915,7 +915,7 @@ const CouponMenuViewInner = ({
                         )
                       )
                     })()}
-                  
+
                   {/* 適用外メニューリスト */}
                   {selectCoupon && excludedMenuDetails?.menus && excludedMenuDetails.menus.length > 0 && (
                     <div className="mt-2 md:mt-3 pt-2 border-t border-neon/20">

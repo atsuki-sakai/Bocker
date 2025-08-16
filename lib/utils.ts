@@ -219,11 +219,23 @@ export const generatePinCode = () => {
 
 // Stripeの課金期間をConvexの課金期間に変換
 export function priceIdToPlanInfo(priceId: string): {
-  name: SubscriptionPlanName;
-  price: number;
-  billing_period: BillingPeriod;
+  name: SubscriptionPlanName
+  price: number
+  billing_period: BillingPeriod
 } {
   switch (priceId) {
+    case getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'):
+      return {
+        name: 'MICRO',
+        price: PLAN_MONTHLY_PRICES.MICRO,
+        billing_period: 'month' as BillingPeriod,
+      }
+    case getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'):
+      return {
+        name: 'MICRO',
+        price: PLAN_YEARLY_PRICES.MICRO.price,
+        billing_period: 'year' as BillingPeriod,
+      }
     case getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'):
       return {
         name: 'LITE',
@@ -270,11 +282,17 @@ export function getPlanNameFromPriceId(priceId: string): SubscriptionPlanName {
 }
 
 // プラン名と課金期間から価格IDを取得する関数
-export function getPriceNameFromPlanName(planName: SubscriptionPlanName, period: BillingPeriod): string {
+export function getPriceNameFromPlanName(
+  planName: SubscriptionPlanName,
+  period: BillingPeriod
+): string {
   let priceId: string | undefined
 
   if (period === 'month') {
     switch (planName) {
+      case 'MICRO':
+        priceId = getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID')
+        break
       case 'LITE':
         priceId = getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID')
         break
@@ -287,6 +305,9 @@ export function getPriceNameFromPlanName(planName: SubscriptionPlanName, period:
   } else if (period === 'year') {
     // period === 'year'
     switch (planName) {
+      case 'MICRO':
+        priceId = getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID')
+        break
       case 'LITE':
         priceId = getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID')
         break

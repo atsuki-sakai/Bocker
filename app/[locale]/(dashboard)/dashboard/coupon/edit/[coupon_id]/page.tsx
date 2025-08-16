@@ -136,7 +136,7 @@ function CouponPreview({
   // 適用外メニューの詳細情報を取得
   const exclusionMenusDetails = useQuery(
     api.menu.query.getDisplayByIds,
-    selectedMenuIds.length > 0 
+    selectedMenuIds.length > 0
       ? { menu_ids: selectedMenuIds, option_ids: [] }
       : 'skip'
   )
@@ -250,7 +250,7 @@ function CouponPreview({
             </div>
           </CardContent>
         )}
-        
+
         <CardFooter className="bg-muted pt-2 pb-2 flex justify-between">
           <div className="text-xs text-muted-foreground">
             {selectedMenuIds.length === 0 ? t('noExcludedMenus') : `${t('excludedMenus')}: ${selectedMenuIds.length}`}
@@ -265,15 +265,15 @@ function CouponPreview({
               className={`h-6 ${
                 data.end_date && new Date(data.end_date) <= new Date()
                   ? 'bg-destructive text-destructive-foreground' // 期限切れの場合は赤色
-                  : data.is_active 
-                    ? 'bg-accent-2-foreground text-accent-2' 
+                  : data.is_active
+                    ? 'bg-accent-2-foreground text-accent-2'
                     : 'bg-destructive text-destructive-foreground'
               }`}
             >
-              {data.end_date && new Date(data.end_date) <= new Date() 
-                ? t('expired') 
-                : data.is_active 
-                  ? t('active') 
+              {data.end_date && new Date(data.end_date) <= new Date()
+                ? t('expired')
+                : data.is_active
+                  ? t('active')
                   : t('inactive')
               }
             </Badge>
@@ -510,14 +510,12 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     // 空配列や undefined の場合の安全な処理
     const current = selectedMenuIds || []
     const initial = initialSelectedMenuIds || []
-    
     // 長さが異なる場合は確実に変更されている
     if (current.length !== initial.length) return true
-    
+
     // ソート済みのコピーを作成して比較（元の配列は変更しない）
     const sortedCurrent = [...current].sort()
     const sortedInitial = [...initial].sort()
-    
     return JSON.stringify(sortedCurrent) !== JSON.stringify(sortedInitial)
   })()
 
@@ -536,7 +534,6 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     initialMenuIds: initialSelectedMenuIds.length,
   })
   console.log('errors', errors)
-  
   return (
     <div className="space-y-6">
       {/* 有効期限アラート */}
@@ -548,7 +545,6 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           </AlertDescription>
         </Alert>
       )}
-      
       {isExpiringSoon && !isExpired && (
         <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -557,7 +553,6 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           </AlertDescription>
         </Alert>
       )}
-      
     <div className="space-y-8">
     <form
       onSubmit={handleSubmit(onSubmit)}
