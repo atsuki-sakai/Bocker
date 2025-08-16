@@ -836,3 +836,501 @@ SELECT NOW() AT TIME ZONE 'UTC' as utc_time,
 - スケーリング: PostgreSQLの標準的な手法適用
 
 この移行により、Bockerのトラッキング機能はより効率的で保守性の高いシステムとなります。
+
+---
+
+## 📋 実装手順書
+
+### 実装前の準備チェックリスト
+
+#### 環境確認
+- [ ] **Supabaseプロジェクトの確認**
+  - プロジェクトが稼働中であること
+  - PostgreSQL 15以上であること
+  - RLS（Row Level Security）が有効であること
+
+- [ ] **アクセス権限の確認**
+  - Supabaseダッシュボードへの管理者アクセス
+  - PostgreSQL データベースへの直接接続権限
+  - 本番環境での変更実行権限
+
+- [ ] **pg_cron拡張の事前確認**
+  ```sql
+  -- Supabaseダッシュボードで実行
+  SELECT * FROM pg_extension WHERE extname = 'pg_cron';
+  ```
+  - 結果が空の場合：Supabaseサポートに`pg_cron`有効化を依頼
+
+#### バックアップ作成
+- [ ] **現在のデータベーススキーマのバックアップ**
+  ```bash
+  # スキーマのみバックアップ
+  pg_dump -h YOUR_HOST -U postgres -d postgres --schema-only > backup_schema_$(date +%Y%m%d).sql
+  ```
+
+- [ ] **tracking関連テーブルのデータバックアップ**
+  ```bash
+  # データのみバックアップ
+  pg_dump -h YOUR_HOST -U postgres -d postgres --data-only \
+    -t tracking_event -t tracking_summaries > backup_tracking_data_$(date +%Y%m%d).sql
+  ```
+
+#### 依存関係確認
+- [ ] **現在のConvex機能使用状況の確認**
+  ```bash
+  # convex/crons.ts内のtracking関連cron確認
+  grep -n "tracking" convex/crons.ts
+  ```
+
+- [ ] **API エンドポイントの動作確認**
+  ```bash
+  # トラッキングAPIの疎通確認
+  curl -X POST http://localhost:3000/api/tracking/event \
+    -H "Content-Type: application/json" \
+    -d '{"eventType":"page_view","pageUrl":"/test"}'
+  ```
+
+### ステップバイステップ実装手順
+
+#### Step 1: 開発環境での実装
+
+**1.1 ローカル環境でのマイグレーション実行**
+```bash
+# 1. プロジェクトルートディレクトリに移動
+cd /path/to/bocker
+
+# 2. Supabase CLI で接続確認
+supabase status
+
+# 3. マイグレーションファイルの実行
+supabase db push
+
+# 期待する出力:
+# ✓ Apply migration 20250816000001_migrate_tracking_from_convex_to_supabase.sql
+```
+
+**1.2 マイグレーション結果の確認**
+```sql
+-- Supabase ダッシュボード > SQL Editor で実行
+
+-- 1. 関数が正常に作成されているか確認
+SELECT 
+    routine_name,
+    routine_type,
+    data_type
+FROM information_schema.routines 
+WHERE routine_name LIKE '%tracking%'
+ORDER BY routine_name;
+
+-- 期待する結果: 4つの関数
+-- aggregate_daily_tracking_data
+-- cleanup_old_tracking_events  
+-- run_tracking_aggregation_manual
+-- backfill_tracking_summaries
+
+-- 2. Cronジョブが設定されているか確認
+SELECT 
+    jobid,
+    jobname,
+    schedule,
+    command,
+    active
+FROM cron.job 
+WHERE jobname LIKE '%tracking%';
+
+-- 期待する結果: 2つのジョブ
+-- daily-tracking-aggregation (15 17 * * *)
+-- weekly-tracking-cleanup (0 18 * * 0)
+```
+
+**1.3 テストデータでの動作確認**
+```sql
+-- テスト用のtracking_eventデータ作成
+INSERT INTO tracking_event (
+    tenant_id, org_id, session_id, event_timestamp_unix,
+    event_type, event_source, page_url, utm_source, utm_medium
+) VALUES 
+    ('test_tenant', 'test_org', 'session1', EXTRACT(EPOCH FROM CURRENT_DATE - INTERVAL '1 day')::BIGINT + 3600,
+     'page_view', 'web', '/dashboard', 'google', 'cpc'),
+    ('test_tenant', 'test_org', 'session2', EXTRACT(EPOCH FROM CURRENT_DATE - INTERVAL '1 day')::BIGINT + 7200,
+     'conversion', 'web', '/reservation', 'facebook', 'social');
+
+-- 手動集計実行
+SELECT * FROM run_tracking_aggregation_manual();
+
+-- 結果確認
+SELECT * FROM tracking_summaries 
+WHERE summary_date = CURRENT_DATE - INTERVAL '1 day'
+ORDER BY dimension_type, total_count DESC;
+
+-- テストデータクリーンアップ
+DELETE FROM tracking_event WHERE tenant_id = 'test_tenant';
+DELETE FROM tracking_summaries WHERE tenant_id = 'test_tenant';
+```
+
+#### Step 2: ステージング環境での検証
+
+**2.1 ステージング環境設定**
+```bash
+# 1. 環境変数の設定
+pnpm env:staging
+
+# 2. ステージング環境でのマイグレーション実行
+supabase db push --linked
+
+# 3. 本番データに近いテストデータの投入
+# (実際の顧客データのサンプルを使用)
+```
+
+**2.2 負荷テスト実行**
+```sql
+-- 大量データでのパフォーマンステスト
+DO $$
+DECLARE
+    i INTEGER;
+    base_timestamp BIGINT;
+BEGIN
+    base_timestamp := EXTRACT(EPOCH FROM CURRENT_DATE - INTERVAL '1 day')::BIGINT;
+    
+    -- 10,000件のテストデータを投入
+    FOR i IN 1..10000 LOOP
+        INSERT INTO tracking_event (
+            tenant_id, org_id, session_id, event_timestamp_unix,
+            event_type, event_source, page_url, utm_source
+        ) VALUES (
+            'load_test_tenant',
+            'load_test_org', 
+            'session_' || (i % 100),
+            base_timestamp + (i * 60),
+            CASE WHEN i % 10 = 0 THEN 'conversion' ELSE 'page_view' END,
+            'web',
+            '/page_' || (i % 20),
+            CASE WHEN i % 4 = 0 THEN 'google' 
+                 WHEN i % 4 = 1 THEN 'facebook'
+                 WHEN i % 4 = 2 THEN 'instagram'
+                 ELSE 'direct' END
+        );
+    END LOOP;
+END $$;
+
+-- パフォーマンス測定付きで集計実行
+\timing on
+SELECT * FROM aggregate_daily_tracking_data();
+\timing off
+
+-- 期待値: 2分以内での完了
+
+-- テストデータクリーンアップ
+DELETE FROM tracking_event WHERE tenant_id = 'load_test_tenant';
+DELETE FROM tracking_summaries WHERE tenant_id = 'load_test_tenant';
+```
+
+#### Step 3: 本番環境での実装
+
+**3.1 メンテナンス時間の設定**
+```bash
+# 推奨実装時間: 日本時間深夜2:00-4:00（UTC 17:00-19:00）
+# 理由: 日次集計実行時間（17:15 UTC）に近く、影響を最小化
+```
+
+**3.2 本番環境マイグレーション実行**
+```bash
+# 1. 本番環境に切り替え
+pnpm env:prod
+
+# 2. 最終確認
+supabase status
+
+# 3. マイグレーション実行（本番環境）
+supabase db push --linked
+
+# 4. 実行ログの保存
+supabase db push --linked 2>&1 | tee migration_$(date +%Y%m%d_%H%M%S).log
+```
+
+**3.3 即座実行による検証**
+```sql
+-- 本番環境での即座検証
+-- ⚠️ 本番データを使用するため慎重に実行
+
+-- 1. 昨日のデータ量確認
+SELECT 
+    COUNT(*) as event_count,
+    COUNT(DISTINCT tenant_id) as tenant_count,
+    COUNT(DISTINCT session_id) as session_count
+FROM tracking_event 
+WHERE DATE(to_timestamp(event_timestamp_unix)) = CURRENT_DATE - INTERVAL '1 day';
+
+-- 2. 手動集計実行（本番データ）
+SELECT * FROM run_tracking_aggregation_manual();
+
+-- 3. 結果検証
+SELECT 
+    dimension_type,
+    COUNT(*) as summary_records,
+    SUM(total_count) as total_events,
+    SUM(unique_user_count) as total_sessions,
+    SUM(conversion_count) as total_conversions
+FROM tracking_summaries 
+WHERE summary_date = CURRENT_DATE - INTERVAL '1 day'
+GROUP BY dimension_type;
+```
+
+### 実装中のトラブルシューティング
+
+#### 問題1: pg_cron拡張が見つからない
+**症状:**
+```
+ERROR: extension "pg_cron" is not available
+```
+
+**解決策:**
+```bash
+# 1. Supabaseサポートに連絡
+# 件名: pg_cron extension activation request
+# 内容: プロジェクトID、pg_cron有効化依頼
+
+# 2. 代替案: GitHub Actionsでの定期実行
+# .github/workflows/daily-tracking-aggregation.yml を作成
+```
+
+#### 問題2: 権限エラー
+**症状:**
+```
+ERROR: permission denied for function aggregate_daily_tracking_data
+```
+
+**解決策:**
+```sql
+-- 権限の再付与
+GRANT EXECUTE ON FUNCTION aggregate_daily_tracking_data TO service_role;
+GRANT EXECUTE ON FUNCTION cleanup_old_tracking_events TO service_role;
+
+-- 現在の権限確認
+SELECT 
+    routine_name,
+    grantee,
+    privilege_type
+FROM information_schema.routine_privileges 
+WHERE routine_name LIKE '%tracking%';
+```
+
+#### 問題3: メモリ不足エラー
+**症状:**
+```
+ERROR: out of memory
+DETAIL: Failed on request of size X in memory context Y
+```
+
+**解決策:**
+```sql
+-- バッチサイズを小さくした集計関数の作成
+CREATE OR REPLACE FUNCTION aggregate_daily_tracking_data_batch(
+    target_date DATE DEFAULT CURRENT_DATE - INTERVAL '1 day',
+    batch_size INTEGER DEFAULT 10000
+)
+RETURNS TABLE (processed_events INTEGER, created_summaries INTEGER) AS $$
+-- バッチ処理ロジックを実装
+$$;
+```
+
+#### 問題4: 集計時間の超過
+**症状:**
+```
+-- 集計処理が5分以上継続
+```
+
+**解決策:**
+```sql
+-- インデックスの追加確認
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tracking_event_compound 
+ON tracking_event (event_timestamp_unix, tenant_id, org_id, is_archive);
+
+-- クエリ実行計画の確認
+EXPLAIN ANALYZE 
+SELECT COUNT(*) FROM tracking_event 
+WHERE event_timestamp_unix BETWEEN X AND Y AND is_archive = false;
+```
+
+### 実装後の検証手順
+
+#### 1. 基本機能検証
+```sql
+-- ✅ 基本機能テスト
+-- 1. 関数の存在確認
+SELECT count(*) FROM pg_proc WHERE proname LIKE '%tracking%';
+-- 期待値: 4
+
+-- 2. Cronジョブの確認
+SELECT count(*) FROM cron.job WHERE jobname LIKE '%tracking%';
+-- 期待値: 2
+
+-- 3. 手動実行テスト
+SELECT * FROM run_tracking_aggregation_manual();
+-- エラーなく完了すること
+
+-- 4. 監視ビューの確認
+SELECT * FROM tracking_aggregation_status LIMIT 5;
+-- データが表示されること
+```
+
+#### 2. データ整合性検証
+```sql
+-- ✅ データ整合性テスト
+WITH consistency_check AS (
+    SELECT 
+        DATE(to_timestamp(event_timestamp_unix)) as event_date,
+        COUNT(*) as raw_events,
+        COUNT(DISTINCT session_id) as raw_sessions,
+        COUNT(*) FILTER (WHERE event_type = 'conversion') as raw_conversions
+    FROM tracking_event 
+    WHERE DATE(to_timestamp(event_timestamp_unix)) = CURRENT_DATE - INTERVAL '1 day'
+    GROUP BY DATE(to_timestamp(event_timestamp_unix))
+),
+summary_check AS (
+    SELECT 
+        summary_date,
+        SUM(total_count) as summary_events,
+        SUM(unique_user_count) as summary_sessions,
+        SUM(conversion_count) as summary_conversions
+    FROM tracking_summaries 
+    WHERE summary_date = CURRENT_DATE - INTERVAL '1 day'
+    GROUP BY summary_date
+)
+SELECT 
+    c.event_date,
+    c.raw_events,
+    s.summary_events,
+    (c.raw_events = s.summary_events) as events_match,
+    c.raw_sessions,
+    s.summary_sessions,
+    (c.raw_sessions <= s.summary_sessions) as sessions_valid -- 重複除去のため以下
+FROM consistency_check c
+LEFT JOIN summary_check s ON c.event_date = s.summary_date;
+```
+
+#### 3. パフォーマンス検証
+```sql
+-- ✅ パフォーマンステスト
+-- 1. 集計処理時間の測定
+\timing on
+SELECT * FROM aggregate_daily_tracking_data();
+\timing off
+
+-- 期待値: 中規模データ（10万イベント）で2分以内
+
+-- 2. ダッシュボードクエリの応答時間測定
+\timing on
+SELECT * FROM tracking_aggregation_status ORDER BY summary_date DESC LIMIT 10;
+\timing off
+
+-- 期待値: 500ms以内
+```
+
+#### 4. 継続監視設定
+```sql
+-- ✅ 監視クエリの設定
+-- 日次ヘルスチェック用のビューを作成
+CREATE OR REPLACE VIEW daily_tracking_health_check AS
+SELECT 
+    'tracking_aggregation' as check_name,
+    CASE 
+        WHEN (
+            SELECT COUNT(*) FROM tracking_summaries 
+            WHERE summary_date = CURRENT_DATE - INTERVAL '1 day'
+        ) > 0 THEN 'PASS'
+        ELSE 'FAIL'
+    END as status,
+    CASE 
+        WHEN (
+            SELECT MAX(created_at) FROM tracking_summaries 
+            WHERE summary_date = CURRENT_DATE - INTERVAL '1 day'
+        ) > CURRENT_DATE - INTERVAL '2 hours' THEN 'RECENT'
+        ELSE 'STALE'
+    END as freshness,
+    (
+        SELECT COUNT(*) FROM tracking_summaries 
+        WHERE summary_date = CURRENT_DATE - INTERVAL '1 day'
+    ) as summary_count;
+
+-- 毎日の確認項目
+-- SELECT * FROM daily_tracking_health_check;
+```
+
+### 本番環境での実行チェックリスト
+
+#### 実行前確認
+- [ ] **本番環境アクセス権限確認済み**
+- [ ] **バックアップ作成済み**
+  - スキーマバックアップ: `backup_schema_YYYYMMDD.sql`
+  - データバックアップ: `backup_tracking_data_YYYYMMDD.sql`
+- [ ] **メンテナンス時間設定済み**（推奨: JST 2:00-4:00）
+- [ ] **関係者への通知完了**（開発チーム、運用チーム）
+
+#### 実行中チェック
+- [ ] **マイグレーション実行ログ保存**
+  ```bash
+  supabase db push --linked 2>&1 | tee production_migration_$(date +%Y%m%d_%H%M%S).log
+  ```
+- [ ] **実行時間記録**（開始時刻、終了時刻）
+- [ ] **エラーなく完了確認**
+
+#### 実行後確認
+- [ ] **基本機能検証完了**
+  - 4つの関数作成確認
+  - 2つのCronジョブ設定確認
+  - 手動集計実行成功確認
+- [ ] **データ整合性検証完了**
+  - 生データと集計データの突合確認
+  - セッション数の整合性確認
+- [ ] **パフォーマンス検証完了**
+  - 集計処理時間が期待値内
+  - ダッシュボード応答時間が改善
+- [ ] **監視設定有効化確認**
+  - ヘルスチェックビューの動作確認
+  - ログ監視の設定確認
+
+#### フォローアップ
+- [ ] **24時間後の自動実行確認**
+  ```sql
+  -- 翌日17:15 UTC後に実行
+  SELECT * FROM cron.job_run_details 
+  WHERE jobid IN (
+      SELECT jobid FROM cron.job WHERE jobname = 'daily-tracking-aggregation'
+  )
+  ORDER BY start_time DESC LIMIT 1;
+  ```
+- [ ] **1週間後のデータ蓄積確認**
+  ```sql
+  -- 1週間分の集計データ確認
+  SELECT * FROM tracking_aggregation_status 
+  WHERE summary_date >= CURRENT_DATE - INTERVAL '7 days'
+  ORDER BY summary_date DESC;
+  ```
+- [ ] **Convex機能の無効化**（実行確認後）
+  ```bash
+  # convex/crons.ts から tracking 関連コメント削除
+  # convex/tracking/ ディレクトリの削除
+  ```
+
+### 実装完了確認
+
+実装が正常に完了した場合、以下の状態になります：
+
+✅ **Supabase側**
+- 4つのトラッキング関数が作成済み
+- 2つのpg_cronジョブが稼働中
+- 監視ビューが利用可能
+- 日次集計が自動実行中
+
+✅ **Convex側**
+- トラッキング関連cronが無効化
+- tracking関連ファイルが削除またはコメントアウト
+
+✅ **運用面**
+- 日次集計が17:15 UTCに自動実行
+- 週次クリーンアップが稼働
+- 手動実行・バックフィル機能が利用可能
+- パフォーマンス向上を確認
+
+この実装により、トラッキング機能の完全なSupabase移行が完了します。
