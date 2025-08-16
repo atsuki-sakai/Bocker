@@ -115,3 +115,4 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_coupon_transaction_customer_uid
 - [ ] 影響監視（スロークエリ/CPU/IO/ロック）
 - [ ] Production適用
 - [ ] 未使用インデックスの観測開始と候補リスト化
+

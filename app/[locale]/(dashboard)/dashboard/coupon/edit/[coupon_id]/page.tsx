@@ -510,14 +510,12 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     // 空配列や undefined の場合の安全な処理
     const current = selectedMenuIds || []
     const initial = initialSelectedMenuIds || []
-
     // 長さが異なる場合は確実に変更されている
     if (current.length !== initial.length) return true
 
     // ソート済みのコピーを作成して比較（元の配列は変更しない）
     const sortedCurrent = [...current].sort()
     const sortedInitial = [...initial].sort()
-
     return JSON.stringify(sortedCurrent) !== JSON.stringify(sortedInitial)
   })()
 
@@ -536,7 +534,6 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
     initialMenuIds: initialSelectedMenuIds.length,
   })
   console.log('errors', errors)
-
   return (
     <div className="space-y-6">
       {/* 有効期限アラート */}
@@ -548,7 +545,6 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           </AlertDescription>
         </Alert>
       )}
-
       {isExpiringSoon && !isExpired && (
         <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -557,7 +553,6 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
           </AlertDescription>
         </Alert>
       )}
-
     <div className="space-y-8">
     <form
       onSubmit={handleSubmit(onSubmit)}
