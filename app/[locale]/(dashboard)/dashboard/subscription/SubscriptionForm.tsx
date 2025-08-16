@@ -247,9 +247,9 @@ function SubscriptionForm({
     }
   }, [createBillingPortal, tenant?.stripe_customer_id, tenantId, orgId, t])
 
-  // const handleMicroSubscribe = useCallback(() => {
-  //   handleSubscribe('MICRO', billingPeriod)
-  // }, [handleSubscribe, billingPeriod])
+  const handleMicroSubscribe = useCallback(() => {
+    handleSubscribe('MICRO', billingPeriod)
+  }, [handleSubscribe, billingPeriod])
 
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
@@ -301,9 +301,9 @@ function SubscriptionForm({
       />
 
       {/* プラン一覧 */}
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Micro プラン */}
-        {/* <PlanCard
+        <PlanCard
           title={t('microPlan')}
           description={t('microPlanDescription')}
           price={
@@ -326,7 +326,7 @@ function SubscriptionForm({
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
           highlightColor="from-palette-2-foreground to-palette-2-foreground"
-        /> */}
+        />
 
         {/* Lite プラン */}
         <PlanCard
