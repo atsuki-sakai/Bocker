@@ -44,11 +44,8 @@ crons.interval(
   internal.reservation.action.sendHourlyReminders
 )
 
-// トラッキングデータ集計（毎日17:15 UTCに実行）
-crons.cron(
-  'aggregate tracking data',
-  '15 17 * * *', // 日本時間の毎日午前2時15分（UTC 17:15）
-  internal.tracking.action.aggregateDailyTrackingData
-)
+// ⚠️ REMOVED: トラッキングデータ集計はSupabaseのpg_cronに移行
+// 詳細: supabase/migrations/20250816000001_migrate_tracking_from_convex_to_supabase.sql
+// Supabaseで実行中: 'daily-tracking-aggregation' (15 17 * * *)
 
 export default crons
