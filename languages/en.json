@@ -3161,6 +3161,10 @@
         }
       },
       "section": {
+        "feature": {
+          "title": "Features",
+          "description": "Compare features across plans"
+        },
         "basic": {
           "title": "Basic Features",
           "features": [
