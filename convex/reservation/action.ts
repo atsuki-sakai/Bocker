@@ -1038,8 +1038,8 @@ async function migrateReservationToSupabase(
 }
 
 /**
- * 予約完了時にSupabaseの売上集計テーブルを更新する（パーティション対応版）
- * 新しいincrement_sales_with_guard_v2 RPC関数を使用してリアルタイム集計を実現
+ * 予約完了時にSupabaseの売上集計テーブルを更新する（差額配賦対応版）
+ * 新しいincrement_sales_with_guard_v3 RPC関数を使用してオプション・指名料・割引を按分配賦
  */
 async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & {
   detail?: Doc<'reservation_detail'> | null;
@@ -1068,8 +1068,13 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
       ? reservation.detail.menus.filter(menu => menu.id && menu.id.trim() !== '') // 空のIDを除外
       : null;
     
-    // パーティション対応の統合RPC関数を呼び出し
-    const { data: result, error } = await supabase.rpc('increment_sales_with_guard_v2', {
+    // オプションデータの準備
+    const optionsForRpc = reservation.detail.options && Array.isArray(reservation.detail.options) 
+      ? reservation.detail.options.filter(option => option.id && option.id.trim() !== '') // 空のIDを除外
+      : null;
+    
+    // 差額配賦対応RPC関数を呼び出し（v3使用）
+    const { data: result, error } = await supabase.rpc('increment_sales_with_guard_v3', {
       p_reservation_id: reservation._id,
       p_tenant_id: reservation.tenant_id,
       p_org_id: reservation.org_id,
@@ -1077,7 +1082,11 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
       p_amount: totalAmount,
       p_staff_id: reservation.staff_id || null,
       p_staff_name: reservation.staff_name || null,
-      p_menus: menusForRpc
+      p_menus: menusForRpc,
+      p_options: optionsForRpc,
+      p_extra_charge: reservation.detail.extra_charge || 0,
+      p_coupon_discount: reservation.detail.coupon_discount || 0,
+      p_use_points: reservation.detail.use_points || 0
     });
 
     if (error) {

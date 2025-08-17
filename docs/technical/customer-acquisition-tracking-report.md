@@ -1,5 +1,10 @@
 # Bocker 顧客獲得トラッキング機能 詳細技術報告書
+ # 2. Supabase認証
+  npx supabase login
+  npx supabase link --project-ref YOUR_PROJECT_REF
 
+  # 3. マイグレーション実行
+  pnpm migrate:supabase
 ## 📋 執行サマリー
 
 本報告書は、Bockerサロン管理システムに実装された顧客獲得トラッキング機能の包括的な技術分析結果をまとめたものです。実装は高度に構造化されており、エンタープライズグレードのマーケティング分析基盤として機能する設計となっています。
