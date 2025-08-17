@@ -1,7 +1,6 @@
 // app/lib/schedule.ts
 
 import {
-  DAY_OF_WEEK_VALUES,
   DAY_OF_WEEK_VALUES_JA,
   DayOfWeek,
   DayOfWeekJA,
@@ -87,8 +86,19 @@ export function convertTimestampToDateString(timestampMs: number, timeZone?: str
  * @returns 曜日の文字列（英語: 'sunday', 'monday'等、日本語: '日曜日', '月曜日'等）
  */
 export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeek | DayOfWeekJA {
-  const idx = date.getDay()
-  return ja ? DAY_OF_WEEK_VALUES_JA[idx] : DAY_OF_WEEK_VALUES[idx]
+  const jsIdx = date.getDay() // JavaScript標準: 0=日曜, 1=月曜, ..., 6=土曜
+  
+  if (ja) {
+    // 日本語の場合はJavaScript標準のインデックスをそのまま使用
+    return DAY_OF_WEEK_VALUES_JA[jsIdx]
+  } else {
+    // 英語の場合もJavaScript標準のインデックスをそのまま使用してマッピング
+    // システム配列は [monday, tuesday, ..., sunday] だが、
+    // JavaScriptの getDay() は [sunday=0, monday=1, ..., saturday=6] なので
+    // 正しいマッピングを作成
+    const dayMapping: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    return dayMapping[jsIdx]
+  }
 }
 
 /**
