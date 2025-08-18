@@ -223,14 +223,26 @@ export function priceIdToPlanInfo(priceId: string): {
   price: number
   billing_period: BillingPeriod
 } {
+  console.log('[priceIdToPlanInfo] Input priceId:', priceId)
+  console.log('[priceIdToPlanInfo] Environment variables:', {
+    MICRO_MONTHLY: getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'),
+    MICRO_YEARLY: getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'),
+    LITE_MONTHLY: getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'),
+    LITE_YEARLY: getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID'),
+    PRO_MONTHLY: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),
+    PRO_YEARLY: getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID'),
+  })
+
   switch (priceId) {
     case getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'):
+      console.log('[priceIdToPlanInfo] Matched MICRO monthly')
       return {
         name: 'MICRO',
         price: PLAN_MONTHLY_PRICES.MICRO,
         billing_period: 'month' as BillingPeriod,
       }
     case getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'):
+      console.log('[priceIdToPlanInfo] Matched MICRO yearly')
       return {
         name: 'MICRO',
         price: PLAN_YEARLY_PRICES.MICRO.price,
@@ -262,7 +274,16 @@ export function priceIdToPlanInfo(priceId: string): {
       }
     default:
       // 無効なpriceIdの場合はデフォルト値を返す
-      console.warn(`Unknown priceId: ${priceId}, returning default plan info`)
+      console.error(`[priceIdToPlanInfo] Unknown priceId: ${priceId}`)
+      console.error('[priceIdToPlanInfo] Available price IDs:', {
+        MICRO_MONTHLY: process.env.NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID,
+        MICRO_YEARLY: process.env.NEXT_PUBLIC_MICRO_YEARLY_PRC_ID,
+        LITE_MONTHLY: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID,
+        LITE_YEARLY: process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID,
+        PRO_MONTHLY: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID,
+        PRO_YEARLY: process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID,
+      })
+      console.warn(`[priceIdToPlanInfo] Returning UNKNOWN plan for priceId: ${priceId}`)
       return {
         name: 'UNKNOWN',
         price: 0,
@@ -286,46 +307,82 @@ export function getPriceNameFromPlanName(
   planName: SubscriptionPlanName,
   period: BillingPeriod
 ): string {
+  console.log('[getPriceNameFromPlanName] Input:', { planName, period })
   let priceId: string | undefined
 
-  if (period === 'month') {
-    switch (planName) {
-      case 'MICRO':
-        priceId = getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID')
-        break
-      case 'LITE':
-        priceId = getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID')
-        break
-      case 'PRO':
-        priceId = getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID')
-        break
-      default:
-        throw new Error(`Invalid plan name: ${planName}`)
+  // 環境変数の取得を try-catch でラップして、エラー時のデバッグ情報を出力
+  try {
+    if (period === 'month') {
+      switch (planName) {
+        case 'MICRO':
+          priceId = getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID')
+          console.log('[getPriceNameFromPlanName] MICRO monthly priceId:', priceId)
+          break
+        case 'LITE':
+          priceId = getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID')
+          console.log('[getPriceNameFromPlanName] LITE monthly priceId:', priceId)
+          break
+        case 'PRO':
+          priceId = getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID')
+          console.log('[getPriceNameFromPlanName] PRO monthly priceId:', priceId)
+          break
+        default:
+          console.error('[getPriceNameFromPlanName] Invalid plan name:', planName)
+          throw new Error(`Invalid plan name: ${planName}`)
+      }
+    } else if (period === 'year') {
+      // period === 'year'
+      switch (planName) {
+        case 'MICRO':
+          priceId = getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID')
+          console.log('[getPriceNameFromPlanName] MICRO yearly priceId:', priceId)
+          break
+        case 'LITE':
+          priceId = getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID')
+          console.log('[getPriceNameFromPlanName] LITE yearly priceId:', priceId)
+          break
+        case 'PRO':
+          priceId = getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID')
+          console.log('[getPriceNameFromPlanName] PRO yearly priceId:', priceId)
+          break
+        default:
+          console.error('[getPriceNameFromPlanName] Invalid plan name:', planName)
+          throw new Error(`Invalid plan name: ${planName}`)
+      }
+    } else {
+      console.error('[getPriceNameFromPlanName] Invalid billing period:', period)
+      throw new Error(`Invalid billing period: ${period}`)
     }
-  } else if (period === 'year') {
-    // period === 'year'
-    switch (planName) {
-      case 'MICRO':
-        priceId = getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID')
-        break
-      case 'LITE':
-        priceId = getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID')
-        break
-      case 'PRO':
-        priceId = getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID')
-        break
-      default:
-        throw new Error(`Invalid plan name: ${planName}`)
-    }
+  } catch (error) {
+    console.error('[getPriceNameFromPlanName] Error getting environment variable:', error)
+    console.error('[getPriceNameFromPlanName] Environment variables check:', {
+      MICRO_MONTHLY: process.env.NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID,
+      MICRO_YEARLY: process.env.NEXT_PUBLIC_MICRO_YEARLY_PRC_ID,
+      LITE_MONTHLY: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID,
+      LITE_YEARLY: process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID,
+      PRO_MONTHLY: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID,
+      PRO_YEARLY: process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID,
+    })
+    throw error
   }
 
   // 環境変数が設定されているかチェック
   if (!priceId) {
+    console.error('[getPriceNameFromPlanName] Price ID not found:', { planName, period })
+    console.error('[getPriceNameFromPlanName] Environment variables check:', {
+      MICRO_MONTHLY: process.env.NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID,
+      MICRO_YEARLY: process.env.NEXT_PUBLIC_MICRO_YEARLY_PRC_ID,
+      LITE_MONTHLY: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID,
+      LITE_YEARLY: process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID,
+      PRO_MONTHLY: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID,
+      PRO_YEARLY: process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID,
+    })
     throw new Error(
       `Price ID not configured for plan "${planName}" and period "${period}". Check environment variables.`
     )
   }
 
+  console.log('[getPriceNameFromPlanName] Returning priceId:', priceId)
   return priceId
 }
 
