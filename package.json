@@ -5,12 +5,10 @@
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "next dev --turbo",
-    "dev:frontend:wp": "next dev",
     "dev:backend": "convex dev --until-success",
-    "predev": "convex dashboard",
+    "predev": "echo 'Starting development...'",
     "build": "next build",
     "build:t": "next build --turbo",
-    "build:wp": "next build",
     "start": "next start",
     "inngest": "pnpm dlx inngest-cli@latest dev",
     "sync-lang-en": "ts-node scripts/i18n/syncEnJson.ts",
@@ -26,15 +24,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:all": "pnpm test:unit && pnpm test:e2e",
-    "migrate:supabase": "supabase db push",
-    "env:dev": "scripts/setup-env.sh development && pnpm dev",
-    "env:staging": "scripts/setup-env.sh staging",
-    "env:prod": "scripts/setup-env.sh production",
-    "env:validate": "tsx scripts/validate-env.ts",
-    "env:switch": "scripts/setup-env.sh",
-    "dev:with-env": "pnpm env:validate && pnpm dev",
-    "build:staging": "pnpm env:staging && pnpm build",
-    "build:prod": "pnpm env:prod && pnpm build"
+    "migrate:supabase": "supabase db push"
   },
   "dependencies": {
     "@clerk/backend": "^2.0.0",
