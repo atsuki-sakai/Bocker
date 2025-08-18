@@ -32,6 +32,34 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
+// プラン名を正規化する関数（データベースの値をTypeScript型に合わせる）
+function normalizePlanName(planName: string | undefined | null): SubscriptionPlanName {
+  console.log('[normalizePlanName] Input:', planName, 'Type:', typeof planName)
+  
+  if (!planName) {
+    console.log('[normalizePlanName] planName is falsy, returning UNKNOWN')
+    return 'UNKNOWN'
+  }
+  
+  const normalizedName = planName.toUpperCase().trim()
+  console.log('[normalizePlanName] Normalized:', normalizedName)
+  
+  switch (normalizedName) {
+    case 'MICRO':
+      console.log('[normalizePlanName] Matched MICRO')
+      return 'MICRO'
+    case 'LITE':
+      console.log('[normalizePlanName] Matched LITE')
+      return 'LITE'
+    case 'PRO':
+      console.log('[normalizePlanName] Matched PRO')
+      return 'PRO'
+    default:
+      console.log('[normalizePlanName] No match found, returning UNKNOWN for:', normalizedName)
+      return 'UNKNOWN'
+  }
+}
+
 // 共通コンポーネント: サイドバーヘッダー（ロゴとタイトル）
 const SidebarHeader = memo(
   ({
@@ -300,17 +328,54 @@ export default function Sidebar({ children }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
   const { role, isLoaded, ready, staffId, subscription } = useTenantAndOrganization()
   const pathname = usePathname() // 現在のパスを取得
+
+  console.log('[Sidebar] Component render:', {
+    pathname,
+    isLoaded,
+    ready,
+    hasRole: !!role,
+    hasSubscription: !!subscription,
+    timestamp: new Date().toISOString(),
+  })
   const { resolvedTheme } = useTheme()
 
-  const currentPlan: SubscriptionPlanName = (subscription?.plan_name ??
-    'UNKNOWN') as SubscriptionPlanName
+  // デバッグログ: サブスクリプション情報を確認
+  console.log('=== Sidebar Debug ===')
+  console.log('subscription object:', subscription)
+  console.log('subscription?.plan_name:', subscription?.plan_name)
+  console.log('subscription?.status:', subscription?.status)
+  console.log('role:', role)
+  console.log('isLoaded:', isLoaded)
+  console.log('ready:', ready)
+
+  const currentPlan: SubscriptionPlanName = normalizePlanName(subscription?.plan_name)
+  console.log('currentPlan after normalization:', currentPlan)
 
   const filteredGroups = useMemo(() => {
-    if (!isLoaded || !role) return []
-    return NAV_GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan)),
-    })).filter((group) => group.items.length > 0)
+    console.log('[filteredGroups] Calculating with:', { isLoaded, role, currentPlan })
+
+    if (!isLoaded || !role) {
+      console.log('[filteredGroups] Not loaded or no role, returning empty array')
+      return []
+    }
+
+    const groups = NAV_GROUPS.map((group) => {
+      const filteredItems = group.items.filter((item) => {
+        const access = hasAccess(role, currentPlan, item.minRole, item.minPlan)
+        console.log(
+          `[filteredGroups] Item ${item.name}: hasAccess(${role}, ${currentPlan}, ${item.minRole}, ${item.minPlan}) = ${access}`
+        )
+        return access
+      })
+
+      return {
+        ...group,
+        items: filteredItems,
+      }
+    }).filter((group) => group.items.length > 0)
+
+    console.log('[filteredGroups] Final groups:', groups)
+    return groups
   }, [isLoaded, role, currentPlan])
   useEffect(() => {
     // パスが変更されたときにサイドバーを閉じる
