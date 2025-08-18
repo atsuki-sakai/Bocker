@@ -133,6 +133,7 @@ export default function SignInForm() {
                     {...register('email')}
                     placeholder={t('emailPlaceholder')}
                     className="pl-10"
+                    autoComplete="email"
                     required
                   />
                 </div>

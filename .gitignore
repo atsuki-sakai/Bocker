@@ -52,3 +52,4 @@ package-lock.json
 .bocker-storage-service-account.json
 
 vitest.config.mts
+.env*.local

@@ -58,7 +58,7 @@ export default function CurrentPlanBanner({
           <div>
             <p className="font-semibold text-primary">
               {t('currentPlan')}{' '}
-              <span className="font-bold text-accent-2 text-2xl ml-1">{planName}</span>
+              <span className="font-bold text-2xl ml-1 text-accent-2">{planName}</span>
             </p>
           </div>
         </div>
@@ -66,7 +66,7 @@ export default function CurrentPlanBanner({
           {buttonContent}
         </Button>
       </div>
-      <p className=" text-sm text-muted-foreground mt-3">{t('subscriptionActive')}</p>
+      <p className="text-sm text-muted-foreground mt-3">{t('subscriptionActive')}</p>
     </div>
   )
 }

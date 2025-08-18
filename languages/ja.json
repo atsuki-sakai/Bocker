@@ -1845,6 +1845,8 @@
     "monthlyEquivalent": "(月あたり {amount}円)",
     "subscriptionManagement": "サブスクリプション管理",
     "subscriptionActive": "サブスクリプション契約は有効です。",
+    "updatingPlan": "プラン変更中",
+    "planUpdateInProgress": "プランの変更を処理中です...",
     "changeBillingCycle": {
       "toYearly": "年払いに変更",
       "toMonthly": "月払いに変更"
