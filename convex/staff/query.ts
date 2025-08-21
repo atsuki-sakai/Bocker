@@ -1,15 +1,15 @@
 import { dayOfWeekType, imageType, genderType } from '@/convex/types'
 import { query, internalQuery } from '@/convex/_generated/server'
 import { v } from 'convex/values'
-import { paginationOptsValidator } from 'convex/server'
 import { checkAuth } from '@/convex/utils/auth'
 import { ConvexError } from 'convex/values'
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants'
-
+import { getPlanLimits } from '@/convex/utils/helpers'
+import { subscriptionPlanNameType } from '@/convex/types'
 
 // スタッフIDからスタッフを取得
 export const getById = query({
-  args: {   
+  args: {
     id: v.id('staff'),
   },
   handler: async (ctx, args) => {
@@ -29,28 +29,53 @@ export const getById = query({
   },
 })
 
-// テナントIDと組織IDからスタッフ一覧を取得
+// テナントIDと組織IDからスタッフ一覧を取得（ページネーション対応）
 export const list = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
-    paginationOpts: paginationOptsValidator,
     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    planName: subscriptionPlanNameType,
   },
   handler: async (ctx, args) => {
     checkAuth(ctx, true)
-    return await ctx.db
+    const limits = getPlanLimits(args.planName)
+
+    // ページネーション対応でスタッフ一覧を取得
+    const result = await ctx.db
       .query('staff')
       .withIndex('by_tenant_org_active_archive', (q) =>
-        q
-          .eq('tenant_id', args.tenant_id)
-          .eq('org_id', args.org_id)
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
       )
       .filter((q) => q.eq(q.field('is_archive'), false))
-      .order(args.sort ?? 'desc')
-      .paginate(args.paginationOpts)
+      .order(args.sort ?? 'asc')
+      .take(limits.maxStaffCount)
+
+    return result
   },
 })
+
+// // テナントIDと組織IDからスタッフ一覧を取得（シンプルバージョン - ドロップダウン等での使用向け）
+// export const list = query({
+//   args: {
+//     tenant_id: v.id('tenant'),
+//     org_id: v.id('organization'),
+//     sort: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+//     planName: subscriptionPlanNameType,
+//   },
+//   handler: async (ctx, args) => {
+//     checkAuth(ctx, true)
+//     const limits = getPlanLimits(args.planName)
+//     return await ctx.db
+//       .query('staff')
+//       .withIndex('by_tenant_org_active_archive', (q) =>
+//         q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
+//       )
+//       .filter((q) => q.eq(q.field('is_archive'), false))
+//       .order(args.sort ?? 'desc')
+//       .take(limits.maxStaffCount)
+//   },
+// })
 
 // ClerkユーザーIDからスタッフを検索
 export const findByClerkUserId = query({
@@ -408,6 +433,7 @@ export const findByAvailableStaffs = query({
   args: {
     tenant_id: v.id('tenant'),
     org_id: v.id('organization'),
+    planName: subscriptionPlanNameType,
     menu_ids: v.array(v.id('menu')),
   },
   handler: async (ctx, args) => {
@@ -462,8 +488,8 @@ export const findByAvailableStaffs = query({
       }
     }));
 
-    // 5. 結果を整形して返却
-    return availableStaff.map((staff) => {
+    // 6. 結果を整形（優先度順でソート）
+    const staffWithConfigs = availableStaff.map((staff) => {
       const config = configMap.get(staff._id)
       return {
         _id: staff._id,
@@ -492,6 +518,18 @@ export const findByAvailableStaffs = query({
         week_schedules: availableStaffWeekSchedules.find((schedule) => schedule.staff_id === staff._id)?.week_schedules,
       }
     })
+
+    // 7. 優先度の降順、追加料金の昇順でソート
+    staffWithConfigs.sort((a, b) => {
+      if ((a.priority ?? 0) !== (b.priority ?? 0)) {
+        return (b.priority ?? 0) - (a.priority ?? 0) // 優先度が高い順
+      }
+      return (a.extra_charge ?? 0) - (b.extra_charge ?? 0) // 追加料金が安い順
+    })
+
+    // 8. プラン制限に応じたスタッフ数を返す
+    const limits = getPlanLimits(args.planName)
+    return staffWithConfigs.slice(0, limits.maxStaffCount)
   },
 })
 

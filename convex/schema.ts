@@ -877,5 +877,5 @@ export default defineSchema({
   reservation_detail,
   reservation_notification,
   point_config,
-  webhook_events,
-});
+  webhook_events
+})
