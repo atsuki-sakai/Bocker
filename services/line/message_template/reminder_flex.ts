@@ -77,7 +77,7 @@ export const createReminderFlexMessage = ({
             },
           ],
           paddingAll: '20px',
-          backgroundColor: '#FF6B6B',
+          backgroundColor: '#FF9500',
         },
         body: {
           type: 'box',
@@ -88,7 +88,7 @@ export const createReminderFlexMessage = ({
               text: '本日のご予約時間が近づいています',
               weight: 'bold',
               size: 'md',
-              color: '#FF6B6B',
+              color: '#FF9500',
               margin: 'md',
             },
             {
@@ -174,7 +174,9 @@ export const createReminderFlexMessage = ({
                     },
                     {
                       type: 'text',
-                      text: reservationData.menus.map(menu => menu.name).join(', '),
+                      text: reservationData.menus.map(menu => 
+                        `${menu.name}${menu.price ? ` ¥${menu.price.toLocaleString()}` : ''}`
+                      ).join('\n'),
                       size: 'sm',
                       color: '#000000',
                       flex: 5,
@@ -266,7 +268,7 @@ export const createReminderFlexMessage = ({
                       type: 'text' as const,
                       text: `-¥${reservationData.couponDiscount.toLocaleString()}`,
                       size: 'sm' as const,
-                      color: '#FF6B6B',
+                      color: '#FF9500',
                       flex: 5,
                     },
                   ],
@@ -288,7 +290,7 @@ export const createReminderFlexMessage = ({
                       type: 'text' as const,
                       text: `-${reservationData.usePoints}pt`,
                       size: 'sm' as const,
-                      color: '#FF6B6B',
+                      color: '#FF9500',
                       flex: 5,
                     },
                   ],
@@ -385,7 +387,7 @@ export const createReminderFlexMessage = ({
                   type: 'text',
                   text: '⚠️ ご来店時のお願い',
                   size: 'sm',
-                  color: '#FF6B6B',
+                  color: '#FF9500',
                   weight: 'bold',
                 },
                 {

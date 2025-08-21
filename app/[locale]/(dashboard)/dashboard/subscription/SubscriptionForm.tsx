@@ -52,9 +52,8 @@ function SubscriptionForm({
     api.tenant.subscription.action.confirmSubscriptionUpdate
   )
 
-  // データの準備
-  // 現在のプラン名を取得（price_idからプラン名に変換）
-  const currentPlanName = subscription?.price_id
+  // 実際のプラン名（サーバーデータのみ使用）
+  const displayPlanName: SubscriptionPlanName | null = subscription?.price_id
     ? getPlanNameFromPriceId(subscription.price_id)
     : null
 
@@ -128,6 +127,7 @@ function SubscriptionForm({
     async (subscriptionId: string, newPriceId: string) => {
       try {
         setIsSubmitting(true)
+        
         const result = await confirmSubscriptionUpdate({
           tenant_id: tenantId,
           org_id: orgId,
@@ -138,6 +138,22 @@ function SubscriptionForm({
         })
 
         if (result.success) {
+          // サブスクリプションクエリの更新を待機
+          const newPlanName = getPlanNameFromPriceId(newPriceId)
+          let attempts = 0
+          const maxAttempts = 10
+          
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+            attempts++
+            
+            // 最新のサブスクリプションデータを確認
+            const currentSubscription = subscription
+            if (currentSubscription?.plan_name === newPlanName) {
+              break
+            }
+          }
+          
           toast.success(t('success.planUpdated'))
 
           // ダイアログを閉じる
@@ -146,6 +162,8 @@ function SubscriptionForm({
           // プレビューデータをクリア
           setPreviewData(null)
           setUpdatePlanId(null)
+
+          // プラン更新完了
         } else {
           const errorMessage = t('errors.updateFailed')
           setError(errorMessage)
@@ -158,11 +176,13 @@ function SubscriptionForm({
             : t('errors.updateUnexpected')
         setError(errorMessage)
         toast.error(errorMessage)
+
+        // エラー時の処理
       } finally {
         setIsSubmitting(false)
       }
     },
-    [confirmSubscriptionUpdate, previewData, tenantId, orgId, t]
+    [confirmSubscriptionUpdate, previewData, tenantId, orgId, t, subscription]
   )
 
   // サブスクリプション作成関数をメモ化
@@ -247,9 +267,9 @@ function SubscriptionForm({
     }
   }, [createBillingPortal, tenant?.stripe_customer_id, tenantId, orgId, t])
 
-  // const handleMicroSubscribe = useCallback(() => {
-  //   handleSubscribe('MICRO', billingPeriod)
-  // }, [handleSubscribe, billingPeriod])
+  const handleMicroSubscribe = useCallback(() => {
+    handleSubscribe('MICRO', billingPeriod)
+  }, [handleSubscribe, billingPeriod])
 
   // 各プラン用のサブスクリプションハンドラをメモ化
   const handleLiteSubscribe = useCallback(() => {
@@ -259,6 +279,14 @@ function SubscriptionForm({
   const handleProSubscribe = useCallback(() => {
     handleSubscribe('PRO', billingPeriod)
   }, [handleSubscribe, billingPeriod])
+
+  // Dialog の open 変更時の処理
+  const handlePreviewOpenChange = useCallback(
+    (open: boolean) => {
+      setShowConfirmDialog(open)
+    },
+    []
+  )
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
@@ -276,9 +304,9 @@ function SubscriptionForm({
       </div>
 
       {/* 現在のプラン表示 */}
-      {currentPlanName && (
+      {displayPlanName && (
         <CurrentPlanBanner
-          currentPlanName={currentPlanName}
+          currentPlanName={displayPlanName}
           isActive={isActive}
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
@@ -289,10 +317,10 @@ function SubscriptionForm({
       {/* プレビューダイアログ */}
       <PreviewDialog
         open={showConfirmDialog}
-        setOpenAction={setShowConfirmDialog}
+        setOpenAction={handlePreviewOpenChange}
         previewData={previewData}
         billingPeriod={billingPeriod}
-        currentPlanName={currentPlanName}
+        currentPlanName={displayPlanName}
         updatePlanName={updatePlanId ?? 'UNKNOWN'}
         tenant={tenant as Doc<'tenant'> | null}
         subscriptionId={subscription?.stripe_subscription_id || null}
@@ -301,9 +329,9 @@ function SubscriptionForm({
       />
 
       {/* プラン一覧 */}
-      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Micro プラン */}
-        {/* <PlanCard
+        <PlanCard
           title={t('microPlan')}
           description={t('microPlanDescription')}
           price={
@@ -317,7 +345,7 @@ function SubscriptionForm({
               : undefined
           }
           features={SUBSCRIPTION_PLANS.MICRO.features}
-          currentPlanName={currentPlanName}
+          currentPlanName={displayPlanName}
           planName="MICRO"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
@@ -326,7 +354,7 @@ function SubscriptionForm({
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
           highlightColor="from-palette-2-foreground to-palette-2-foreground"
-        /> */}
+        />
 
         {/* Lite プラン */}
         <PlanCard
@@ -343,7 +371,7 @@ function SubscriptionForm({
               : undefined
           }
           features={SUBSCRIPTION_PLANS.LITE.features}
-          currentPlanName={currentPlanName}
+          currentPlanName={displayPlanName}
           planName="LITE"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}
@@ -369,7 +397,7 @@ function SubscriptionForm({
               : undefined
           }
           features={SUBSCRIPTION_PLANS.PRO.features}
-          currentPlanName={currentPlanName}
+          currentPlanName={displayPlanName}
           planName="PRO"
           billingPeriod={billingPeriod}
           currentBillingPeriod={subscription?.billing_period as BillingPeriod | undefined}

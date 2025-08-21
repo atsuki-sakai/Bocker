@@ -9,7 +9,7 @@ import { getPlanNameFromPriceId } from '@/lib/utils'
 
 export async function handleSubscriptionUpdated(
   /**
-   * Stripe の Subscription 更新の Webhook イュウィエントを処理
+   * Stripe の Subscription 更新の Webhook イベントを処理
    * (customer.subscription.updated)
    *
    * @param evt - Stripe イベントオブジェクト
@@ -23,25 +23,29 @@ export async function handleSubscriptionUpdated(
   deps: WebhookDependencies,
   metrics: WebhookMetricsCollector
 ): Promise<EventProcessingResult> {
-// ------------------------------------------------------------
-// 以下、実装の主な流れ
-// 1. Stripe から必要な ID / ステータスを取得
-// 2. Convex に同期 (retry & await で冪等・確実に書き込み)
-// 3. メトリクス収集で監視基盤に反映
-// ------------------------------------------------------------
-  
+  // ------------------------------------------------------------
+  // 以下、実装の主な流れ
+  // 1. Stripe から必要な ID / ステータスを取得
+  // 2. Convex に同期 (retry & await で冪等・確実に書き込み)
+  // 3. メトリクス収集で監視基盤に反映
+  // ------------------------------------------------------------
+
   const context: LogContext = {
     eventId,
     eventType: 'customer.subscription.updated',
     stripeCustomerId: evt.data.object.customer as string,
     stripeSubscriptionId: evt.data.object.id as string,
-  };
-  console.log(`👤 [${eventId}] CustomerSubscriptionUpdated処理開始: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, context);
+  }
+  console.log(
+    `👤 [${eventId}] CustomerSubscriptionUpdated処理開始: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`,
+    context
+  )
 
   try {
-
-    const customer = await deps.stripe.customers.retrieve(evt.data.object.customer as string) as Stripe.Customer;
-    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>;
+    const customer = (await deps.stripe.customers.retrieve(
+      evt.data.object.customer as string
+    )) as Stripe.Customer
+    const tenant_id = customer.metadata?.tenant_id as Id<'tenant'>
     await deps.retry(() =>
       fetchMutation(deps.convex.tenant.subscription.mutation.upsertSubscription, {
         tenant_id: tenant_id,
@@ -54,8 +58,8 @@ export async function handleSubscriptionUpdated(
         current_period_start: evt.data.object.current_period_start,
         current_period_end: evt.data.object.current_period_end,
       })
-    );
-    metrics.incrementApiCall("convex");
+    )
+    metrics.incrementApiCall('convex')
 
     return {
       result: 'success',
@@ -63,60 +67,65 @@ export async function handleSubscriptionUpdated(
         action: 'customer_subscription_updated',
         stripeCustomerId: evt.data.object.customer as string,
         stripeSubscriptionId: evt.data.object.id as string,
-      }
-    };
+      },
+    }
   } catch (error) {
-    console.error(`❌ [${eventId}] CustomerSubscriptionUpdated処理中に致命的なエラーが発生: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, { ...context, error });
+    console.error(
+      `❌ [${eventId}] CustomerSubscriptionUpdated処理中に致命的なエラーが発生: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`,
+      { ...context, error }
+    )
     Sentry.captureException(error, {
       level: 'error',
       tags: { ...context, operation: 'handleCustomerSubscriptionUpdated_main_catch' },
-    });
+    })
     return {
       result: 'error',
-      errorMessage: error instanceof Error ? error.message : '不明なエラー'
-    };
+      errorMessage: error instanceof Error ? error.message : '不明なエラー',
+    }
   }
 }
 
 export async function handleSubscriptionDeleted(
-/**
- * Stripe の Subscription 削除の Webhook イュウィエントを処理
- * (customer.subscription.deleted)
- *
- * @param evt - Stripe イベントオブジェクト
- * @param eventId - イベントID
- * @param deps - Webhook の依存関係 (Stripe インスタンスなど)
- * @param metrics - メトリクスコレクター
- * @returns イベント処理結果 ('success', 'skipped', 'error')
- */
+  /**
+   * Stripe の Subscription 削除の Webhook イベントを処理
+   * (customer.subscription.deleted)
+   *
+   * @param evt - Stripe イベントオブジェクト
+   * @param eventId - イベントID
+   * @param deps - Webhook の依存関係 (Stripe インスタンスなど)
+   * @param metrics - メトリクスコレクター
+   * @returns イベント処理結果 ('success', 'skipped', 'error')
+   */
   evt: Stripe.CustomerSubscriptionDeletedEvent,
   eventId: string,
   deps: WebhookDependencies,
   metrics: WebhookMetricsCollector
 ): Promise<EventProcessingResult> {
-// ------------------------------------------------------------
-// 以下、実装の主な流れ
-// 1. Stripe から必要な ID / ステータスを取得
-// 2. Convex に同期 (retry & await で冪等・確実に書き込み)
-// 3. メトリクス収集で監視基盤に反映
-// ------------------------------------------------------------
-  
+  // ------------------------------------------------------------
+  // 以下、実装の主な流れ
+  // 1. Stripe から必要な ID / ステータスを取得
+  // 2. Convex に同期 (retry & await で冪等・確実に書き込み)
+  // 3. メトリクス収集で監視基盤に反映
+  // ------------------------------------------------------------
+
   const context: LogContext = {
     eventId,
     eventType: 'customer.subscription.deleted',
     stripeCustomerId: evt.data.object.customer as string,
     stripeSubscriptionId: evt.data.object.id as string,
-  };
-  console.log(`👤 [${eventId}] CustomerSubscriptionDeleted処理開始: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, context);
+  }
+  console.log(
+    `👤 [${eventId}] CustomerSubscriptionDeleted処理開始: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`,
+    context
+  )
 
   try {
-
     const subscription = await deps.retry(() =>
       fetchQuery(deps.convex.tenant.subscription.query.findByStripeCustomerId, {
         stripe_customer_id: evt.data.object.customer as string,
       })
-    );
-    metrics.incrementApiCall("convex");
+    )
+    metrics.incrementApiCall('convex')
     if (!subscription) {
       return {
         result: 'skipped',
@@ -125,34 +134,37 @@ export async function handleSubscriptionDeleted(
           stripeCustomerId: evt.data.object.customer as string,
           stripeSubscriptionId: evt.data.object.id as string,
           errorMessage: 'サブスクリプションはすでに削除またはアーカイブされています',
-        }
-      };
+        },
+      }
     }
     await deps.retry(() =>
       fetchMutation(deps.convex.tenant.subscription.mutation.archive, {
-        id: subscription._id
+        id: subscription._id,
       })
-    );
-    metrics.incrementApiCall("convex");
-    
+    )
+    metrics.incrementApiCall('convex')
+
     return {
       result: 'success',
       metadata: {
         action: 'customer_subscription_deleted',
         stripeCustomerId: evt.data.object.customer as string,
         stripeSubscriptionId: evt.data.object.id as string,
-      }
-    };
+      },
+    }
   } catch (error) {
-    console.error(`❌ [${eventId}] CustomerSubscriptionDeleted処理中に致命的なエラーが発生: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`, { ...context, error });
+    console.error(
+      `❌ [${eventId}] CustomerSubscriptionDeleted処理中に致命的なエラーが発生: stripeCustomerId=${evt.data.object.customer}, stripeSubscriptionId=${evt.data.object.id}`,
+      { ...context, error }
+    )
     Sentry.captureException(error, {
       level: 'error',
       tags: { ...context, operation: 'handleCustomerSubscriptionDeleted_main_catch' },
-    });
+    })
     return {
       result: 'error',
-      errorMessage: error instanceof Error ? error.message : '不明なエラー'
-    };
+      errorMessage: error instanceof Error ? error.message : '不明なエラー',
+    }
   }
 }
 

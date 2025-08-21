@@ -157,7 +157,7 @@ export default function PreviewDialog({
 
   const confirmButtonContent = isSubmitting ? (
     <>
-      <Loader2 className="mr-2 h-4 w-4" />
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       {t('processing')}
     </>
   ) : (

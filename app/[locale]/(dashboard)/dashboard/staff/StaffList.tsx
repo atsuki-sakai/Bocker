@@ -10,10 +10,12 @@ import { useQueryWithStatus } from '@/hooks/useQueryWithStatus'
 import { CheckCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
+import { SubscriptionPlanName } from '@/convex/types'
 
 export default function StaffList() {
   const t = useTranslations('staff')
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
+
   const router = useRouter()
   // 招待状態を含むスタッフ一覧を取得
   const { data: staffsWithInvitation, isPending } = useQueryWithStatus(
@@ -23,6 +25,8 @@ export default function StaffList() {
           tenant_id: tenantId,
           org_id: orgId,
           includeInactive: false,
+          planName: planName as SubscriptionPlanName,
+          sort: 'asc',
         }
       : 'skip'
   )

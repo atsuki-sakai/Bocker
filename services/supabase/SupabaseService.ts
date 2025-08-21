@@ -23,7 +23,13 @@ if (!supabaseAnonKey) {
   throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY. Please check your .env file.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+})
 // export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey) // モジュールロード時の初期化を削除
 
 // サーバーサイド用 Supabase Admin クライアントを作成するファクトリ関数

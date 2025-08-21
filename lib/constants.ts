@@ -98,7 +98,7 @@ export const PLAN_DURATION_MONTHS = {
 }
 
 export const PLAN_MONTHLY_PRICES = {
-  MICRO: 3980,
+  MICRO: 4000,
   LITE: 8000,
   PRO: 12000,
 }
@@ -138,13 +138,23 @@ export const SUBSCRIPTION_PLANS = {
   MICRO: {
     id: 'micro',
     name: 'Micro',
-    features: ['features.micro.1', 'features.micro.2', 'features.micro.3', 'features.micro.4'],
+    features: [
+      'features.micro.1',
+      'features.micro.2',
+      'features.micro.3',
+      'features.micro.4',
+      'features.micro.5',
+      'features.micro.6',
+      'features.micro.7',
+      'features.micro.8',
+      'features.micro.9',
+    ],
     monthly: {
-      priceId: getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'),  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'), // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.MICRO,
     },
     yearly: {
-      priceId: getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'),  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'), // Set dynamically in runtime
       price: PLAN_YEARLY_PRICES.MICRO.price,
       savingPercent: PLAN_YEARLY_PRICES.MICRO.savingPercent,
     },
@@ -152,23 +162,13 @@ export const SUBSCRIPTION_PLANS = {
   LITE: {
     id: 'lite',
     name: 'Lite', // HTMLの表示は'LITE'ですが、例の形式に合わせて'Lite'とします
-    features: [
-      'features.lite.1',
-      'features.lite.2',
-      'features.lite.3',
-      'features.lite.4',
-      'features.lite.5',
-      'features.lite.6',
-      'features.lite.7',
-      'features.lite.8',
-      'features.lite.9',
-    ],
+    features: ['features.lite.1', 'features.lite.2'],
     monthly: {
-      priceId: getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'),  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'), // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.LITE,
     },
     yearly: {
-      priceId: getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID'),  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID'), // Set dynamically in runtime
       price: PLAN_YEARLY_PRICES.LITE.price,
       savingPercent: PLAN_YEARLY_PRICES.LITE.savingPercent,
     },
@@ -176,13 +176,13 @@ export const SUBSCRIPTION_PLANS = {
   PRO: {
     id: 'pro',
     name: 'Pro',
-    features: ['features.pro.1', 'features.pro.2', 'features.pro.3', 'features.pro.4'],
+    features: ['features.pro.1', 'features.pro.2', 'features.pro.3'],
     monthly: {
-      priceId: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'), // Set dynamically in runtime
       price: PLAN_MONTHLY_PRICES.PRO,
     },
     yearly: {
-      priceId: getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID'),  // Set dynamically in runtime
+      priceId: getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID'), // Set dynamically in runtime
       price: PLAN_YEARLY_PRICES.PRO.price,
       savingPercent: PLAN_YEARLY_PRICES.PRO.savingPercent,
     },
@@ -245,99 +245,99 @@ export const NAV_ITEMS: NavItem[] = [
     href: `/dashboard`,
     icon: HomeIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'reservationCreate',
     href: `/dashboard/reservation/add`,
     icon: BookIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'reservationList',
     href: `/dashboard/reservation`,
     icon: CalendarIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'staffSchedule',
     href: `/dashboard/staff-schedule`,
     icon: TimerIcon,
     minRole: 'manager',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
-  
+
   {
     name: 'staff',
     href: `/dashboard/staff`,
     icon: UsersIcon,
     minRole: 'owner',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'menu',
     href: `/dashboard/menu`,
     icon: FileIcon,
     minRole: 'manager',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'customers',
     href: `/dashboard/customer`,
     icon: UserCircleIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'customerCarte',
     href: `/dashboard/carte`,
     icon: CloudIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'options',
     href: `/dashboard/option`,
     icon: MenuSquareIcon,
     minRole: 'manager',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'coupons',
     href: `/dashboard/coupon`,
     icon: GiftIcon,
     minRole: 'manager',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'pointSettings',
     href: `/dashboard/point`,
     icon: TicketIcon,
     minRole: 'owner',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'settings',
     href: `/dashboard/setting`,
     icon: SettingsIcon,
     minRole: 'owner',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'document',
     href: `/docs`,
     icon: BookIcon,
     minRole: 'staff',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
   {
     name: 'analytics',
     href: `/dashboard/analytics`,
     icon: ChartBarIcon,
     minRole: 'owner',
-    minPlan: 'LITE',
+    minPlan: 'MICRO',
   },
 ]
 
@@ -347,8 +347,8 @@ export const DASHBOARD_ITEM: NavItem = {
   href: `/dashboard`,
   icon: HomeIcon,
   minRole: 'staff',
-  minPlan: 'LITE',
-};
+  minPlan: 'MICRO',
+}
 
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -360,14 +360,14 @@ export const NAV_GROUPS: NavGroup[] = [
         href: `/dashboard/reservation/add`,
         icon: BookIcon,
         minRole: 'staff',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'reservationList',
         href: `/dashboard/reservation`,
         icon: CalendarIcon,
         minRole: 'staff',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
     ],
   },
@@ -380,21 +380,21 @@ export const NAV_GROUPS: NavGroup[] = [
         href: `/dashboard/analytics/daily`,
         icon: ChartBarIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'staffAnalytics',
         href: `/dashboard/analytics/staff`,
         icon: UsersIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'menuAnalytics',
         href: `/dashboard/analytics/menu`,
         icon: FileIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
     ],
   },
@@ -407,14 +407,14 @@ export const NAV_GROUPS: NavGroup[] = [
         href: `/dashboard/customer`,
         icon: UserCircleIcon,
         minRole: 'staff',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'customerCarte',
         href: `/dashboard/carte`,
         icon: CloudIcon,
         minRole: 'staff',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
     ],
   },
@@ -427,28 +427,28 @@ export const NAV_GROUPS: NavGroup[] = [
         href: `/dashboard/menu`,
         icon: FileIcon,
         minRole: 'manager',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'options',
         href: `/dashboard/option`,
         icon: MenuSquareIcon,
         minRole: 'manager',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'coupons',
         href: `/dashboard/coupon`,
         icon: GiftIcon,
         minRole: 'manager',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'pointSettings',
         href: `/dashboard/point`,
         icon: TicketIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
     ],
   },
@@ -461,21 +461,21 @@ export const NAV_GROUPS: NavGroup[] = [
         href: `/dashboard/staff`,
         icon: UsersIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'staffWorkTime',
         href: `/dashboard/staff/schedule`,
         icon: ClockIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'staffSchedule',
         href: `/dashboard/staff-schedule`,
         icon: TimerIcon,
         minRole: 'manager',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
     ],
   },
@@ -488,21 +488,21 @@ export const NAV_GROUPS: NavGroup[] = [
         href: `/dashboard/setting`,
         icon: SettingsIcon,
         minRole: 'owner',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'subscription',
         href: `/dashboard/subscription`,
         icon: CreditCardIcon,
         minRole: 'admin',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
       {
         name: 'document',
         href: `/docs`,
         icon: BookIcon,
         minRole: 'staff',
-        minPlan: 'LITE',
+        minPlan: 'MICRO',
       },
     ],
   },

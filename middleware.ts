@@ -18,6 +18,7 @@ const intlMiddleware = createMiddleware(routing)
 // 認証不要なパス
 const publicPaths = [
   '/',
+  '/?source=pwa',
   '/api/webhook/clerk',
   '/api/stripe/checkout/webhook',
   '/api/webhook/stripe/connect',
@@ -86,6 +87,8 @@ const checkMaintenance = (pathname: string, req: NextRequest) => {
 // 言語設定を除いたパスを取得する関数
 const getPathnameWithoutLocale = (pathname: string): string => {
   const segments = pathname.split('/')
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (segments.length > 1 && routing.locales.includes(segments[1] as any)) {
     return `/${segments.slice(2).join('/')}`
   }
@@ -126,7 +129,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (pathnameWithoutLocale.startsWith('/api/webhook/')) {
     return NextResponse.next()
   }
-  
+
   if (pathnameWithoutLocale.startsWith('/api/')) {
     // APIルートはClerk認証のみ処理、next-intlは適用しない
     return NextResponse.next()
@@ -140,13 +143,16 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const { userId } = await auth()
+  console.log('[MIDDLEWARE] Auth check:', {
+    pathname: pathnameWithoutLocale,
+    hasUserId: !!userId,
+    timestamp: new Date().toISOString(),
+  })
   // const { searchParams, origin } = req.nextUrl // 現在は使用していない
-
 
   // LINEセッションCookieの確認 (Assuming LOGIN_SESSION_KEY is used for both LINE and potentially other auth sessions)
   const lineSessionCookie = req.cookies.get(LOGIN_SESSION_KEY)
   // const authSessionCookie = req.cookies.get(LOGIN_SESSION_KEY); // authSessionCookieも同じ変数を見ているようです
-
 
   // 公開パスの判定（ロケール除去後のパスで判定）
   const isPublic = isPublicPath(pathnameWithoutLocale)
@@ -159,14 +165,13 @@ export default clerkMiddleware(async (auth, req) => {
 
   let response: NextResponse // 生成するレスポンスを格納する変数
 
-
   // サインイン/サインアップページへの特別処理
   // Clerkでログイン済みの場合はダッシュボードへリダイレクト
   if (isAuthPg) {
     if (userId) {
       // 現在の言語を保持してダッシュボードへリダイレクト
       const locale = pathname.split('/')[1]
-      const isValidLocale = routing.locales.includes(locale as any)
+      const isValidLocale = routing.locales.includes(locale as any) // eslint-disable-line @typescript-eslint/no-explicit-any
       const redirectLocale = isValidLocale ? locale : routing.defaultLocale
       const dashboardUrl = new URL(`/${redirectLocale}/dashboard`, req.url)
       response = NextResponse.redirect(dashboardUrl) // レスポンスを設定
@@ -175,7 +180,6 @@ export default clerkMiddleware(async (auth, req) => {
       response = intlMiddleware(req)
     }
   }
-
 
   // 保護されたAPIエンドポイントへのアクセス
   // ClerkユーザーIDがなく、認証セッションもない場合は認証エラー
@@ -198,6 +202,7 @@ export default clerkMiddleware(async (auth, req) => {
     // 認証セッションはlineSessionCookieのみチェックすれば良さそうであれば修正
     // 現在の言語を保持してサインインページへリダイレクト
     const locale = pathname.split('/')[1]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const isValidLocale = routing.locales.includes(locale as any)
     const redirectLocale = isValidLocale ? locale : routing.defaultLocale
     const signInUrl = new URL(`/${redirectLocale}/sign-in`, req.url)

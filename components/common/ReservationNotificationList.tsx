@@ -58,6 +58,12 @@ export default function ReservationNotificationList() {
     return <Loading />
   }
 
+  const isSubscriptionActive =
+    subscription?.status === 'active' || subscription?.status === 'trialing'
+
+  if (!isSubscriptionActive) {
+    return null
+  }
   return (
     <div className={`relative h-full w-full ${subscription === null ? 'hidden' : ''}`}>
       {notifications?.length === 0 ? (

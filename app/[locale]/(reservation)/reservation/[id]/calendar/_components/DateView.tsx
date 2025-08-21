@@ -255,6 +255,7 @@ export const DateView = ({
   }
 
   // サロンとスタッフの曜日毎の休みを判定し、無効化する曜日インデックスを取得
+  // JavaScript標準（date.getDay()）に合わせたマッピング: 0=日曜, 1=月曜, ..., 6=土曜
   const weekdayToIndex: Record<string, number> = {
     sunday: 0,
     monday: 1,

@@ -400,8 +400,9 @@ export const getSubscriptionUpdatePreview = action({
         });
       }
 
-      // サブスクリプション状態をチェック
-      if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+      // サブスクリプション状態をチェック（past_dueも許可）
+      const allowedStatuses = ['active', 'trialing', 'past_due'];
+      if (!allowedStatuses.includes(subscription.status)) {
         throw new ConvexError({
           statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
           severity: ERROR_SEVERITY.ERROR,
@@ -420,12 +421,12 @@ export const getSubscriptionUpdatePreview = action({
         { id: subscription.items.data[0].id, price: args.new_price_id },
       ];
 
-      // 更新後の請求書プレビュー取得（トライアル中は手動生成）
+      // 更新後の請求書プレビュー取得（トライアル中・past_due中は手動生成）
       let upcomingInvoice;
       let isManualPreview = false;
       
-      if (subscription.status === 'trialing') {
-        // トライアル中: 手動プレビュー生成
+      if (subscription.status === 'trialing' || subscription.status === 'past_due') {
+        // トライアル中・past_due中: 手動プレビュー生成
         try {
           upcomingInvoice = await createTrialPreview(
             stripe,
@@ -537,6 +538,27 @@ export const createBillingPortalSession = action({
       });
       return { portalUrl: session.url };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      
+      // Stripe設定エラーの場合
+      if (errorMessage.includes('No configuration provided') || 
+          errorMessage.includes('default configuration has not been created')) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'tenant.subscription.createBillingPortalSession',
+          message: 'Stripe請求ポータルが設定されていません。管理者にお問い合わせください。',
+          code: 'BILLING_PORTAL_NOT_CONFIGURED',
+          status: 400,
+          details: {
+            ...args,
+            error: errorMessage,
+            solution: 'Stripeダッシュボードで請求ポータルの設定を完了してください: https://dashboard.stripe.com/settings/billing/portal'
+          },
+        });
+      }
+      
+      // その他のエラー
       throw new ConvexError({
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
@@ -546,7 +568,7 @@ export const createBillingPortalSession = action({
         status: 500,
         details: {
           ...args,
-          error: error instanceof Error ? error.message : '不明なエラー',
+          error: errorMessage,
         },
       });
     }
@@ -575,6 +597,25 @@ export const confirmSubscriptionUpdate = action({
       const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
         apiVersion: STRIPE_API_VERSION,
       });
+      
+      // 更新前にサブスクリプション状態を確認
+      const subscription = await stripe.subscriptions.retrieve(args.subscription_id);
+      const allowedStatuses = ['active', 'trialing', 'past_due'];
+      if (!allowedStatuses.includes(subscription.status)) {
+        throw new ConvexError({
+          statusCode: ERROR_STATUS_CODE.UNPROCESSABLE_ENTITY,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'tenant.subscription.confirmSubscriptionUpdate',
+          message: `サブスクリプションが無効な状態です: ${subscription.status}`,
+          code: 'SUBSCRIPTION_INVALID_STATUS',
+          status: 400,
+          details: { 
+            ...args, 
+            current_status: subscription.status 
+          },
+        });
+      }
+      
       // Stripeサブスクリプションを更新
       const updatedSubscription = await stripe.subscriptions.update(
         args.subscription_id,

@@ -71,9 +71,21 @@ export async function getOrganizationAuthForPage(): Promise<{
     token: string
     planName: SubscriptionPlanName | null
 }> {
+    console.log('[getOrganizationAuthForPage] START:', {
+      timestamp: new Date().toISOString(),
+      caller: new Error().stack?.split('\n')[2]?.trim(),
+    })
+
     const { userId, getToken } = await auth()
     const user = await currentUser()
     const token = await getToken({ template: 'convex' })
+
+    console.log('[getOrganizationAuthForPage] Auth results:', {
+      hasUserId: !!userId,
+      hasUser: !!user,
+      hasToken: !!token,
+      userMetadata: user?.publicMetadata,
+    })
   
     if (!userId || !token || !user) {
       redirect('/sign-in')

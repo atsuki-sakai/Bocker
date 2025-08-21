@@ -180,14 +180,6 @@ const containerVariants = {
   },
 }
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: 'spring', stiffness: 100 },
-  },
-}
 
 export default function SignUpPage() {
   const t = useTranslations('auth.signUp')
@@ -486,12 +478,12 @@ export default function SignUpPage() {
             <LanguageSwitcher />
           </div>
           <CardHeader className="space-y-1">
-            <motion.div variants={itemVariants}>
+            <motion.div>
               <CardTitle className="text-2xl font-bold text-center">
                 {t('ownerAccountTitle')}
               </CardTitle>
             </motion.div>
-            <motion.div variants={itemVariants}>
+            <motion.div>
               <CardDescription className="text-center text-muted-foreground">
                 {t('subtitle')}
               </CardDescription>
@@ -511,7 +503,7 @@ export default function SignUpPage() {
                   className="space-y-4"
                   noValidate
                 >
-                  <motion.div variants={itemVariants} className="space-y-2">
+                  <motion.div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       {t('storeName')}
                     </Label>
@@ -536,7 +528,7 @@ export default function SignUpPage() {
                       </p>
                     )}
                   </motion.div>
-                  <motion.div variants={itemVariants} className="space-y-2">
+                  <motion.div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       {t('email')}
                     </Label>
@@ -562,7 +554,7 @@ export default function SignUpPage() {
                     )}
                   </motion.div>
 
-                  <motion.div variants={itemVariants}>
+                  <motion.div>
                     <PasswordInput
                       register={register}
                       showPassword={showPassword}
@@ -571,7 +563,7 @@ export default function SignUpPage() {
                     />
                   </motion.div>
 
-                  <motion.div variants={itemVariants} className="space-y-2">
+                  <motion.div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-sm font-medium">
                       {t('confirmPassword')}
                     </Label>
@@ -600,7 +592,7 @@ export default function SignUpPage() {
                     )}
                   </motion.div>
 
-                  <motion.div variants={itemVariants} className="space-y-2 flex items-center">
+                  <motion.div className="space-y-2 flex items-center">
                     <Checkbox
                       className="mr-2 mt-2"
                       id="show-referral"
@@ -654,7 +646,7 @@ export default function SignUpPage() {
                   {/* CAPTCHA Widget */}
                   <div id="clerk-captcha" />
 
-                  <motion.div variants={itemVariants}>
+                  <motion.div>
                     <Button
                       type="submit"
                       className="w-full "
@@ -780,7 +772,7 @@ export default function SignUpPage() {
 
           <CardFooter className="flex flex-col space-y-4">
             <Separator className="bg-muted w-1/2 mx-auto my-2" />
-            <motion.div variants={itemVariants} className="w-full text-center">
+            <motion.div className="w-full text-center">
               <p className="text-xs text-muted-foreground">
                 {t('alreadyHaveAccount')}
                 <Link

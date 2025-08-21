@@ -7,7 +7,18 @@ import { Suspense } from 'react'
 import { Loading } from '@/components/common'
 
 export default async function SubscriptionPage() {
+  console.log('[SubscriptionPage] START:', {
+    timestamp: new Date().toISOString(),
+    url: 'subscription page',
+  })
+
   const { userId, orgId, token } = await getOrganizationAuthForPage()
+
+  console.log('[SubscriptionPage] Auth completed:', {
+    hasUserId: !!userId,
+    hasOrgId: !!orgId,
+    hasToken: !!token,
+  })
 
   const tenantPreloaded = await preloadQuery(
     api.tenant.query.findByUserId,

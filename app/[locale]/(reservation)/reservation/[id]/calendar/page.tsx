@@ -10,6 +10,8 @@ import { Doc, Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
+import { SubscriptionPlanName } from '@/convex/types'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import {
   CouponMenuView,
   StaffView,
@@ -83,30 +85,6 @@ const dayOrder: Record<string, number> = {
 
 // 予約ステップの定義
 type ReservationStep = 'menu' | 'staff' | 'option' | 'date' | 'payment' | 'confirm'
-
-// アニメーションバリアント
-const pageVariants = {
-  initial: (direction: number) => ({
-    x: direction > 0 ? '100%' : '-100%',
-    opacity: 0,
-  }),
-  animate: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      x: { type: 'spring', stiffness: 300, damping: 30 },
-      opacity: { duration: 0.2 },
-    },
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? '-100%' : '100%',
-    opacity: 0,
-    transition: {
-      x: { type: 'spring', stiffness: 300, damping: 30 },
-      opacity: { duration: 0.2 },
-    },
-  }),
-}
 
 // 電話番号バリデーション関数
 const isValidPhoneNumber = (phone: string | null): boolean => {
@@ -189,9 +167,8 @@ export default function CalendarPage() {
   }
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
-  // const pointTaskQueueRepository = useMemo(() => new PointTaskQueueRepository(), [])
-  // const carteRepository = useMemo(() => new CarteRepository(), [])
-  // const carteDetailRepository = useMemo(() => new CarteDetailRepository(), [])
+
+  const { planName } = useTenantAndOrganization()
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -1091,7 +1068,7 @@ export default function CalendarPage() {
               couponDiscount: appliedDiscount.discount > 0 ? appliedDiscount.discount : undefined,
               totalAmount: calculateTotal(),
               reservationRules: organizationComplete.config?.reservation_rules,
-              reservationDetailUrl: `${BASE_URL}/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`,
+              reservationDetailUrl: `${BASE_URL}/customer/${organizationComplete.organization._id}/${sessionCustomer?.customerUid}/reservation`,
             }
 
             const emailResponse = await fetch('/api/resend', {
@@ -1388,7 +1365,6 @@ export default function CalendarPage() {
         <motion.div
           key={currentStep}
           custom={direction}
-          variants={pageVariants}
           initial="initial"
           animate="animate"
           exit="exit"
@@ -1407,6 +1383,7 @@ export default function CalendarPage() {
                       <CouponMenuView
                         tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
                         orgId={organizationComplete.organization._id as Id<'organization'>}
+                        planName={planName as SubscriptionPlanName}
                         sessionCustomerType={sessionCustomer?.target_type as ActiveCustomerType}
                         onCouponChange={(coupon) => {
                           setAppliedDiscount((prev) => ({
@@ -1440,7 +1417,7 @@ export default function CalendarPage() {
                           className="flex items-center justify-center gap-2"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                          transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}
                         >
                           次へ進む
                         </motion.div>
@@ -1458,6 +1435,7 @@ export default function CalendarPage() {
                     <StaffView
                       tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
                       orgId={organizationComplete.organization._id as Id<'organization'>}
+                      planName={planName as SubscriptionPlanName}
                       selectedMenuIds={selectedMenus.map((menu) => menu._id)}
                       selectedStaff={selectedStaffCompleted?.staff as Doc<'staff'> | 'free' | null}
                       onChangeStaffAction={(staff) => {
@@ -1486,7 +1464,7 @@ export default function CalendarPage() {
                           className="flex items-center justify-center gap-2"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                          transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}
                         >
                           次へ進む
                         </motion.div>
@@ -1504,6 +1482,7 @@ export default function CalendarPage() {
                     <OptionView
                       tenantId={organizationComplete.organization.tenant_id as Id<'tenant'>}
                       orgId={organizationComplete.organization._id as Id<'organization'>}
+                      planName={planName as SubscriptionPlanName}
                       selectedOptions={selectedOptions}
                       onChangeOptionsAction={(options) => setSelectedOptions(options)}
                     />
@@ -1902,7 +1881,7 @@ export default function CalendarPage() {
           className="fixed bottom-0 left-0 right-0 z-20 px-4 py-2 bg-background border-t shadow-md"
           initial={{ y: 100 }}
           animate={{ y: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          transition={{ type: 'spring' as const, stiffness: 300, damping: 30 }}
         >
           <div className="container max-w-3xl mx-auto flex justify-between items-center">
             <div className="flex flex-col items-start justify-between gap-2 w-5/7">

@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { usePaginatedQuery } from 'convex/react'
+import { SubscriptionPlanName } from '@/convex/types'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { convertReservationStatus } from '@/convex/types'
@@ -52,7 +52,7 @@ const DAY_OF_WEEK_VALUES = [
 ] as const
 
 function StaffSchedulePage() {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const router = useRouter()
   const searchParams = useSearchParams()
   const t = useTranslations('reservations')
@@ -130,17 +130,16 @@ function StaffSchedulePage() {
     }
   }, [staffSchedules])
 
-  const staffs = usePaginatedQuery(
+  const staffs = useQuery(
     api.staff.query.list,
     tenantId && orgId
       ? {
           tenant_id: tenantId,
           org_id: orgId,
+          planName: planName as SubscriptionPlanName,
+          sort: 'asc',
         }
-      : 'skip',
-    {
-      initialNumItems: 50,
-    }
+      : 'skip'
   )
 
   // 曜日の配列（国際化対応）
@@ -448,6 +447,13 @@ function StaffSchedulePage() {
     updateQueryParams({ date: new Date(), viewMode })
   }
 
+  // MICROプランでスタッフが一名の場合、自動選択する処理
+  useEffect(() => {
+    if (planName === 'MICRO' && staffs && staffs.length === 1 && !selectedStaffId) {
+      setSelectedStaffId(staffs[0]._id)
+    }
+  }, [planName, staffs, selectedStaffId])
+
   // 予約データの更新
   useEffect(() => {
     if (reservations) {
@@ -513,7 +519,7 @@ function StaffSchedulePage() {
                       <SelectValue placeholder={t('selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {staffs.results?.map((staff) => (
+                      {staffs?.map((staff) => (
                         <SelectItem key={staff._id} value={staff._id}>
                           {staff.name}
                         </SelectItem>
@@ -567,9 +573,9 @@ function StaffSchedulePage() {
                       <SelectValue placeholder={t('selectStaff')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {staffs.results &&
-                        staffs.results.length > 0 &&
-                        staffs.results?.map((staff) => (
+                      {staffs &&
+                        staffs.length > 0 &&
+                        staffs.map((staff) => (
                           <SelectItem key={staff._id} value={staff._id}>
                             {staff.name}
                           </SelectItem>

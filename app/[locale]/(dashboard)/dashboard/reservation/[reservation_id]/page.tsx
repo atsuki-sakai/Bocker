@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { useQuery, useMutation, usePaginatedQuery } from 'convex/react'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loading } from '@/components/common'
 import { DashboardSection } from '@/components/common'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { format } from 'date-fns'
-import type { Gender } from '@/convex/types'
+import type { Gender, SubscriptionPlanName } from '@/convex/types'
 import { Separator } from '@/components/ui/separator'
 import {
   convertReservationStatus,
@@ -66,6 +67,7 @@ export default function ReservationPage() {
   const { showErrorToast } = useErrorHandler()
   const router = useRouter()
   const t = useTranslations('reservationDetail')
+  const { planName } = useTenantAndOrganization()
   const commonT = useTranslations('common')
   const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -103,15 +105,15 @@ export default function ReservationPage() {
   )
 
   // 利用可能なスタッフ一覧を取得（スタッフ変更用）
-  const { results: availableStaffsData } = usePaginatedQuery(
+  const availableStaffsData = useQuery(
     api.staff.query.list,
     reservationData?.reservation?.is_free_nomination
       ? {
           tenant_id: reservationData.reservation.tenant_id,
           org_id: reservationData.reservation.org_id,
+          planName: planName as SubscriptionPlanName,
         }
-      : 'skip',
-    { initialNumItems: 50 }
+      : 'skip'
   )
 
   const availableStaffs = availableStaffsData || []

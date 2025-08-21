@@ -14,8 +14,29 @@ function classNames(...classes: any[]) {
 export function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false)
   const t = useTranslations('landing.pricing')
+  const tSubscription = useTranslations('subscription')
 
   const tiers = [
+    {
+      id: 'micro',
+      name: t('subscription.micro.title'),
+      description: t('subscription.micro.description'),
+      price: {
+        monthly: t('subscription.micro.price.monthly'),
+        annually: t('subscription.micro.price.annually'),
+      },
+      highlights: [
+        t('subscription.micro.features.1'),
+        t('subscription.micro.features.2'),
+        t('subscription.micro.features.3'),
+        t('subscription.micro.features.4'),
+        t('subscription.micro.features.5'),
+        t('subscription.micro.features.6'),
+        t('subscription.micro.features.7'),
+        t('subscription.micro.features.8'),
+      ],
+      featured: true,
+    },
     {
       id: 'lite',
       name: t('subscription.lite.title'),
@@ -45,13 +66,8 @@ export function Pricing() {
         monthly: t('subscription.pro.price.monthly'),
         annually: t('subscription.pro.price.annually'),
       },
-      highlights: [
-        t('subscription.pro.features.1'),
-        t('subscription.pro.features.2'),
-        t('subscription.pro.features.3'),
-        t('subscription.pro.features.4'),
-      ],
-      featured: true,
+      highlights: [t('subscription.pro.features.1'), t('subscription.pro.features.2')],
+      featured: false,
     },
   ]
 
@@ -62,6 +78,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.0.name'),
           tiers: {
+            MICRO: t('section.basic.features.0.tiers.MICRO'),
             LITE: t('section.basic.features.0.tiers.LITE'),
             PRO: t('section.basic.features.0.tiers.PRO'),
           },
@@ -69,6 +86,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.1.name'),
           tiers: {
+            MICRO: t('section.basic.features.1.tiers.MICRO'),
             LITE: t('section.basic.features.1.tiers.LITE'),
             PRO: t('section.basic.features.1.tiers.PRO'),
           },
@@ -76,6 +94,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.2.name'),
           tiers: {
+            MICRO: t('section.basic.features.2.tiers.MICRO'),
             LITE: t('section.basic.features.2.tiers.LITE'),
             PRO: t('section.basic.features.2.tiers.PRO'),
           },
@@ -83,6 +102,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.3.name'),
           tiers: {
+            MICRO: t('section.basic.features.3.tiers.MICRO'),
             LITE: t('section.basic.features.3.tiers.LITE'),
             PRO: t('section.basic.features.3.tiers.PRO'),
           },
@@ -90,6 +110,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.4.name'),
           tiers: {
+            MICRO: t('section.basic.features.4.tiers.MICRO'),
             LITE: t('section.basic.features.4.tiers.LITE'),
             PRO: t('section.basic.features.4.tiers.PRO'),
           },
@@ -97,6 +118,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.5.name'),
           tiers: {
+            MICRO: t('section.basic.features.5.tiers.MICRO'),
             LITE: t('section.basic.features.5.tiers.LITE'),
             PRO: t('section.basic.features.5.tiers.PRO'),
           },
@@ -104,6 +126,7 @@ export function Pricing() {
         {
           name: t('section.basic.features.6.name'),
           tiers: {
+            MICRO: t('section.basic.features.6.tiers.MICRO'),
             LITE: t('section.basic.features.6.tiers.LITE'),
             PRO: t('section.basic.features.6.tiers.PRO'),
           },
@@ -116,6 +139,7 @@ export function Pricing() {
         {
           name: t('section.customer.features.0.name'),
           tiers: {
+            MICRO: t('section.customer.features.0.tiers.MICRO'),
             LITE: t('section.customer.features.0.tiers.LITE'),
             PRO: t('section.customer.features.0.tiers.PRO'),
           },
@@ -123,6 +147,7 @@ export function Pricing() {
         {
           name: t('section.customer.features.1.name'),
           tiers: {
+            MICRO: t('section.customer.features.1.tiers.MICRO'),
             LITE: t('section.customer.features.1.tiers.LITE'),
             PRO: t('section.customer.features.1.tiers.PRO'),
           },
@@ -135,6 +160,7 @@ export function Pricing() {
         {
           name: t('section.support.features.0.name'),
           tiers: {
+            MICRO: t('section.support.features.0.tiers.MICRO'),
             LITE: t('section.support.features.0.tiers.LITE'),
             PRO: t('section.support.features.0.tiers.PRO'),
           },
@@ -152,7 +178,7 @@ export function Pricing() {
 
   return (
     <form data-testid="pricing" className="group/tiers isolate overflow-hidden">
-      <div className="flow-root bg-background pt-24 pb-16 sm:pt-32 lg:pb-0">
+      <div className="flow-root bg-background pt-12 pb-8 sm:pt-24 sm:pb-16 md:pt-32 lg:pb-0">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="relative z-10">
             <motion.h2
@@ -224,93 +250,43 @@ export function Pricing() {
               </fieldset>
             </motion.div>
           </div>
-          <div className="relative mx-auto mt-10 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:-mb-14 lg:max-w-none lg:grid-cols-2">
-            <div
-              aria-hidden="true"
-              className="hidden lg:absolute lg:inset-x-px lg:top-4 lg:bottom-0 lg:block lg:rounded-t-2xl lg:bg-neon lg:ring-1 lg:ring-border"
-            />
-            {tiers.map((tier, idx) => (
-              <motion.div
-                key={tier.id}
-                role="plan"
-                data-featured={tier.featured ? 'true' : undefined}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.6 + idx * 0.15 }}
-                viewport={{ once: true, amount: 0.2 }}
-                className={classNames(
-                  tier.featured
-                    ? 'z-10 bg-foreground shadow-xl ring-1 ring-accent'
-                    : 'bg-accent ring-1 ring-accent lg:bg-transparent lg:pb-14 lg:ring-0',
-                  'group/tier relative rounded-2xl'
-                )}
-              >
-                <div className="p-8 lg:pt-12 xl:p-10 xl:pt-14">
-                  <h3
-                    id={`tier-${tier.id}`}
-                    className="text-base/6 font-semibold text-neon-foreground group-data-featured/tier:text-muted-foreground"
-                  >
-                    {tier.name}
-                  </h3>
-                  <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between lg:flex-col lg:items-stretch ">
-                    <div className="mt-2 flex items-center gap-x-4">
-                      {isAnnual ? (
-                        <p className="text-4xl font-semibold tracking-tight text-background group-not-has-[[name=frequency][value=monthly]:checked]/tiers:hidden group-data-featured/tier:text-foreground">
-                          {tier.price.annually}
-                        </p>
-                      ) : (
-                        <p className="text-4xl font-semibold tracking-tight text-background group-not-has-[[name=frequency][value=annually]:checked]/tiers:hidden group-data-featured/tier:text-foreground">
-                          {tier.price.monthly}
-                        </p>
-                      )}
-                      <div className="text-base">
-                        <p className="text-primary-foreground group-data-featured/tier:text-foreground">
-                          {t('subscription.title')}
-                        </p>
-                        {isAnnual ? (
-                          <p className="text-muted font-bold group-not-has-[[name=frequency][value=monthly]:checked]/tiers:hidden group-data-featured/tier:text-muted-foreground">
-                            {t('type.annually')}
-                          </p>
-                        ) : (
-                          <p className="text-muted font-bold group-not-has-[[name=frequency][value=annually]:checked]/tiers:hidden group-data-featured/tier:text-muted-foreground">
-                            {t('type.monthly')}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-8 flow-root sm:mt-10">
-                    <ul
-                      role="list"
-                      className="-my-2 divide-y divide-border border-t border-border text-sm text-primary-foreground group-data-featured/tier:divide-border group-data-featured/tier:border-border group-data-featured/tier:text-muted-foreground lg:border-t-0"
-                    >
-                      {tier.highlights.map((mainFeature: string) => (
-                        <li key={mainFeature} className="flex gap-x-3 py-2">
-                          <CheckIcon
-                            data-testid="check-icon"
-                            aria-hidden="true"
-                            className="h-6 w-5 flex-none text-muted-foreground group-data-featured/tier:text-primary"
-                          />
-                          {mainFeature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </div>
-      <div className="relative bg-background lg:pt-14">
-        <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
-          {/* Feature comparison (up to lg) */}
-          <section aria-labelledby="mobile-comparison-heading" className="lg:hidden">
-            <h2 id="mobile-comparison-heading" className="sr-only">
-              Feature comparison
-            </h2>
-
-            <div className="mx-auto max-w-2xl space-y-16">
+      <div className="relative bg-background">
+        <div className="mx-auto max-w-7xl px-6 py-12  md:py-16 lg:px-8">
+          <section>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-4 md:gap-x-8">
+              <div className="col-span-1 space-y-0">
+                <div className="-mt-px w-full md:border-t-4 pt-12 md:pt-14">
+                  <h3 className="text-sm md:text-lg font-semibold text-foreground">
+                    {t('section.feature.title')}
+                  </h3>
+                  <p className="mt-2 text-xs md:text-sm text-muted-foreground text-nowrap mb-2">
+                    {t('section.feature.description')}
+                  </p>
+                </div>
+                {sections.map((section) => (
+                  <div key={section.name} className="w-full">
+                    <div className="border-t border-border pt-4 md:pt-8 pb-2">
+                      <h4 className="text-xs md:text-sm font-semibold text-foreground mb-4">
+                        {section.name}
+                      </h4>
+                    </div>
+                    <div className="space-y-0">
+                      {section.features.map((feature) => (
+                        <div
+                          key={feature.name}
+                          className="w-full py-2 md:py-4 border-b border-border/30"
+                        >
+                          <p className="text-xs md:text-sm text-muted-foreground leading-relaxed text-nowrap ">
+                            {feature.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
               {tiers.map((tier, index) => (
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
@@ -318,104 +294,101 @@ export function Pricing() {
                   transition={{ duration: 0.6, ease: 'easeOut', delay: 0.6 + index * 0.15 }}
                   viewport={{ once: true, amount: 0.2 }}
                   key={tier.id}
-                  className="border-t border-border"
                 >
                   <div
                     className={classNames(
-                      tier.featured ? 'border-primary' : 'border-transparent',
-                      '-mt-px w-72 border-t-2 pt-10 md:w-80'
+                      tier.featured ? 'border-neon' : 'border-border',
+                      '-mt-px w-full md:border-t-4 pt-12 md:pt-14'
                     )}
                   >
-                    <h3
-                      className={classNames(
-                        tier.featured ? 'text-primary' : 'text-foreground',
-                        'text-base/6 font-semibold'
-                      )}
-                    >
-                      {tier.name}
-                    </h3>
-                    <p className="mt-1 text-base/6 text-muted-foreground">{tier.description}</p>
+                    <div className="flex items-center gap-4">
+                      <h3
+                        className={classNames(
+                          tier.featured ? 'text-primary' : 'text-foreground',
+                          'text-base md:text-lg font-semibold'
+                        )}
+                      >
+                        {tier.name}
+                      </h3>
+                      <div data-tier={tier.id}>
+                        {isAnnual ? (
+                          <p className="text-xl font-semibold text-link-foreground">
+                            {tier.price.annually}{' '}
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {tSubscription('annual')}
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="text-xl font-semibold text-link-foreground">
+                            {tier.price.monthly}{' '}
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {tSubscription('monthly')}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="mt-2 text-xs md:text-sm text-muted-foreground text-nowrap mb-2">
+                      {tier.description}
+                    </p>
                   </div>
-                  <div className="mt-10 space-y-10">
+                  <div className="space-y-0">
                     {sections.map((section) => (
                       <div key={section.name}>
-                        <h4 className="text-base/6 font-semibold text-foreground">
-                          {section.name}
-                        </h4>
-                        <div className="relative mt-6">
-                          {/* Fake card background */}
-                          <div
-                            aria-hidden="true"
-                            className="absolute inset-y-0 right-0 hidden w-1/2 rounded-lg bg-card shadow-xs sm:block"
-                          />
+                        <div className="border-t border-border pt-2 md:pt-4 lg:pt-8 pb-2 hidden md:block">
+                          <h4 className="text-xs md:text-sm font-semibold text-foreground opacity-0 mb-4">
+                            {section.name}
+                          </h4>
+                        </div>
+                        <div className="space-y-0">
+                          {section.features.map((feature) => {
+                            const tierKey = tier.id.toUpperCase() as keyof typeof feature.tiers
+                            const value = feature.tiers[tierKey]
+                            const evaluatedValue = evaluateTierValue(value)
 
-                          <div
-                            className={classNames(
-                              tier.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border',
-                              'relative rounded-lg bg-card shadow-xs sm:rounded-none sm:bg-transparent sm:shadow-none sm:ring-0'
-                            )}
-                          >
-                            <dl className=" divide-y divide-border text-base/6">
-                              {section.features.map((feature) => (
-                                <div
-                                  key={feature.name}
-                                  className="flex items-center justify-between px-4 py-3 sm:grid sm:grid-cols-2 sm:px-0"
-                                >
-                                  <dt className="pr-4 text-muted-foreground">{feature.name}</dt>
-                                  <dd className="flex items-center justify-end sm:justify-center sm:px-4">
-                                    {(() => {
-                                      const tierValue =
-                                        feature.tiers[tier.name as keyof typeof feature.tiers]
-                                      const evaluatedValue = evaluateTierValue(tierValue)
+                            return (
+                              <div
+                                key={feature.name}
+                                className="flex items-center md:justify-center py-2 md:py-4 border-b border-border/30"
+                              >
+                                <div className="flex items-center  w-full">
+                                  {typeof evaluatedValue === 'boolean' ? (
+                                    evaluatedValue ? (
+                                      <div className="flex items-center gap-2 w-full">
+                                        <p className="text-xs md:text-sm text-center md:text-nowrap pr-4 md:hidden">
+                                          {feature.name}
+                                        </p>
+                                        <CheckIcon className="h-5 w-5 text-green-500" />
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-xs md:text-sm text-center md:text-nowrap pr-4 md:hidden">
+                                          {feature.name}
+                                        </p>
+                                        <XMarkIcon className="h-5 w-5 text-red-500" />
+                                      </div>
+                                    )
+                                  ) : (
+                                    <>
+                                      <span className="text-xs md:text-sm text-center md:text-nowrap pr-4 md:hidden">
+                                        {feature.name}
+                                      </span>
 
-                                      if (typeof evaluatedValue === 'string') {
-                                        return (
-                                          <span
-                                            className={
-                                              tier.featured
-                                                ? 'font-semibold text-primary'
-                                                : 'text-foreground'
-                                            }
-                                          >
-                                            {evaluatedValue}
-                                          </span>
-                                        )
-                                      } else {
-                                        return (
-                                          <>
-                                            {evaluatedValue === true ? (
-                                              <CheckIcon
-                                                aria-hidden="true"
-                                                className="mx-auto size-5 text-primary"
-                                              />
-                                            ) : (
-                                              <XMarkIcon
-                                                data-testid="x-mark-icon"
-                                                aria-hidden="true"
-                                                className="mx-auto size-5 text-muted-foreground"
-                                              />
-                                            )}
-                                            <span className="sr-only">
-                                              {evaluatedValue === true ? 'Yes' : 'No'}
-                                            </span>
-                                          </>
-                                        )
-                                      }
-                                    })()}
-                                  </dd>
+                                      <span
+                                        className={classNames(
+                                          'text-xs md:text-sm text-center text-nowrap font-semibold',
+                                          tier.featured ? 'text-neon' : 'text-foreground'
+                                        )}
+                                      >
+                                        {evaluatedValue}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
-                              ))}
-                            </dl>
-                          </div>
-
-                          {/* Fake card border */}
-                          <div
-                            aria-hidden="true"
-                            className={classNames(
-                              tier.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border',
-                              'pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 rounded-lg sm:block'
-                            )}
-                          />
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
@@ -424,153 +397,6 @@ export function Pricing() {
               ))}
             </div>
           </section>
-          {/* Feature comparison (lg+) */}
-          <motion.section
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.4 }}
-            viewport={{ once: true, amount: 0.2 }}
-            aria-labelledby="comparison-heading"
-            className="hidden lg:block"
-          >
-            <h2 id="comparison-heading" className="sr-only">
-              Feature comparison
-            </h2>
-
-            <div className="grid grid-cols-3 gap-x-8 border-t border-border before:block">
-              {tiers.map((tier) => (
-                <div key={tier.id} aria-hidden="true" className="-mt-px">
-                  <div
-                    className={classNames(
-                      tier.featured ? 'border-primary' : 'border-transparent',
-                      'border-t-2 pt-10'
-                    )}
-                  >
-                    <p
-                      className={classNames(
-                        tier.featured ? 'text-primary' : 'text-foreground',
-                        'text-base/6 font-semibold'
-                      )}
-                    >
-                      {tier.name}
-                    </p>
-                    <p className="mt-1 text-base/6 text-muted-foreground">{tier.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="-mt-6 space-y-16">
-              {sections.map((section) => (
-                <div key={section.name}>
-                  <h3 className="text-base/6 font-semibold text-foreground">{section.name}</h3>
-                  <div className="relative -mx-8 mt-10 w-full">
-                    {/* Fake card backgrounds */}
-                    <div
-                      aria-hidden="true"
-                      className="absolute inset-x-8 inset-y-0 grid grid-cols-3 gap-x-8 before:block"
-                    >
-                      <div className="size-full rounded-lg bg-card shadow-xs" />
-                      <div className="size-full rounded-lg bg-card shadow-xs" />
-                      <div className="size-full rounded-lg bg-card shadow-xs" />
-                    </div>
-
-                    <table className="relative w-full border-separate border-spacing-x-8">
-                      <thead>
-                        <tr className="text-left">
-                          <th scope="col">
-                            <span className="sr-only">Feature</span>
-                          </th>
-                          {tiers.map((tier) => (
-                            <th key={tier.id} scope="col">
-                              <span className="sr-only">{tier.name} tier</span>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {section.features.map((feature, featureIdx) => (
-                          <tr key={feature.name}>
-                            <th
-                              scope="row"
-                              className="py-3 pr-4 text-left text-base/6 font-normal text-foreground"
-                            >
-                              {feature.name}
-                              {featureIdx !== section.features.length - 1 ? (
-                                <div className="absolute inset-x-8 mt-3 h-px bg-border" />
-                              ) : null}
-                            </th>
-                            {tiers.map((tier) => (
-                              <td key={tier.id} className="relative w-1/3 px-4 py-0 text-center">
-                                <span className="relative size-full py-3">
-                                  {(() => {
-                                    const tierValue =
-                                      feature.tiers[tier.name as keyof typeof feature.tiers]
-                                    const evaluatedValue = evaluateTierValue(tierValue)
-
-                                    if (typeof evaluatedValue === 'string') {
-                                      return (
-                                        <span
-                                          className={classNames(
-                                            tier.featured
-                                              ? 'font-semibold text-primary'
-                                              : 'text-foreground',
-                                            'text-base/6'
-                                          )}
-                                        >
-                                          {evaluatedValue}
-                                        </span>
-                                      )
-                                    } else {
-                                      return (
-                                        <>
-                                          {evaluatedValue === true ? (
-                                            <CheckIcon
-                                              aria-hidden="true"
-                                              className="mx-auto size-5 text-neon"
-                                            />
-                                          ) : (
-                                            <XMarkIcon
-                                              data-testid="x-mark-icon"
-                                              aria-hidden="true"
-                                              className="mx-auto size-5 text-muted-foreground"
-                                            />
-                                          )}
-                                          <span className="sr-only">
-                                            {evaluatedValue === true ? 'Yes' : 'No'}
-                                          </span>
-                                        </>
-                                      )
-                                    }
-                                  })()}
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {/* Fake card borders */}
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-x-8 inset-y-0 grid grid-cols-3 gap-x-8 before:block"
-                    >
-                      {tiers.map((tier) => (
-                        <div
-                          key={tier.id}
-                          className={classNames(
-                            tier.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border',
-                            'rounded-lg'
-                          )}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.section>
         </div>
       </div>
     </form>

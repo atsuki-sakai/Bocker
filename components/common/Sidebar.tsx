@@ -32,6 +32,34 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
+// プラン名を正規化する関数（データベースの値をTypeScript型に合わせる）
+function normalizePlanName(planName: string | undefined | null): SubscriptionPlanName {
+  console.log('[normalizePlanName] Input:', planName, 'Type:', typeof planName)
+  
+  if (!planName) {
+    console.log('[normalizePlanName] planName is falsy, returning UNKNOWN')
+    return 'UNKNOWN'
+  }
+  
+  const normalizedName = planName.toUpperCase().trim()
+  console.log('[normalizePlanName] Normalized:', normalizedName)
+  
+  switch (normalizedName) {
+    case 'MICRO':
+      console.log('[normalizePlanName] Matched MICRO')
+      return 'MICRO'
+    case 'LITE':
+      console.log('[normalizePlanName] Matched LITE')
+      return 'LITE'
+    case 'PRO':
+      console.log('[normalizePlanName] Matched PRO')
+      return 'PRO'
+    default:
+      console.log('[normalizePlanName] No match found, returning UNKNOWN for:', normalizedName)
+      return 'UNKNOWN'
+  }
+}
+
 // 共通コンポーネント: サイドバーヘッダー（ロゴとタイトル）
 const SidebarHeader = memo(
   ({
@@ -138,7 +166,7 @@ const SidebarNavigation = memo(
 
     return (
       <nav className="flex flex-1 flex-col">
-        {!isSubscriptionActive && (
+        {!isSubscriptionActive ? (
           <>
             <div className="flex flex-col my-2 bg-muted p-2 rounded-md">
               <p className="text-xs text-muted-foreground">
@@ -154,136 +182,142 @@ const SidebarNavigation = memo(
               <Button className="text-xs w-full">{t('goToSubscription')}</Button>
             </Link>
           </>
-        )}
-        <div className="flex flex-1 flex-col">
-          {/* マイページ */}
-          {staffId && (
-            <div className="mb-4">
-              <Link
-                href={`/dashboard/staff/${staffId}/my-page`}
-                className={classNames(
-                  pathname === `/dashboard/staff/${staffId}/my-page`
-                    ? 'text-accent-foreground bg-accent'
-                    : 'text-neon bg-neon-foreground border border-neon  font-light',
-                  'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
-                )}
-              >
-                <UserIcon
-                  aria-hidden="true"
+        ) : (
+          <div className="flex flex-1 flex-col">
+            {/* マイページ */}
+            {staffId && (
+              <div className="mb-4">
+                <Link
+                  href={`/dashboard/staff/${staffId}/my-page`}
                   className={classNames(
                     pathname === `/dashboard/staff/${staffId}/my-page`
                       ? 'text-accent-foreground bg-accent'
-                      : 'text-neon',
-                    'size-4 shrink-0'
+                      : 'text-neon bg-neon-foreground border border-neon  font-light',
+                    'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                   )}
-                />
-                <p className="w-full text-nowrap">{tNav('myPage')}</p>
-                {pathname === `/dashboard/staff/${staffId}/my-page` && (
-                  <div className="w-full flex justify-end items-center pr-2">
-                    <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                  </div>
-                )}
-              </Link>
-            </div>
-          )}
+                >
+                  <UserIcon
+                    aria-hidden="true"
+                    className={classNames(
+                      pathname === `/dashboard/staff/${staffId}/my-page`
+                        ? 'text-accent-foreground bg-accent'
+                        : 'text-neon',
+                      'size-4 shrink-0'
+                    )}
+                  />
+                  <p className="w-full text-nowrap">{tNav('myPage')}</p>
+                  {pathname === `/dashboard/staff/${staffId}/my-page` && (
+                    <div className="w-full flex justify-end items-center pr-2">
+                      <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                    </div>
+                  )}
+                </Link>
+              </div>
+            )}
 
-          {/* ダッシュボード（常に表示） */}
-          {hasAccess(role as Role, currentPlan, DASHBOARD_ITEM.minRole, DASHBOARD_ITEM.minPlan) && (
-            <div className="mb-2">
-              <Link
-                href={DASHBOARD_ITEM.href}
-                className={classNames(
-                  pathname === DASHBOARD_ITEM.href
-                    ? 'text-accent-foreground bg-accent'
-                    : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                  'w-full group flex gap-x-3 rounded-md p-2 border border-border items-center'
-                )}
-              >
-                <DASHBOARD_ITEM.icon
-                  aria-hidden="true"
+            {/* ダッシュボード（常に表示） */}
+            {hasAccess(
+              role as Role,
+              currentPlan,
+              DASHBOARD_ITEM.minRole,
+              DASHBOARD_ITEM.minPlan
+            ) && (
+              <div className="mb-2">
+                <Link
+                  href={DASHBOARD_ITEM.href}
                   className={classNames(
                     pathname === DASHBOARD_ITEM.href
                       ? 'text-accent-foreground bg-accent'
-                      : 'text-primary',
-                    'size-4 shrink-0'
+                      : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                    'w-full group flex gap-x-3 rounded-md p-2 border border-border items-center'
                   )}
-                />
-                <p className="w-full text-nowrap">{tNav(DASHBOARD_ITEM.name)}</p>
-                {pathname === DASHBOARD_ITEM.href && (
-                  <div className="w-full flex justify-end items-center pr-2">
-                    <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                  </div>
-                )}
-              </Link>
-            </div>
-          )}
-
-          {/* アコーディオンナビゲーション */}
-          <Accordion
-            type="multiple"
-            value={openGroups}
-            onValueChange={setOpenGroups}
-            className="w-full space-y-2"
-          >
-            {filteredGroups.map((group) => {
-              const isActive = isGroupActive(group.id)
-              return (
-                <AccordionItem key={group.id} value={group.id} className="border-b-0">
-                  <AccordionTrigger
+                >
+                  <DASHBOARD_ITEM.icon
+                    aria-hidden="true"
                     className={classNames(
-                      'hover:no-underline py-2 px-2 text-sm font-medium rounded-md transition-colors',
-                      isActive
+                      pathname === DASHBOARD_ITEM.href
                         ? 'text-accent-foreground bg-accent'
-                        : 'text-primary hover:bg-primary-foreground',
-                      isMobile ? 'text-base' : ''
+                        : 'text-primary',
+                      'size-4 shrink-0'
                     )}
-                  >
-                    <div className="flex items-center gap-2">
-                      {tGroups(group.name)}
-                      {isActive && (
-                        <div className="h-2 w-2 bg-accent-2 ring-border ring-1 rounded-full" />
-                      )}
+                  />
+                  <p className="w-full text-nowrap">{tNav(DASHBOARD_ITEM.name)}</p>
+                  {pathname === DASHBOARD_ITEM.href && (
+                    <div className="w-full flex justify-end items-center pr-2">
+                      <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2">
-                      {group.items.map((item) => {
-                        const isCurrent = pathname === item.href
-                        return (
-                          <li key={item.name}>
-                            <Link
-                              href={item.href}
-                              className={classNames(
-                                isCurrent
-                                  ? 'text-accent-foreground bg-accent'
-                                  : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
-                                'w-full group flex gap-x-3 p-2 text-sm items-center border border-border rounded-md'
-                              )}
-                            >
-                              <item.icon
-                                aria-hidden="true"
+                  )}
+                </Link>
+              </div>
+            )}
+
+            {/* アコーディオンナビゲーション */}
+            <Accordion
+              type="multiple"
+              value={openGroups}
+              onValueChange={setOpenGroups}
+              className="w-full space-y-2"
+            >
+              {filteredGroups.map((group) => {
+                const isActive = isGroupActive(group.id)
+                return (
+                  <AccordionItem key={group.id} value={group.id} className="border-b-0">
+                    <AccordionTrigger
+                      className={classNames(
+                        'hover:no-underline py-2 px-2 text-sm font-medium rounded-md transition-colors',
+                        isActive
+                          ? 'text-accent-foreground bg-accent'
+                          : 'text-primary hover:bg-primary-foreground',
+                        isMobile ? 'text-base' : ''
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        {tGroups(group.name)}
+                        {isActive && (
+                          <div className="h-2 w-2 bg-accent-2 ring-border ring-1 rounded-full" />
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="space-y-2">
+                        {group.items.map((item) => {
+                          const isCurrent = pathname === item.href
+                          return (
+                            <li key={item.name}>
+                              <Link
+                                href={item.href}
                                 className={classNames(
-                                  isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
-                                  'size-4 shrink-0'
+                                  isCurrent
+                                    ? 'text-accent-foreground bg-accent'
+                                    : 'text-primary hover:bg-primary-foreground hover:text-primary font-light',
+                                  'w-full group flex gap-x-3 p-2 text-sm items-center border border-border rounded-md'
                                 )}
-                              />
-                              <p className="w-full text-nowrap">{tNav(item.name)}</p>
-                              {isCurrent && (
-                                <div className="w-full flex justify-end items-center pr-2">
-                                  <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                                </div>
-                              )}
-                            </Link>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              )
-            })}
-          </Accordion>
-        </div>
+                              >
+                                <item.icon
+                                  aria-hidden="true"
+                                  className={classNames(
+                                    isCurrent ? 'text-accent-foreground bg-accent' : 'text-primary',
+                                    'size-4 shrink-0'
+                                  )}
+                                />
+                                <p className="w-full text-nowrap">{tNav(item.name)}</p>
+                                {isCurrent && (
+                                  <div className="w-full flex justify-end items-center pr-2">
+                                    <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                                  </div>
+                                )}
+                              </Link>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
+          </div>
+        )}
       </nav>
     )
   }
@@ -300,17 +334,54 @@ export default function Sidebar({ children }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
   const { role, isLoaded, ready, staffId, subscription } = useTenantAndOrganization()
   const pathname = usePathname() // 現在のパスを取得
+
+  console.log('[Sidebar] Component render:', {
+    pathname,
+    isLoaded,
+    ready,
+    hasRole: !!role,
+    hasSubscription: !!subscription,
+    timestamp: new Date().toISOString(),
+  })
   const { resolvedTheme } = useTheme()
 
-  const currentPlan: SubscriptionPlanName = (subscription?.plan_name ??
-    'UNKNOWN') as SubscriptionPlanName
+  // デバッグログ: サブスクリプション情報を確認
+  console.log('=== Sidebar Debug ===')
+  console.log('subscription object:', subscription)
+  console.log('subscription?.plan_name:', subscription?.plan_name)
+  console.log('subscription?.status:', subscription?.status)
+  console.log('role:', role)
+  console.log('isLoaded:', isLoaded)
+  console.log('ready:', ready)
+
+  const currentPlan: SubscriptionPlanName = normalizePlanName(subscription?.plan_name)
+  console.log('currentPlan after normalization:', currentPlan)
 
   const filteredGroups = useMemo(() => {
-    if (!isLoaded || !role) return []
-    return NAV_GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter((item) => hasAccess(role, currentPlan, item.minRole, item.minPlan)),
-    })).filter((group) => group.items.length > 0)
+    console.log('[filteredGroups] Calculating with:', { isLoaded, role, currentPlan })
+
+    if (!isLoaded || !role) {
+      console.log('[filteredGroups] Not loaded or no role, returning empty array')
+      return []
+    }
+
+    const groups = NAV_GROUPS.map((group) => {
+      const filteredItems = group.items.filter((item) => {
+        const access = hasAccess(role, currentPlan, item.minRole, item.minPlan)
+        console.log(
+          `[filteredGroups] Item ${item.name}: hasAccess(${role}, ${currentPlan}, ${item.minRole}, ${item.minPlan}) = ${access}`
+        )
+        return access
+      })
+
+      return {
+        ...group,
+        items: filteredItems,
+      }
+    }).filter((group) => group.items.length > 0)
+
+    console.log('[filteredGroups] Final groups:', groups)
+    return groups
   }, [isLoaded, role, currentPlan])
   useEffect(() => {
     // パスが変更されたときにサイドバーを閉じる
@@ -419,9 +490,15 @@ export default function Sidebar({ children }: SidebarProps) {
               <div className="flex items-center gap-x-4 lg:gap-x-6">
                 {subscription?.plan_name && (
                   <div className="flex items-center gap-x-4 lg:gap-x-6">
-                    <p className="text-xs tracking-widest w-fit text-center font-bold border border-muted-foreground rounded-full px-4 py-1 bg-primary text-primary-foreground">
-                      {subscription.plan_name}
-                    </p>
+                    {isSubscriptionActive ? (
+                      <p className="text-xs tracking-widest w-fit text-center font-bold border border-muted-foreground rounded-full px-4 py-1 bg-primary text-primary-foreground [writing-mode:horizontal-tb] [text-orientation:mixed]">
+                        {subscription.plan_name}
+                      </p>
+                    ) : (
+                      <p className="text-xs tracking-widest w-[100px] text-center font-bold border border-destructive rounded-full px-4 py-1 bg-destructive-foreground text-destructive [writing-mode:horizontal-tb] [text-orientation:mixed]">
+                        {t('subscriptionExpired')}
+                      </p>
+                    )}
                   </div>
                 )}
 

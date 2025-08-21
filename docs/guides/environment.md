@@ -1,9 +1,8 @@
-# Bocker 本番環境と開発環境の設定ガイド
+# Bocker 環境変数ガイド（統一版）
 
 ## 概要
 
-本ドキュメントでは、Bocker プロジェクトの本番環境と開発環境の設定について説明します。
-環境変数の管理方法、各サービスの設定、およびWebhook処理の実装について詳細に記載しています。
+開発は `.env.local` 1 つに集約します。本番は Vercel/Convex のダッシュボードに設定し、リポジトリに置きません。過去の `.env.development*`, `.env.test` などは廃止予定です。
 
 ## 環境構成
 
@@ -18,19 +17,26 @@
 
 | サービス | 開発環境 | 本番環境 | 用途 |
 |----------|----------|----------|------|
-| **GCP** | CloudStorage, Networking, CDN | 同左 | 画像保存・配信 |
-| **Supabase** | DEV_Bocker | Bocker | データベース（履歴・分析） |
+| **GCP** | Cloud Storage, CDN | 同左 | 画像保存・配信 |
+| **Supabase** | DEV_Bocker | Bocker | 分析/履歴 DB |
 | **Convex** | Development | Production | リアルタイムDB |
-| **Clerk** | clerk:dev | clerk:prod | 認証サービス |
-| **Stripe** | stripe:dev | stripe:prod | 決済処理 |
+| **Clerk** | clerk:dev | clerk:prod | 認証 |
+| **Stripe** | stripe:dev | stripe:prod | 決済 |
 
 ## 環境変数設定
 
-### 環境変数ファイル
+### ファイル運用（開発）
 
-- **開発環境**: `.env.dev`
-- **本番環境**: `.env.prod`
-- **ローカル開発**: `.env.dev`
+- 使うのは `.env.local` のみ
+- ひな形は `.env.example` をコピーして作成
+- 変更反映には `pnpm dev` の再起動が必要
+
+### 本番の管理
+
+- Next.js: Vercel の Project Settings → Environment Variables
+- Convex: `convex env set KEY VALUE` で Development/Production それぞれに設定（CLERK などサーバーのみの値）
+
+> 注意: Convex 関数内では `lib/env-config.ts` 経由で `process.env` を参照します。Convex 側にも同じキーを設定してください。
 
 ### 主要な環境変数
 

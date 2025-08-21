@@ -664,7 +664,8 @@
     "closeSidebar": "Close",
     "subscriptionRequired": "Please subscribe to a plan.",
     "subscriptionRequiredDetail": "After subscribing via the link below, you can use features based on your plan.",
-    "goToSubscription": "Go to Subscription Page"
+    "goToSubscription": "Go to Subscription Page",
+    "subscriptionExpired": "Subscription Expired"
   },
   "reservationLink": {
     "selectLinkDestination": "Select link destination",
@@ -1085,7 +1086,9 @@
       "friday": "Friday",
       "saturday": "Saturday",
       "sunday": "Sunday"
-    }
+    },
+    "subscriptionRequired": "To use the reservation function, you need a subscription.",
+    "goToSubscription": "Go to Subscription"
   },
   "customers": {
     "title": "Customer Management",
@@ -3111,19 +3114,19 @@
           "title": "MICRO",
           "description": "One-person owner plan",
           "price": {
-            "monthly": "¥3,980",
-            "annually": "¥39,800"
+            "monthly": "¥4,000",
+            "annually": "¥40,000"
           },
           "features": {
             "1": "Reservation Management (timeline, staff scheduling, confirmation/cancellation, 24/7 online booking)",
             "2": "Customer Management (basic info, booking/purchase history, points, customer portal)",
             "3": "Customer Records (automatic treatment details, allergies, hair quality management)",
             "4": "Staff Management (account creation, basic scheduling) ※Up to 1 staff",
-            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 30 items",
-            "6": "Options & Retail (add options, option selection) ※Up to 15 items",
-            "7": "Points & Coupons (customizable point system, coupon management)",
+            "5": "Menu Settings (one image, menu registration, pricing/duration) ※Up to 50 items",
+            "6": "Options & Retail (add options, option selection) ※Up to 25 items",
+            "7": "Points & Coupons (customizable point system, coupon management) ※Up to 10 items",
             "8": "Automatic Reminders & Notifications (LINE)",
-            "9": "Staff (1), Menus (30), Options (15), Coupons (15), Reservations (100/month)"
+            "9": "Staff (1), Menus (50), Options (25), Coupons (10), Reservations (150/month)"
           }
         },
         "lite": {
@@ -3161,13 +3164,17 @@
         }
       },
       "section": {
+        "feature": {
+          "title": "Features",
+          "description": "Compare features across plans"
+        },
         "basic": {
           "title": "Basic Features",
           "features": [
             {
               "name": "Max Reservations/Month",
               "tiers": {
-                "MICRO": "100",
+                "MICRO": "150",
                 "LITE": "500",
                 "PRO": "Unlimited"
               }
@@ -3175,7 +3182,7 @@
             {
               "name": "Max Customer Registration",
               "tiers": {
-                "MICRO": "500",
+                "MICRO": "1000",
                 "LITE": "1000",
                 "PRO": "Unlimited"
               }
@@ -3191,7 +3198,7 @@
             {
               "name": "Menu Settings",
               "tiers": {
-                "MICRO": "30 items",
+                "MICRO": "50 items",
                 "LITE": "50 items",
                 "PRO": "100 items"
               }
@@ -3199,7 +3206,7 @@
             {
               "name": "Options & Retail",
               "tiers": {
-                "MICRO": "15 items",
+                "MICRO": "25 items",
                 "LITE": "25 items",
                 "PRO": "50 items"
               }
@@ -3207,7 +3214,7 @@
             {
               "name": "Points & Coupons",
               "tiers": {
-                "MICRO": "15 items",
+                "MICRO": "10 items",
                 "LITE": "25 items",
                 "PRO": "100 items"
               }

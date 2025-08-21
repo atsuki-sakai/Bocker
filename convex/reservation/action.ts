@@ -10,10 +10,11 @@ import { Doc, Id} from '@/convex/_generated/dataModel';
 import { ReservationMenu, ReservationOption, ReservationStatus, PaymentMethod, reservationStatusType } from '@/convex/types';
 import { ConvexError } from 'convex/values';
 import { ERROR_SEVERITY, ERROR_STATUS_CODE } from '@/lib/errors/constants';
-import { PointTaskQueueRepository } from '@/services/supabase/repositories/point';
+import { PointTaskQueueRepository, PointTransactionRepository } from '@/services/supabase/repositories/point';
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
 import { cancelForCompletedReservation } from './reservation.helpers';
 import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon';
+import { CarteRepository, CarteDetailRepository } from '@/services/supabase/repositories/carte';
 import { fetchMutation } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { validateStringLength, validateDateStrFormat } from '@/convex/utils/validations';
@@ -36,7 +37,14 @@ export const deletePointTaskForReservation = internalAction({
       // Supabase管理者クライアントを作成
       const supabase = createClient(
         getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-        getEnv('SUPABASE_SERVICE_ROLE_KEY')
+        getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+          }
+        }
       );
       
       const supabaseService = new SupabaseService(supabase);
@@ -109,7 +117,14 @@ export const sendHourlyReminders = internalAction({
       // Supabase管理者クライアントを作成
       const supabase = createClient(
         getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-        getEnv('SUPABASE_SERVICE_ROLE_KEY')
+        getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+          }
+        }
       );
       
       const supabaseService = new SupabaseService(supabase);
@@ -367,7 +382,13 @@ export const performSideEffects = internalAction({
     // Supabase管理者クライアントを作成
     const supabase = createClient(
       getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-      getEnv('SUPABASE_SERVICE_ROLE_KEY')
+      getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
     
     const supabaseService = new SupabaseService(supabase);
@@ -453,8 +474,6 @@ async function handleCreateSideEffects(
     reservationId: string;
   }
 ) {
-  const { CarteRepository } = await import('@/services/supabase/repositories/carte');
-  
   const carteRepo = new CarteRepository(supabaseService);
   
   // ポイント使用がある場合の減算処理
@@ -501,7 +520,6 @@ async function handleCreateSideEffects(
     );
     
     // カルテ詳細を追加
-    const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
     const carteDetailRepo = new CarteDetailRepository(supabaseService);
     await carteDetailRepo.createCarteDetail({
       tenant_id: payload.tenant_id,
@@ -569,8 +587,6 @@ async function handleConfirmSideEffects(
       }
     }
 
-    const { CarteRepository } = await import('@/services/supabase/repositories/carte');
-  
     // クレジットカード決済の場合のみカルテ作成
     if(payload.reservation?.detail?.payment_method === "credit_card" && payload.reservation?.customer_uid && payload.reservation?.org_id) {
       const carteRepo = new CarteRepository(supabaseService);
@@ -583,7 +599,6 @@ async function handleConfirmSideEffects(
         }
       );
       // カルテ詳細を追加
-      const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
       const carteDetailRepo = new CarteDetailRepository(supabaseService);
       await carteDetailRepo.createCarteDetail({
         tenant_id: payload.reservation.tenant_id,
@@ -625,7 +640,6 @@ async function handleCancelSideEffects(
   
   if (!reservation || !reservation.customer_uid) return;
   
-  const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
   const carteDetailRepo = new CarteDetailRepository(supabaseService);
   
   try {
@@ -642,7 +656,6 @@ async function handleCancelSideEffects(
 
     // 2. ポイント返還処理
     if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
-      const { PointTransactionRepository } = await import('@/services/supabase/repositories/point');
       const pointTransactionRepo = new PointTransactionRepository(supabaseService);
       
       try {
@@ -691,10 +704,6 @@ async function handleStatusSideEffects(
 
   // completed ステータスへの変更時の処理
   if (payload.status === 'completed' && reservation.customer_uid) {
-    const { PointTaskQueueRepository } = await import('@/services/supabase/repositories/point');
-    const { CustomerRepository } = await import('@/services/supabase/repositories/customer');
-    const { CarteRepository } = await import('@/services/supabase/repositories/carte');
-
     const pointTaskQueueRepo = new PointTaskQueueRepository(supabaseService);
     const customerRepo = new CustomerRepository(supabaseService);
     const carteRepo = new CarteRepository(supabaseService);
@@ -768,37 +777,50 @@ async function handleStatusSideEffects(
           console.log(`[handleStatusSideEffects] Points already deducted at reservation confirmation: ${reservation.detail.use_points} points for reservation ${reservation._id}`);
         }
 
-        // 7. クーポン利用時はトランザクションを作成
+        // 7. クーポン利用時の処理（completed時は利用回数更新のみ）
+        // 注意: クーポントランザクションは予約確定時に既に作成済みであるべき
         if(reservation.detail.coupon_discount && reservation.detail.coupon_discount > 0 && reservation.detail.coupon_id) {
-           // Supabaseクライアントの作成（サーバーサイドでのみService Role Keyを使用）
-    const supabase = createClient(
-      getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-      getEnv('SUPABASE_SERVICE_ROLE_KEY')
-    )
-    const supabaseService = new SupabaseService(supabase)
-    const couponTransactionRepo = new CouponTransactionRepository(supabaseService)
+          try {
+            // クーポントランザクションが既に存在するかチェック
+            const couponTransactionRepo = new CouponTransactionRepository(supabaseService);
+            const existingTransaction = await couponTransactionRepo.findByReservation(
+              reservation.tenant_id,
+              reservation.org_id,
+              reservation._id
+            );
 
-    // クーポントランザクションの作成
-    const couponTransaction = await couponTransactionRepo.create({
-      tenant_id: reservation.tenant_id,
-      org_id: reservation.org_id,
-      coupon_id: reservation.detail.coupon_id,
-      customer_uid: reservation.customer_uid,
-      reservation_id: reservation._id,
-      transaction_date_unix: Math.floor(Date.now() / 1000),
-      discount_amount: reservation.detail.coupon_discount,
-    })
+            if (existingTransaction) {
+              console.log(`[handleStatusSideEffects] クーポントランザクションは既に存在します: ${existingTransaction.id}`);
+            } else {
+              console.warn(`[handleStatusSideEffects] クーポントランザクションが見つかりません。completed時に作成します: ${reservation._id}`);
+              
+              // 緊急対応として completed 時にトランザクションを作成
+              const couponTransaction = await couponTransactionRepo.create({
+                tenant_id: reservation.tenant_id,
+                org_id: reservation.org_id,
+                coupon_id: reservation.detail.coupon_id,
+                customer_uid: reservation.customer_uid,
+                reservation_id: reservation._id,
+                transaction_date_unix: Math.floor(Date.now() / 1000),
+                discount_amount: reservation.detail.coupon_discount,
+              });
 
-    await fetchMutation(api.coupon.config.mutation.updateNumberOfUse, {
-      type: 'increment',
-      tenant_id: reservation.tenant_id as Id<'tenant'>,
-      org_id: reservation.org_id as Id<'organization'>,
-      coupon_id: reservation.detail.coupon_id as Id<'coupon'>,
-    })
+              console.log(`[handleStatusSideEffects] 緊急作成されたクーポントランザクション: ${couponTransaction.id}`);
+            }
 
-    console.log(
-      `[API] Created coupon transaction: ${couponTransaction.id} for reservation: ${reservation._id}`
-    )
+            // クーポン利用回数を更新（重複チェック付き）
+            await fetchMutation(api.coupon.config.mutation.updateNumberOfUse, {
+              type: 'increment',
+              tenant_id: reservation.tenant_id as Id<'tenant'>,
+              org_id: reservation.org_id as Id<'organization'>,
+              coupon_id: reservation.detail.coupon_id as Id<'coupon'>,
+            });
+
+            console.log(`[handleStatusSideEffects] クーポン利用回数を更新しました: ${reservation.detail.coupon_id}`);
+          } catch (couponError) {
+            console.error(`[handleStatusSideEffects] クーポン処理でエラーが発生しました (予約ID: ${reservation._id}):`, couponError);
+            // クーポン処理のエラーは予約完了処理をブロックしない（ビジネス継続性優先）
+          }
         }
       }
       
@@ -843,7 +865,6 @@ async function handleStatusSideEffects(
   } else if ((payload.status === 'cancelled' || payload.status === 'refunded') && reservation.customer_uid) {
     console.log('[handleStatusSideEffects] Cancelled status side effects');
 
-    const { CarteDetailRepository } = await import('@/services/supabase/repositories/carte');
     const carteDetailRepo = new CarteDetailRepository(supabaseService);
     console.log('handleCancelSideEffects', coreResult);
     // 予約詳細はpayloadから取得
@@ -863,7 +884,6 @@ async function handleStatusSideEffects(
 
       // 2. ポイント返還処理
       if (reservation.detail?.use_points && reservation.detail.use_points > 0) {
-        const { PointTransactionRepository } = await import('@/services/supabase/repositories/point');
         const pointTransactionRepo = new PointTransactionRepository(supabaseService);
         
         try {
@@ -910,7 +930,13 @@ async function migrateReservationToSupabase(
     // Supabase管理者クライアントを作成
     const supabase = createClient(
       getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-      getEnv('SUPABASE_SERVICE_ROLE_KEY')
+      getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
     
     console.log(`[migrateReservationToSupabase] Starting migration for reservation: ${reservation._id}`);
@@ -1054,7 +1080,13 @@ async function updateSupabaseSalesAggregation(reservation: Doc<'reservation'> & 
     // Supabase管理者クライアントを作成
     const supabase = createClient(
       getEnv('NEXT_PUBLIC_SUPABASE_URL'),
-      getEnv('SUPABASE_SERVICE_ROLE_KEY')
+      getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
     
     console.log(`[updateSupabaseSalesAggregation] Starting aggregation update for reservation: ${reservation._id}`);
