@@ -719,7 +719,9 @@
     "dateLabel": "日付",
     "timeLabel": "時間",
     "loadingAvailableTimes": "予約可能時間を取得中...",
-    "noAvailableTimes": "この日は予約可能な時間がありません"
+    "noAvailableTimes": "この日は予約可能な時間がありません",
+    "subscriptionRequired": "予約機能を利用するにはサブスクリプションが必要です。",
+    "goToSubscription": "サブスクリプションに移動する"
   },
   "customers": {
     "title": "顧客管理",
@@ -1942,7 +1944,8 @@
     "closeSidebar": "閉じる",
     "subscriptionRequired": "サブスクリプションをご契約ください。",
     "subscriptionRequiredDetail": "以下のリンクから契約後にプラン毎の機能をご利用いただけます。",
-    "goToSubscription": "サブスクリプションページへ"
+    "goToSubscription": "サブスクリプションページへ",
+    "subscriptionExpired": "契約切れ"
   },
   "reservationLink": {
     "selectLinkDestination": "リンクの設置先を選択",
