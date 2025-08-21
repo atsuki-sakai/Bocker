@@ -252,10 +252,10 @@ const StaffTimelineRow = memo(
         )}
       >
         {/* スタッフ名（左端固定） */}
-        <div className="sticky left-0 z-20 bg-background border-r border-border w-20 md:w-40 p-2 md:p-4 flex h-full items-center">
-          <Link className="pointer-cursor" href={`/dashboard/staff/${staffData.staff._id}`}>
-            <div className="flex flex-col md:flex-row items-center gap-3 w-full">
-              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shadow-sm">
+        <div className="sticky left-0 z-20 bg-background border-r border-border w-20 md:w-40 p-2 md:p-4 flex h-full items-center overflow-hidden">
+          <Link className="pointer-cursor w-full" href={`/dashboard/staff/${staffData.staff._id}`}>
+            <div className="flex flex-col md:flex-row items-center gap-3 w-full overflow-hidden">
+              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                 {staffData.staff.images && staffData.staff.images.length > 0 ? (
                   <Image
                     src={staffData.staff.images[0].thumbnail_url}
@@ -268,8 +268,14 @@ const StaffTimelineRow = memo(
                   <User className="w-5 h-5 text-primary" />
                 )}
               </div>
-              <div className="flex-1 min-w-0 w-full">
-                <div className="font-semibold text-xs text-center  md:text-sm text-primary truncate">
+              <div
+                className="flex-1 min-w-0 flex flex-col items-center overflow-hidden"
+                style={{ maxWidth: '100%' }}
+              >
+                <div
+                  className="font-semibold text-xs md:text-sm text-primary w-full text-start"
+                  title={staffData.staff.name} // ツールチップで完全な名前を表示
+                >
                   {staffData.staff.name}
                 </div>
                 <div className="text-xs text-link-foreground flex items-center gap-1">
@@ -704,7 +710,23 @@ export default function ReservationTimeLine() {
   }
 
   const isWeekendDate = isWeekend(selectedDate)
+  const isSubscriptionActive =
+    subscription?.status === 'active' || subscription?.status === 'trialing'
 
+  if (!isSubscriptionActive) {
+    return (
+      <div>
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="text-sm text-muted-foreground flex flex-col items-center justify-center gap-8">
+            <p className="text-center text-lg font-bold">{t('subscriptionRequired')}</p>
+            <Link href="/dashboard/subscription">
+              <Button className="w-fit text-xs">{t('goToSubscription')}</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className={`h-fit w-full ${subscription === null ? 'hidden' : ''}`}>
       {/* ヘッダー部分 */}

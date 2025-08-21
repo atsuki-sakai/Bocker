@@ -664,7 +664,8 @@
     "closeSidebar": "Close",
     "subscriptionRequired": "Please subscribe to a plan.",
     "subscriptionRequiredDetail": "After subscribing via the link below, you can use features based on your plan.",
-    "goToSubscription": "Go to Subscription Page"
+    "goToSubscription": "Go to Subscription Page",
+    "subscriptionExpired": "Subscription Expired"
   },
   "reservationLink": {
     "selectLinkDestination": "Select link destination",
@@ -1085,7 +1086,9 @@
       "friday": "Friday",
       "saturday": "Saturday",
       "sunday": "Sunday"
-    }
+    },
+    "subscriptionRequired": "To use the reservation function, you need a subscription.",
+    "goToSubscription": "Go to Subscription"
   },
   "customers": {
     "title": "Customer Management",
