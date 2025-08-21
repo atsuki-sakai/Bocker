@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useStablePaginatedQuery } from '@/hooks/useStablePaginatedQuery'
@@ -8,6 +9,8 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { Loading } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Doc } from '@/convex/_generated/dataModel'
+import { getPlanLimits } from '@/convex/utils/helpers'
+import { SubscriptionPlanName } from '@/convex/types'
 
 import { useTranslations } from 'next-intl'
 
@@ -15,7 +18,8 @@ const numberOfItems = 10
 export default function OptionList() {
   const t = useTranslations('options')
   const router = useRouter()
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
+  const limits = getPlanLimits(planName as SubscriptionPlanName)
   const {
     results: options,
     loadMore,
@@ -32,6 +36,11 @@ export default function OptionList() {
     {
       initialNumItems: numberOfItems,
     }
+  )
+
+  const allOptions: Doc<'option'>[] = useMemo(() => options || [], [options]).slice(
+    0,
+    limits.maxOptionCount
   )
 
   if (isLoading) {
@@ -80,8 +89,8 @@ export default function OptionList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border bg-background text-nowrap">
-                {options && options.length > 0 ? (
-                  options.map((option: Doc<'option'>) => (
+                {allOptions && allOptions.length > 0 ? (
+                  allOptions.map((option: Doc<'option'>) => (
                     <tr
                       key={option._id}
                       onClick={() => router.push(`/dashboard/option/${option._id}`)}

@@ -58,13 +58,18 @@ interface StaffInvitation {
 }
 
 export default function InviteManagement() {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
 
   // Convexクエリで招待中スタッフを取得
   const pendingStaff = useQuery(
     api.staff.invitation.query.listPending,
-    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip'
+    tenantId && orgId && planName
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+        }
+      : 'skip'
   )
 
   // コンポーネントの状態管理

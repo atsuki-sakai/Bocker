@@ -90,15 +90,6 @@ export default function SignInForm() {
     },
   }
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring', stiffness: 100 },
-    },
-  }
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted">
       <motion.div
@@ -112,16 +103,16 @@ export default function SignInForm() {
             <LanguageSwitcher />
           </div>
           <CardHeader className="space-y-1">
-            <motion.div variants={itemVariants}>
+            <motion.div>
               <CardTitle className="text-2xl font-bold text-center flex-1">{t('title')}</CardTitle>
             </motion.div>
-            <motion.div variants={itemVariants}>
+            <motion.div>
               <p className="text-sm text-center text-muted-foreground">{t('subtitle')}</p>
             </motion.div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <motion.div variants={itemVariants} className="space-y-2">
+              <motion.div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   {t('email')}
                 </Label>
@@ -140,7 +131,7 @@ export default function SignInForm() {
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </motion.div>
 
-              <motion.div variants={itemVariants} className="space-y-2">
+              <motion.div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   {t('password')}
                 </Label>
@@ -168,7 +159,7 @@ export default function SignInForm() {
                 )}
               </motion.div>
 
-              <motion.div variants={itemVariants}>
+              <motion.div>
                 <Button type="submit" className="w-full " disabled={isSubmitting}>
                   {isSubmitting ? t('loading') : t('submit')}
                   {isSubmitting ? (
@@ -199,10 +190,7 @@ export default function SignInForm() {
 
           <CardFooter className="flex flex-col space-y-4">
             <Separator className="bg-muted w-1/2 mx-auto my-2" />
-            <motion.div
-              variants={itemVariants}
-              className="flex items-center justify-end w-full text-right text-xs"
-            >
+            <motion.div className="flex items-center justify-end w-full text-right text-xs">
               <Link href={`/sign-up`} className="inline-flex items-center text-xs text-blue-500">
                 {t('signUp')}
                 <ArrowRight className="ml-1 h-3 w-3" />

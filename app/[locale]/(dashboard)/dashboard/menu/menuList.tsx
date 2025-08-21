@@ -3,7 +3,7 @@
 import { useState, useCallback, memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
-import { useQuery } from 'convex/react'
+import { usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,13 +25,16 @@ import { Doc, Id } from '@/convex/_generated/dataModel'
 import type { MenuCategory } from '@/convex/types'
 import { MENU_CATEGORY_VALUES } from '@/convex/types'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { getPlanLimits } from '@/convex/utils/helpers'
+import { SubscriptionPlanName } from '@/convex/types'
 
 // 性別とタイプの定義を追加
 type TargetGender = 'male' | 'female' | 'unselected'
 type TargetType = 'all' | 'first_time' | 'repeat'
 
 export const MenuList = memo(() => {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
+  const limits = getPlanLimits(planName as SubscriptionPlanName)
   const t = useTranslations('menu')
   const [selectedCategories, setSelectedCategories] = useState<MenuCategory[]>([])
   const [openCategoryPopover, setOpenCategoryPopover] = useState(false)
@@ -42,26 +45,30 @@ export const MenuList = memo(() => {
   const [openTypePopover, setOpenTypePopover] = useState(false)
 
   // === 1. すべてのメニュー取得 ===
-  const allMenusQuery = useQuery(
+  const { results: allMenusResults, loadMore } = usePaginatedQuery(
     api.menu.query.listByTenantAndOrg,
     tenantId && orgId
       ? {
           tenant_id: tenantId as Id<'tenant'>,
           org_id: orgId as Id<'organization'>,
-          paginationOpts: { numItems: 100, cursor: null },
-          sort: 'desc',
+          sort: 'asc',
           activeOnly: true,
           includeArchive: false,
         }
-      : 'skip'
+      : 'skip',
+    {
+      initialNumItems: 10,
+    }
   )
 
   // ページネーション関連（今回は先頭 100 件のみ）
-  const allMenus: Doc<'menu'>[] = useMemo(() => allMenusQuery?.page || [], [allMenusQuery])
-  const status: 'CanLoadMore' | 'Exhausted' = allMenusQuery?.isDone ? 'Exhausted' : 'CanLoadMore'
-  const loadMore = () => {
-    // 今後の拡張用: 追加読み込みが必要な場合に実装
-  }
+  const allMenus: Doc<'menu'>[] = useMemo(() => allMenusResults || [], [allMenusResults]).slice(
+    0,
+    limits.maxMenuCount
+  )
+  const status: 'CanLoadMore' | 'Exhausted' =
+    allMenusResults.length === 0 ? 'Exhausted' : 'CanLoadMore'
+
   const numberOfMenus = allMenus.length
 
   // 表示するメニューの決定 - 複数フィルターを考慮
@@ -85,7 +92,7 @@ export const MenuList = memo(() => {
     })
   }, [selectedCategories, selectedGender, selectedType, allMenus])
 
-  const isLoadingData = !allMenusQuery
+  const isLoadingData = !allMenusResults
 
   const allCategories = MENU_CATEGORY_VALUES
 
@@ -465,7 +472,7 @@ export const MenuList = memo(() => {
               transition={{ delay: 0.3 }}
               className="mt-6 flex justify-center"
             >
-              <Button onClick={loadMore} variant="outline" className="w-full sm:w-auto">
+              <Button onClick={() => loadMore(10)} variant="outline" className="w-full sm:w-auto">
                 {t('messages.loadMore')}
               </Button>
             </motion.div>

@@ -13,6 +13,7 @@ const intlMiddleware = createMiddleware(routing)
 // 認証不要なパス
 const publicPaths = [
   '/',
+  '/?source=pwa',
   '/api/webhook/clerk',
   '/api/stripe/checkout/webhook',
   '/api/webhook/stripe/connect',

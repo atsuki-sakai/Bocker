@@ -6,7 +6,8 @@ import DashboardSection from '@/components/common/DashboardSection'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTranslations } from 'next-intl'
 import { api } from '@/convex/_generated/api'
-import { usePaginatedQuery, useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
+import { SubscriptionPlanName } from '@/convex/types'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -59,14 +60,12 @@ const timeToMinutes = (time: string): number => {
   return h * 60 + m
 }
 
-const pageSize: number = 20
-
 export default function StaffSchedulePage() {
   const t = useTranslations('staff.schedule')
   const searchParams = useSearchParams()
   const initialStaffId = searchParams.get('staffId') as Id<'staff'> | null
   console.log('initialStaffId', initialStaffId)
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | null>(initialStaffId)
   const [selectedDates, setSelectedDates] = useState<Date[]>([])
@@ -74,10 +73,15 @@ export default function StaffSchedulePage() {
   // 日付と時間情報を保持する状態
   const [dateTimeSettings, setDateTimeSettings] = useState<DateWithTimes[]>([])
 
-  const { results: staffs } = usePaginatedQuery(
+  const staffs = useQuery(
     api.staff.query.list,
-    tenantId && orgId ? { tenant_id: tenantId, org_id: orgId } : 'skip',
-    { initialNumItems: pageSize }
+    tenantId && orgId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+          planName: planName as SubscriptionPlanName,
+        }
+      : 'skip'
   )
 
   const upsertSchedules = useMutation(api.staff.exception_schedule.mutation.upsertSchedules)
@@ -172,9 +176,16 @@ export default function StaffSchedulePage() {
     })
   }, [selectedDates])
 
+  // MICROプランでスタッフが一名の場合、自動選択する処理
+  useEffect(() => {
+    if (planName === 'MICRO' && staffs && staffs.length === 1 && !selectedStaffId) {
+      setSelectedStaffId(staffs[0]._id)
+    }
+  }, [planName, staffs, selectedStaffId])
+
   // スタッフ選択時の既存スケジュール取得処理
   useEffect(() => {
-    if (tenantId && orgId && selectedStaffId && staffs.length > 0) {
+    if (tenantId && orgId && selectedStaffId && staffs && staffs.length > 0) {
       const fetchStaffSchedule = async (): Promise<void> => {
         const staffSchedule = await fetchQuery(
           api.staff.exception_schedule.query.findByTenantOrgStaff,
@@ -253,7 +264,7 @@ export default function StaffSchedulePage() {
                 <SelectValue placeholder={t('selectStaffPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                {staffs.length > 0 ? (
+                {staffs && staffs.length > 0 ? (
                   staffs.map((staff) => (
                     <SelectItem key={staff._id} value={staff._id}>
                       {staff.name}

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
+import { SubscriptionPlanName } from '@/convex/types'
+import { getPlanLimits } from '@/convex/utils/helpers'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
@@ -21,6 +23,7 @@ import Image from 'next/image'
 type OptionViewProps = {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
+  planName: SubscriptionPlanName
   selectedOptions: Doc<'option'>[]
   onChangeOptionsAction: (options: Doc<'option'>[]) => void
 }
@@ -28,6 +31,7 @@ type OptionViewProps = {
 export const OptionView = ({
   tenantId,
   orgId,
+  planName,
   selectedOptions,
   onChangeOptionsAction,
 }: OptionViewProps) => {
@@ -68,6 +72,15 @@ export const OptionView = ({
 
   // オプションの追加処理
   const addOption = (option: Doc<'option'>) => {
+    // プラン制限チェック
+    const limits = getPlanLimits(planName)
+    const currentOptionCount = selectedOptions.length
+    
+    if (currentOptionCount >= limits.maxOptionCount) {
+      setOptionSelectionError(`${planName}プランでは最大${limits.maxOptionCount}個のオプションまでしか選択できません。`)
+      return
+    }
+
     if (canAddOption(option)) {
       onChangeOptionsAction([...selectedOptions, option])
       setOptionSelectionError(null)

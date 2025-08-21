@@ -22,10 +22,12 @@ import {
 import { useState } from 'react'
 import type { StaffDisplay } from '@/lib/types'
 import { User } from 'lucide-react'
+import type { SubscriptionPlanName } from '@/convex/types'
 
 type StaffViewProps = {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
+  planName: SubscriptionPlanName
   selectedMenuIds: Id<'menu'>[]
   selectedStaff: Doc<'staff'> | 'free' | null
   onChangeStaffAction: (staff: StaffDisplay | 'free' | null) => void
@@ -35,6 +37,7 @@ type StaffViewProps = {
 export const StaffView = ({
   tenantId,
   orgId,
+  planName,
   selectedMenuIds,
   selectedStaff,
   onChangeStaffAction,
@@ -47,6 +50,7 @@ export const StaffView = ({
       ? {
           tenant_id: tenantId,
           org_id: orgId,
+          planName: planName,
           menu_ids: selectedMenuIds,
         }
       : 'skip'
@@ -56,12 +60,8 @@ export const StaffView = ({
     return <Loading />
   }
 
-  // Staffs を priority の降順に並び替える
-  const sortedStaffs = [...staffsDisplayData].sort((a, b) => {
-    const priDiff = (b.priority ?? 0) - (a.priority ?? 0)
-    if (priDiff !== 0) return priDiff
-    return (a.extra_charge ?? 0) - (b.extra_charge ?? 0)
-  })
+  // クエリ内で既にソート済みなので、そのまま使用
+  const sortedStaffs = staffsDisplayData
 
   const today = new Date()
   const todayDayOfWeek = getDayOfWeek(today)

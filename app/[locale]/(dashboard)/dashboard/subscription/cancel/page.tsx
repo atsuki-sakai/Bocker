@@ -24,16 +24,11 @@ export default function CancelSubscriptionPage() {
       y: 0,
       transition: {
         duration: 0.5,
-        ease: "easeOut",
+        ease: [0.4, 0, 0.2, 1] as const,
         staggerChildren: 0.15,
       },
     },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0 },
-  };
+  }
 
   return (
     <div className="min-h-[calc(100vh-20vh)] flex items-center justify-center  p-4">
@@ -47,11 +42,11 @@ export default function CancelSubscriptionPage() {
           <div className="h-2 bg-destructive"></div>
           <CardContent className="pt-10 pb-6 px-8">
             <motion.div className="text-center space-y-4" variants={containerVariants}>
-              <motion.div variants={itemVariants} className="inline-flex p-4 rounded-full ">
+              <motion.div className="inline-flex p-4 rounded-full ">
                 <XCircle className="w-16 h-16 text-destructive" />
               </motion.div>
 
-              <motion.div variants={itemVariants}>
+              <motion.div>
                 <h2 className="text-2xl font-bold tracking-tight text-primary">
                   {t('cancel.title')}
                 </h2>
@@ -59,7 +54,7 @@ export default function CancelSubscriptionPage() {
 
               <Separator className="my-6" />
 
-              <motion.div variants={itemVariants} className="space-y-4">
+              <motion.div className="space-y-4">
                 <div className="bg-background p-6 rounded-lg">
                   <div className="space-y-6">
                     <div className="flex flex-col sm:flex-row items-center gap-3 text-left">

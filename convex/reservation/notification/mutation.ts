@@ -61,24 +61,25 @@ export const killAll = mutation({
     org_id: v.id('organization'),
   }),
   handler: async (ctx, args) => {
-    const { tenant_id, org_id } = args;
-    
+    const { tenant_id, org_id } = args
+
     // 該当する通知を取得
     const notifications = await ctx.db
       .query('reservation_notification')
-      .withIndex('by_tenant_org_archive', (q) => 
+      .withIndex('by_tenant_org_archive', (q) =>
         q.eq('tenant_id', tenant_id).eq('org_id', org_id).eq('is_archive', false)
       )
-      .collect();
-    
+      .collect()
+
     // 全ての通知を削除
-    await Promise.all(notifications.map(async (notification) => {
-      await killRecord(ctx, notification._id);
-    }));
-    
+    await Promise.all(
+      notifications.map(async (notification) => {
+        await killRecord(ctx, notification._id)
+      })
+    )
+
     return {
       success: true,
-    };
+    }
   },
-});
-
+})

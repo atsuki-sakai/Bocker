@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { XIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -70,25 +69,13 @@ export default function ReservationList() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedStaff, setSelectedStaff] = useState<string>('all')
   const [selectedCustomer, setSelectedCustomer] = useState<string>('all')
-  const [isCsvCalendarOpen, setIsCsvCalendarOpen] = useState(false)
   // CSVエクスポート用のstate
-  const [csvStartDate, setCsvStartDate] = useState('')
-  const [csvEndDate, setCsvEndDate] = useState('')
   const [csvStatus, setCsvStatus] = useState('all')
   const [openCsvDialog, setOpenCsvDialog] = useState(false)
 
   // データ更新の状態管理
   const [isInterval, setIsInterval] = useState(false)
   const [intervalTime, setIntervalTime] = useState(10)
-
-  // CSVエクスポートフック
-  const { exportToCsv, isExporting, isValidPeriod, maxDate, minDate } = useReservationExport({
-    tenantId: tenantId || '',
-    orgId: orgId || '',
-    status: csvStatus,
-    startDate: csvStartDate,
-    endDate: csvEndDate,
-  })
 
   // 実際の検索で使用する日付範囲（本日から1週間）
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
@@ -112,6 +99,15 @@ export default function ReservationList() {
   // 日付範囲を文字列に変換
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined
+
+  // CSVエクスポートフック
+  const { exportToCsv, isExporting } = useReservationExport({
+    tenantId: tenantId || '',
+    orgId: orgId || '',
+    status: csvStatus,
+    startDate: startDate,
+    endDate: endDate,
+  })
 
   console.log('[ReservationCollection] Date range processing:', {
     dateRange,
@@ -304,116 +300,16 @@ export default function ReservationList() {
               </DialogHeader>
               <div className="space-y-4 p-4">
                 <p className="text-sm text-muted-foreground">
-                  指定期間の予約データを全件CSVファイルでダウンロードできます
-                  <small>(※現在最大3ヶ月)</small>
+                  指定期間の予約データを全件CSVファイルでダウンロードで きます
                 </p>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>期間選択</Label>
-                    <Popover open={isCsvCalendarOpen} onOpenChange={setIsCsvCalendarOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !csvStartDate && !csvEndDate && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {csvStartDate && csvEndDate ? (
-                            <>
-                              {format(new Date(csvStartDate), 'yyyy/MM/dd')} -{' '}
-                              {format(new Date(csvEndDate), 'yyyy/MM/dd')}
-                            </>
-                          ) : csvStartDate ? (
-                            format(new Date(csvStartDate), 'yyyy/MM/dd')
-                          ) : (
-                            <span>期間を選択してください</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0"
-                        align="start"
-                      >
-                        <div className="flex flex-col max-h-[85vh] min-w-[320px] animate-in fade-in-0 zoom-in-95 duration-200">
-                          {/* ヘッダー */}
-                          <div className="flex items-center justify-between p-3 border-b">
-                            <h4 className="font-medium text-sm">期間を選択</h4>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setIsCsvCalendarOpen(false)}
-                              className="h-8 w-8 p-0 hover:bg-muted"
-                            >
-                              <XIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          {/* カレンダーコンテンツ */}
-                          <div className="overflow-y-auto flex-1">
-                            <div className="p-3">
-                              <Calendar
-                                initialFocus
-                                mode="range"
-                                selected={{
-                                  from: csvStartDate ? new Date(csvStartDate) : undefined,
-                                  to: csvEndDate ? new Date(csvEndDate) : undefined,
-                                }}
-                                onSelect={(dateRange) => {
-                                  if (dateRange?.from) {
-                                    setCsvStartDate(format(dateRange.from, 'yyyy-MM-dd'))
-                                  } else {
-                                    setCsvStartDate('')
-                                  }
-                                  if (dateRange?.to) {
-                                    setCsvEndDate(format(dateRange.to, 'yyyy-MM-dd'))
-                                  } else if (dateRange?.from && !dateRange?.to) {
-                                    // 単一日付選択の場合、終了日も同じに設定
-                                    setCsvEndDate(format(dateRange.from, 'yyyy-MM-dd'))
-                                  } else {
-                                    setCsvEndDate('')
-                                  }
-                                }}
-                                disabled={(date) => {
-                                  const min = new Date(minDate)
-                                  const max = new Date(maxDate)
-                                  return date < min || date > max
-                                }}
-                                numberOfMonths={1}
-                                locale={locale === 'ja' ? ja : enUS}
-                              />
-                            </div>
-                          </div>
-
-                          {/* フッター */}
-                          <div className="border-t p-3">
-                            <div className="flex justify-between items-center">
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setCsvStartDate('')
-                                  setCsvEndDate('')
-                                }}
-                                size="sm"
-                                className="transition-all duration-200 hover:scale-105"
-                              >
-                                クリア
-                              </Button>
-                              <Button
-                                onClick={() => setIsCsvCalendarOpen(false)}
-                                size="sm"
-                                className="transition-all duration-200 hover:scale-105"
-                              >
-                                完了
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                <div>
+                  {/* 選択中の日付範囲を表示 */}
+                  {tempDateRange && tempDateRange.from && (
+                    <div className="text-sm text-muted-foreground mb-2 font-bold">
+                      選択中の期間: {format(tempDateRange.from, 'yyyy/MM/dd')} -{' '}
+                      {tempDateRange.to ? format(tempDateRange.to, 'yyyy/MM/dd') : 'なし'}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -433,17 +329,9 @@ export default function ReservationList() {
                   </Select>
                 </div>
 
-                {!isValidPeriod && csvStartDate && csvEndDate && (
-                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                    <p className="text-sm text-destructive">期間は最大3ヶ月間まで指定可能です</p>
-                  </div>
-                )}
-
                 <Button
                   onClick={handleExportToCsv}
-                  disabled={
-                    !isValidPeriod || isExporting || !csvStartDate || !csvEndDate || isInterval
-                  }
+                  disabled={isExporting || !startDate || !endDate || isInterval}
                   className="w-full"
                 >
                   {isExporting || isInterval ? (

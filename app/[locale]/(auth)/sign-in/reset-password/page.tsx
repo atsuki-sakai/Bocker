@@ -80,20 +80,6 @@ const containerVariants = {
   },
 }
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: 'spring', stiffness: 100 },
-  },
-  exit: {
-    y: -20,
-    opacity: 0,
-    transition: { duration: 0.2 },
-  },
-}
-
 // フォーム共通のエラーメッセージ表示を含むリセットコード送信用コンポーネント
 function ResetCodeForm({
   register,
@@ -118,7 +104,7 @@ function ResetCodeForm({
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-4"
     >
-      <motion.div variants={itemVariants} className="space-y-2">
+      <motion.div className="space-y-2">
         <Label htmlFor="email" className="text-xs font-medium">
           {t('auth.resetPassword.accountEmail')}
         </Label>
@@ -141,7 +127,7 @@ function ResetCodeForm({
         )}
       </motion.div>
 
-      <motion.div variants={itemVariants} className="flex justify-end">
+      <motion.div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? (
             <>
@@ -180,10 +166,7 @@ function ResetPasswordForm({
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible" exit="exit">
-      <motion.div
-        variants={itemVariants}
-        className="mb-6 p-4 bg-secondary rounded-lg border border-secondary flex items-center gap-3"
-      >
+      <motion.div className="mb-6 p-4 bg-secondary rounded-lg border border-secondary flex items-center gap-3">
         <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
         <p className="text-xs text-primary">{t('codeInstruction')}</p>
       </motion.div>
@@ -193,7 +176,7 @@ function ResetPasswordForm({
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-4"
       >
-        <motion.div variants={itemVariants} className="space-y-2">
+        <motion.div className="space-y-2">
           <Label htmlFor="code" className="text-xs font-medium">
             {t('code')}
           </Label>
@@ -216,7 +199,7 @@ function ResetPasswordForm({
           )}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="space-y-2">
+        <motion.div className="space-y-2">
           <Label htmlFor="newPassword" className="text-xs font-medium">
             {t('newPassword')}
           </Label>
@@ -245,7 +228,7 @@ function ResetPasswordForm({
           )}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="space-y-2">
+        <motion.div className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-xs font-medium">
             {t('confirmPassword')}
           </Label>
@@ -274,7 +257,7 @@ function ResetPasswordForm({
           )}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="flex justify-end pt-2">
+        <motion.div className="flex justify-end pt-2">
           <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting ? (
               <>
