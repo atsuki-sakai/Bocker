@@ -23,7 +23,7 @@ interface ReminderRequestBody {
     staff_name: string
     start_time_unix: number
     end_time_unix: number
-    menus: Array<{ name: string; duration_min?: number }>
+    menus: Array<{ name: string; price?: number; duration_min?: number }>
     options?: Array<{ name: string; quantity: number }>
     extra_charge?: number
     coupon_discount?: number

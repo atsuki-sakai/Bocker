@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
 
     // 3. Convexから招待中スタッフ一覧を取得（招待情報も含まれている）
     const pendingStaff = await convex.query(api.staff.invitation.query.listPending, {
-      tenant_id: tenant_id as Id<"tenant">,
-      org_id: org_id as Id<"organization">,
+      tenant_id: tenant_id as Id<'tenant'>,
+      org_id: org_id as Id<'organization'>,
     })
 
     // 4. レスポンスデータを整形（Clerk APIは不要）
