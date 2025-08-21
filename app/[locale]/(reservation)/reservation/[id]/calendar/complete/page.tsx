@@ -233,14 +233,9 @@ export default function CompletePage() {
     },
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0 },
-  }
-
   // reservationデータがロードされるまでローディング表示
   // フリー指名の場合はstaffチェックを無視
-  const isStaffLoading = reservationWithDetail?.reservation?.staff_id && !staff;
+  const isStaffLoading = reservationWithDetail?.reservation?.staff_id && !staff
   if (!reservationWithDetail || !organizationConfig || !reservationItems || isStaffLoading) {
     return <Loading />
   }
@@ -270,7 +265,7 @@ export default function CompletePage() {
         animate="visible"
       >
         {/* 成功メッセージカード */}
-        <motion.div variants={itemVariants}>
+        <motion.div>
           <Card className="mb-6 bg-background shadow-lg border-border overflow-hidden">
             <CardHeader className="bg-neon-foreground pb-4">
               <div className="flex justify-center mb-2">

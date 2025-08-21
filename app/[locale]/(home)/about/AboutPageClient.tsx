@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { CTASection } from '../_components/CTASection'
 import Image from 'next/image'
-import { TeamSection } from '../_components/TeamSection'
+// import { TeamSection } from '../_components/TeamSection'
 import { motion } from 'framer-motion'
 import { Header } from '../_components/Header'
 import { Footer } from '../_components/Footer'
@@ -18,31 +18,6 @@ export function AboutPageClient() {
       transition: {
         staggerChildren: 0.2,
         delayChildren: 0.3,
-      },
-    },
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: 'easeOut',
-      },
-    },
-  }
-
-  const imageVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.8,
-        ease: 'easeOut',
-        delay: 0.4,
       },
     },
   }
@@ -77,7 +52,6 @@ export function AboutPageClient() {
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
               <div className="mx-auto max-w-2xl lg:mx-0 lg:max-w-none">
                 <motion.p
-                  variants={itemVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.3 }}
@@ -86,7 +60,6 @@ export function AboutPageClient() {
                   {t('subtitle')}
                 </motion.p>
                 <motion.h1
-                  variants={itemVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.3 }}
@@ -102,7 +75,7 @@ export function AboutPageClient() {
                   viewport={{ once: true, amount: 0.3 }}
                 >
                   {story.map((item, index) => (
-                    <motion.div key={index} variants={itemVariants}>
+                    <motion.div key={index}>
                       <p className="text-2xl font-bold">{item.title}</p>
                       <p className="mt-8 text-sm text-muted-foreground">{item.description}</p>
                     </motion.div>
@@ -113,7 +86,6 @@ export function AboutPageClient() {
             <div className="relative overflow-hidden pt-16 lg:pt-20">
               <div className="mx-auto max-w-7xl px-6 lg:px-8">
                 <motion.div
-                  variants={imageVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.2 }}
@@ -134,7 +106,7 @@ export function AboutPageClient() {
           </div>
         </section>
         {/* Team Section */}
-        <TeamSection />
+        {/* <TeamSection /> */}
 
         {/* CTA Section */}
         <CTASection />

@@ -7,8 +7,9 @@ import { Doc, Id } from '@/convex/_generated/dataModel'
 import { CheckCircle, Tag, X, Clock, AlertTriangle } from 'lucide-react'
 import { useQuery, usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { ActiveCustomerType } from '@/convex/types'
+import { ActiveCustomerType, SubscriptionPlanName } from '@/convex/types'
 import { convertActiveCustomerType } from '@/convex/types'
+import { getPlanLimits } from '@/convex/utils/helpers'
 import { fetchQuery } from 'convex/nextjs'
 import { CouponErrorBoundary } from './CouponErrorBoundary'
 import { Loading } from '@/components/common'
@@ -48,6 +49,7 @@ import {
 type CouponMenuViewProps = {
   tenantId: Id<'tenant'>
   orgId: Id<'organization'>
+  planName: SubscriptionPlanName
   sessionCustomerType: ActiveCustomerType
   onCouponChange: (coupon: Doc<'coupon'> | null) => void
   onMenuChange: (menus: Doc<'menu'>[]) => void
@@ -68,6 +70,7 @@ type MenuCategoryWithSet = MenuCategory | 'セットメニュー'
 const CouponMenuViewInner = ({
   tenantId,
   orgId,
+  planName,
   sessionCustomerType,
   onCouponChange,
   onMenuChange,
@@ -152,8 +155,9 @@ const CouponMenuViewInner = ({
 
   // Force re-render when selectedCoupon changes
   const [couponVersion, setCouponVersion] = useState(0)
+  console.log('🔍 [CouponMenuView] couponVersion:', couponVersion)
   useEffect(() => {
-    setCouponVersion(prev => prev + 1)
+    setCouponVersion((prev) => prev + 1)
   }, [selectedCoupon])
 
   // Helper functions
@@ -171,7 +175,7 @@ const CouponMenuViewInner = ({
       if (!selectedCoupon || !excludedMenus) return false
       return excludedMenus.some((ex) => ex.menu_id === menu._id)
     },
-    [selectedCoupon, excludedMenus, couponVersion]
+    [selectedCoupon, excludedMenus]
   )
 
   const isSetMenu = useCallback((menu: Doc<'menu'>): boolean => {
@@ -300,7 +304,7 @@ const CouponMenuViewInner = ({
 
       return { isBlocked: false, reason: null }
     },
-    [isMenuExcludedByCoupon, isSetMenu, blockedCategories, couponVersion]
+    [isMenuExcludedByCoupon, isSetMenu, blockedCategories]
   )
 
   const extractUniqueCategories = useCallback((menus: Doc<'menu'>[]): MenuCategoryWithSet[] => {
@@ -389,6 +393,15 @@ const CouponMenuViewInner = ({
           }
         }
       } else {
+        // プラン制限チェック（メニュー追加時のみ）
+        const limits = getPlanLimits(planName as SubscriptionPlanName)
+        const currentMenuCount = Object.keys(newSelectedMenuMap).length
+        
+        if (currentMenuCount >= limits.maxMenuCount) {
+          alert(`${planName}プランでは最大${limits.maxMenuCount}個のメニューまでしか選択できません。`)
+          return
+        }
+
         const categoryIsBlocked = isSet
           ? false
           : menuCategories.some((cat) => blockedCategories.includes(cat))
@@ -429,7 +442,7 @@ const CouponMenuViewInner = ({
       setSelectedMenuMap(newSelectedMenuMap)
       onMenuChange(Object.values(newSelectedMenuMap))
     },
-    [selectedMenuMap, isSetMenu, blockedCategories, onMenuChange]
+    [selectedMenuMap, isSetMenu, blockedCategories, onMenuChange, planName]
   )
 
   const handleShowMenuDetails = useCallback((menu: Doc<'menu'>) => {

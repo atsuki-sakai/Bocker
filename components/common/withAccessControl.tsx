@@ -69,7 +69,7 @@ export function withAccessControl<P extends object>(
 export const withRoleAccess = <P extends object>(
   WrappedComponent: ComponentType<P>,
   minRole: Role,
-  minPlan: SubscriptionPlanName = 'LITE'
+  minPlan: SubscriptionPlanName = 'MICRO'
 ) => {
   return withAccessControl(WrappedComponent, { minRole, minPlan })
 }

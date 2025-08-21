@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
@@ -11,6 +12,8 @@ import { toast } from 'sonner'
 import { Doc } from '@/convex/_generated/dataModel'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { getPlanLimits } from '@/convex/utils/helpers'
+import { SubscriptionPlanName } from '@/convex/types'
 import {
   Dialog,
   DialogContent,
@@ -24,7 +27,8 @@ export default function CouponList() {
   const t = useTranslations('coupon')
   const tCommon = useTranslations('common')
   const router = useRouter()
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
+  const limits = getPlanLimits(planName as SubscriptionPlanName)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCouponId, setSelectedCouponId] = useState<Id<'coupon'> | null>(null)
   const deleteCoupon = useMutation(api.coupon.mutation.killRelatedTables)
@@ -51,10 +55,13 @@ export default function CouponList() {
     setIsDialogOpen(false)
   }
 
+  const allCoupons: Doc<'coupon'>[] = useMemo(() => {
+    return (results || []).slice(0, limits.maxCouponCount)
+  }, [results, limits.maxCouponCount])
+
   if (!tenantId || !orgId || isLoading) {
     return <Loading />
   }
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
@@ -102,8 +109,8 @@ export default function CouponList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border bg-background text-nowrap">
-                  {results.length > 0 ? (
-                    results?.map((coupon: Doc<'coupon'>, index: number) => (
+                  {allCoupons.length > 0 ? (
+                    allCoupons.map((coupon: Doc<'coupon'>, index: number) => (
                       <tr
                         key={`${coupon._id.slice(0, 4)}-${index}`}
                         className="cursor-pointer hover:bg-secondary"

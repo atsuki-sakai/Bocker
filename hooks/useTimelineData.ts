@@ -1,27 +1,29 @@
 'use client'
 
 import { useMemo } from 'react'
-import { usePaginatedQuery, useQuery } from 'convex/react'
+import { useQuery, usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id, Doc } from '@/convex/_generated/dataModel'
-import { 
-  convertTimestampToHour, 
-  hourToMinutes, 
-  getMinuteMultiples, 
-  toHourString
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import { SubscriptionPlanName } from '@/convex/types'
+import {
+  convertTimestampToHour,
+  hourToMinutes,
+  getMinuteMultiples,
+  toHourString,
 } from '@/lib/schedules'
 
 // ■ 型定義
 
 export interface TimelineSchedule {
-    tenant_id: Id<'tenant'>
-    org_id: Id<'organization'>
-    staff_id: Id<'staff'> | null
-    date: string
-    scheduled_by: "staff" | "organization"
-    is_all_day?: boolean | null
-    start_time_unix?: number | null
-    end_time_unix?: number | null
+  tenant_id: Id<'tenant'>
+  org_id: Id<'organization'>
+  staff_id: Id<'staff'> | null
+  date: string
+  scheduled_by: 'staff' | 'organization'
+  is_all_day?: boolean | null
+  start_time_unix?: number | null
+  end_time_unix?: number | null
 }
 interface StaffTimelineData {
   staff: Doc<'staff'>
@@ -31,10 +33,10 @@ interface StaffTimelineData {
 
 interface ReservationWithDetails {
   _id: Id<'reservation'>
-  staff_id: Id<'staff'> | null
-  assigned_staff_id?: Id<'staff'>  // フリー指名の場合に使用
-  is_free_nomination?: boolean     // フリー指名フラグ
-  customer_uid?: string  // Supabase側のcustomer.uid (UUID) - オプショナルフィールド
+  staff_id?: Id<'staff'> | null // undefinedも許可するため?を追加
+  assigned_staff_id?: Id<'staff'> // フリー指名の場合に使用
+  is_free_nomination?: boolean // フリー指名フラグ
+  customer_uid?: string // Supabase側のcustomer.uid (UUID) - オプショナルフィールド
   staff_name: string
   customer_name: string
   start_time_unix: number
@@ -69,7 +71,6 @@ interface ReservationBar {
   spanColumns: number
   color: string
 }
-
 
 interface ReservationBar {
   reservation: ReservationWithDetails
@@ -140,7 +141,7 @@ const generateTimeSlots = (): TimeSlot[] => {
   const START_HOUR = 5 // 5時から開始
   const START_MINUTES = START_HOUR * 60 // 300分
   const minutes = getMinuteMultiples(TIME_SLOT_MINUTES, TOTAL_MINUTES_PER_DAY - TIME_SLOT_MINUTES)
-  
+
   return minutes.map((min, index) => {
     // 5時を起点とした分数に変換（5時 = 0分として扱う）
     const adjustedMinutes = (min + START_MINUTES) % TOTAL_MINUTES_PER_DAY
@@ -160,24 +161,26 @@ const generateTimeSlots = (): TimeSlot[] => {
 const calculateReservationBar = (reservation: ReservationWithDetails): ReservationBar => {
   const START_HOUR = 5 // 5時から開始（generateTimeSlotsと統一）
   const START_MINUTES = START_HOUR * 60 // 300分
-  
+
   const startHour = convertTimestampToHour(reservation.start_time_unix)
   const endHour = convertTimestampToHour(reservation.end_time_unix)
-  
+
   const startMinutes = hourToMinutes(startHour)
   const endMinutes = hourToMinutes(endHour)
-  
+
   // 5時を起点として調整（5時 = 0列目）
-  const adjustedStartMinutes = (startMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
-  const adjustedEndMinutes = (endMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
-  
+  const adjustedStartMinutes =
+    (startMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+  const adjustedEndMinutes =
+    (endMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+
   const startColumn = Math.floor(adjustedStartMinutes / TIME_SLOT_MINUTES)
   const endColumn = Math.ceil(adjustedEndMinutes / TIME_SLOT_MINUTES)
   const spanColumns = endColumn - startColumn
-  
+
   // フリー指名予約の場合は専用色を使用
   const colorSet = reservation.is_free_nomination ? FREE_NOMINATION_COLORS : RESERVATION_COLORS
-  
+
   return {
     reservation,
     startColumn,
@@ -192,12 +195,10 @@ const calculateReservationBar = (reservation: ReservationWithDetails): Reservati
  * @param source - スケジュールの種別（staff or organization）
  * @returns タイムライン表示用のバー情報
  */
-const calculateScheduleBar = (
-  schedules: TimelineSchedule[],
-): ScheduleBar[] => {
+const calculateScheduleBar = (schedules: TimelineSchedule[]): ScheduleBar[] => {
   if (!schedules) return []
   const scheduleBars: ScheduleBar[] = []
-  schedules.forEach(schedule => {
+  schedules.forEach((schedule) => {
     if (schedule.scheduled_by === 'organization') {
       const colorSet = ORGANIZATION_SCHEDULE_COLORS
       scheduleBars.push({
@@ -238,8 +239,10 @@ const calculateScheduleBar = (
       const endMinutes = hourToMinutes(endHour)
 
       // 5時を起点として調整（5時 = 0列目）
-      const adjustedStartMinutes = (startMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
-      const adjustedEndMinutes = (endMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+      const adjustedStartMinutes =
+        (startMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
+      const adjustedEndMinutes =
+        (endMinutes - START_MINUTES + TOTAL_MINUTES_PER_DAY) % TOTAL_MINUTES_PER_DAY
 
       const startColumn = Math.floor(adjustedStartMinutes / TIME_SLOT_MINUTES)
       const endColumn = Math.ceil(adjustedEndMinutes / TIME_SLOT_MINUTES)
@@ -248,7 +251,7 @@ const calculateScheduleBar = (
       const colorSet = SCHEDULE_COLORS
       scheduleBars.push({
         schedule: {
-          type: "holiday",
+          type: 'holiday',
           is_all_day: schedule.is_all_day,
           start_time_unix: schedule.start_time_unix || 0,
           end_time_unix: schedule.end_time_unix || 0,
@@ -257,7 +260,7 @@ const calculateScheduleBar = (
         spanColumns: spanColumns,
         color: colorSet.holiday,
         source: schedule.scheduled_by,
-        type: "holiday",
+        type: 'holiday',
       })
     }
   })
@@ -277,32 +280,33 @@ export function useTimelineData({
   tenantId,
   orgId,
   date,
-  ready
+  ready,
 }: UseTimelineDataProps): UseTimelineDataReturn {
-  
+  const { planName } = useTenantAndOrganization()
+
   // スタッフ一覧の取得（ページネーション対応）
-  const staffList = usePaginatedQuery(
+  const staffList = useQuery(
     api.staff.query.list,
-    ready && tenantId && orgId 
-      ? { 
-          tenant_id: tenantId, 
+    ready && tenantId && orgId
+      ? {
+          tenant_id: tenantId,
           org_id: orgId,
-          sort: 'asc'
-        } 
-      : 'skip',
-    { initialNumItems: 100 } // スタッフ数に応じて調整
+          planName: planName as SubscriptionPlanName,
+          sort: 'asc',
+        }
+      : 'skip'
   )
 
   // 指定日の予約一覧の取得（ページネーション対応）
   const reservations = usePaginatedQuery(
     api.reservation.query.listByDate,
-    ready && tenantId && orgId 
-      ? { 
-          tenant_id: tenantId, 
-          org_id: orgId, 
+    ready && tenantId && orgId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
           date,
-          sort: 'asc'
-        } 
+          sort: 'asc',
+        }
       : 'skip',
     { initialNumItems: 500 } // 予約数に応じて調整
   )
@@ -310,14 +314,14 @@ export function useTimelineData({
   // 組織の例外スケジュール（店舗休業・特別営業時間など）を取得
   const allSchedules = useQuery(
     api.staff.exception_schedule.query.allSchedulesByDate,
-    ready && tenantId && orgId 
-      ? { 
-          tenant_id: tenantId, 
-          org_id: orgId, 
-          staff_ids: staffList.results.map(staff => staff._id),
+    ready && tenantId && orgId
+      ? {
+          tenant_id: tenantId,
+          org_id: orgId,
+          staff_ids: staffList?.map((staff) => staff._id) || [],
           date,
-        } 
-      : 'skip',
+        }
+      : 'skip'
   )
 
   // 時間スロットの生成（メモ化）
@@ -325,44 +329,48 @@ export function useTimelineData({
 
   // スタッフ別のタイムラインデータの計算（メモ化）
   const staffTimelineData = useMemo(() => {
-    if (!staffList?.results || !reservations?.results || !allSchedules) return []
+    if (!staffList || !reservations || !allSchedules) return []
 
-    const activeStaffs = staffList.results.filter(
-      staff => staff.is_active && !staff.is_archive
-    )
-    const confirmedReservations = reservations.results.filter(
-      res => res.status === 'confirmed' && !res.is_archive
-    ) as ReservationWithDetails[]
+    const activeStaffs = staffList.filter((staff) => staff.is_active && !staff.is_archive)
+    const confirmedReservations = (reservations.results?.filter(
+      (res) => res.status === 'confirmed' && !res.is_archive
+    ) || []) as ReservationWithDetails[]
 
     // 予約をスタッフIDでグループ化
-    const reservationsByStaff = confirmedReservations.reduce((acc, reservation) => {
-      const staffId = reservation.is_free_nomination 
-        ? reservation.assigned_staff_id || reservation.staff_id 
-        : reservation.staff_id
-      
-      if (staffId) {
-        if (!acc[staffId]) acc[staffId] = []
-        acc[staffId].push(reservation)
-      }
-      return acc
-    }, {} as Record<string, ReservationWithDetails[]>)
+    const reservationsByStaff = confirmedReservations.reduce(
+      (acc, reservation) => {
+        const staffId = reservation.is_free_nomination
+          ? reservation.assigned_staff_id || reservation.staff_id
+          : reservation.staff_id
+
+        if (staffId) {
+          if (!acc[staffId]) acc[staffId] = []
+          acc[staffId].push(reservation)
+        }
+        return acc
+      },
+      {} as Record<string, ReservationWithDetails[]>
+    )
 
     // スケジュールをスタッフIDでグループ化
-    const schedulesByStaff = allSchedules.reduce((acc, schedule) => {
-      if (schedule.staff_id) {
-        if (!acc[schedule.staff_id]) acc[schedule.staff_id] = []
-        acc[schedule.staff_id].push(schedule)
-      }
-      return acc
-    }, {} as Record<string, TimelineSchedule[]>)
+    const schedulesByStaff = allSchedules.reduce(
+      (acc, schedule) => {
+        if (schedule.staff_id) {
+          if (!acc[schedule.staff_id]) acc[schedule.staff_id] = []
+          acc[schedule.staff_id].push(schedule)
+        }
+        return acc
+      },
+      {} as Record<string, TimelineSchedule[]>
+    )
 
     // 組織全体のスケジュール
     const organizationSchedules = allSchedules.filter(
-      schedule => schedule.scheduled_by === 'organization'
+      (schedule) => schedule.scheduled_by === 'organization'
     )
 
     // スタッフごとのタイムラインデータを構築
-    return activeStaffs.map(staff => {
+    return activeStaffs.map((staff) => {
       const staffSchedules = schedulesByStaff[staff._id] || []
       return {
         staff,
@@ -370,18 +378,24 @@ export function useTimelineData({
         schedules: [...staffSchedules, ...organizationSchedules], // 個人のスケジュールと組織のスケジュールを結合
       }
     })
-  }, [staffList?.results, reservations?.results, allSchedules])
+  }, [staffList, reservations, allSchedules])
 
   // 統計情報の計算（メモ化）
-  const totalReservations = useMemo(() => 
-    reservations?.results?.filter(res => res.status === 'confirmed' && !res.is_archive).length || 0,
+  const totalReservations = useMemo(
+    () =>
+      reservations?.results?.filter((res) => res.status === 'confirmed' && !res.is_archive)
+        .length || 0,
     [reservations?.results]
   )
 
   // ローディング状態の判定
-  const isLoading = useMemo(() => 
-    !staffList || !reservations || allSchedules === undefined || 
-    staffList.isLoading || reservations.isLoading,
+  const isLoading = useMemo(
+    () =>
+      !staffList ||
+      !reservations ||
+      allSchedules === undefined ||
+      staffList === undefined ||
+      reservations.isLoading,
     [staffList, reservations, allSchedules]
   )
 

@@ -1,7 +1,7 @@
 {
   "name": "Bocker",
   "short_name": "Bocker",
-  "start_url": "/?source=pwa",
+  "start_url": "/ja/?source=pwa",
   "display": "standalone",
   "icons": [
     {
@@ -17,6 +17,6 @@
       "purpose": "any maskable"
     }
   ],
-  "theme_color": "#ffffff",
+  "theme_color": "#002833FF",
   "background_color": "#ffffff"
 }

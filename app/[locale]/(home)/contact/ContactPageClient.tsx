@@ -313,13 +313,22 @@ export function ContactPageClient({ translations }: { translations: TranslationT
                   <h2 className="text-2xl font-bold mb-6">{translations.info.title}</h2>
                   <div className="space-y-6">
                     {infoItems.map((item, index) => (
-                      <motion.div key={index} variants={fadeIn} className="flex items-start gap-4">
-                        <div className="p-3 rounded-lg bg-primary/10">
-                          <item.icon className="h-6 w-6 text-primary" />
+                      <motion.div key={index} variants={fadeIn} className="flex items-start gap-2">
+                        <div className="p-1 bg-primary/10 rounded-sm">
+                          <item.icon className="h-4 w-4 text-primary" />
                         </div>
                         <div>
                           <p className="font-medium">{item.label}</p>
-                          <p className="text-muted-foreground">{item.value}</p>
+                          {item.value.includes('@') ? (
+                            <a
+                              href={`mailto:${item.value}`}
+                              className="text-link-foreground text-sm underline"
+                            >
+                              {item.value}
+                            </a>
+                          ) : (
+                            <p className="text-muted-foreground text-sm">{item.value}</p>
+                          )}
                         </div>
                       </motion.div>
                     ))}
@@ -329,14 +338,12 @@ export function ContactPageClient({ translations }: { translations: TranslationT
                 {/* FAQ CTA */}
                 <motion.div variants={fadeIn}>
                   <Card className="bg-muted/50">
-                    <CardHeader>
-                      <CardTitle className="text-xl">{translations.faq.title}</CardTitle>
-                    </CardHeader>
                     <CardContent>
+                      <h4 className="text-xl font-semibold mb-2">{translations.faq.title}</h4>
                       <CardDescription className="mb-4">{translations.faq.cta}</CardDescription>
                       <Link href="/faq">
                         <Button size="sm" className="text-sm">
-                          FAQ
+                          よくある質問へ
                         </Button>
                       </Link>
                     </CardContent>

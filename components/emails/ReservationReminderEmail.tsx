@@ -19,7 +19,7 @@ interface ReservationReminderEmailProps {
   reservationDate: string
   startTime: string
   endTime: string
-  menus: Array<{ name: string; duration_min?: number }>
+  menus: Array<{ name: string; price?: number; duration_min?: number }>
   options?: Array<{ name: string; quantity: number }>
   staffName: string
   extraCharge?: number
@@ -95,6 +95,7 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
                   {menus.map((menu, index) => (
                     <span key={index}>
                       {menu.name}
+                      {menu.price && ` ¥${menu.price.toLocaleString()}`}
                       {index < menus.length - 1 && <br />}
                     </span>
                   ))}
@@ -129,7 +130,7 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
               {(couponDiscount ?? 0) > 0 && (
                 <Row style={detailRow}>
                   <Column style={detailLabel}>クーポン割引</Column>
-                  <Column style={detailValue} color="#FF6B6B">
+                  <Column style={detailValue} color="#FF9500">
                     -¥{(couponDiscount ?? 0).toLocaleString()}
                   </Column>
                 </Row>
@@ -138,7 +139,7 @@ const ReservationReminderEmail: React.FC<ReservationReminderEmailProps> = ({
               {(usePoints ?? 0) > 0 && (
                 <Row style={detailRow}>
                   <Column style={detailLabel}>ポイント使用</Column>
-                  <Column style={detailValue} color="#FF6B6B">
+                  <Column style={detailValue} color="#FF9500">
                     -{usePoints ?? 0}pt
                   </Column>
                 </Row>
@@ -211,7 +212,7 @@ const container: React.CSSProperties = {
 }
 
 const header: React.CSSProperties = {
-  backgroundColor: '#FF6B6B',
+  backgroundColor: '#FF9500',
   padding: '24px',
   textAlign: 'center',
 }
@@ -243,7 +244,7 @@ const message: React.CSSProperties = {
   fontSize: '16px',
   lineHeight: '24px',
   marginBottom: '24px',
-  color: '#FF6B6B',
+  color: '#FF9500',
   fontWeight: 'bold',
 }
 
@@ -305,7 +306,7 @@ const noticeSectionTitle: React.CSSProperties = {
   fontSize: '16px',
   fontWeight: 'bold',
   marginBottom: '8px',
-  color: '#FF6B6B',
+  color: '#FF9500',
 }
 
 const noticeText: React.CSSProperties = {

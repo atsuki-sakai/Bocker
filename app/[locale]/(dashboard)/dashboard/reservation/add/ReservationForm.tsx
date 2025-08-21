@@ -12,7 +12,12 @@ import { ja } from 'date-fns/locale'
 import { DatePicker } from '@/components/common'
 import { Textarea } from '@/components/ui/textarea'
 import { getDayOfWeek, formatTimestamp } from '@/lib/schedules'
-import { convertGender, ReservationMenu, ReservationOption } from '@/convex/types'
+import {
+  convertGender,
+  ReservationMenu,
+  ReservationOption,
+  SubscriptionPlanName,
+} from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import type { RowType } from '@/services/supabase/SupabaseService'
 import { useTranslations } from 'next-intl'
@@ -71,11 +76,11 @@ import { toast } from 'sonner'
 import { usePriceCalculation } from '@/hooks/usePriceCalculation'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Accordion, 
-  AccordionContent, 
-  AccordionItem, 
-  AccordionTrigger 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from '@/components/ui/accordion'
 
 import {
@@ -301,7 +306,7 @@ const stepConfig = [
 ]
 
 export default function ReservationForm() {
-  const { tenantId, orgId } = useTenantAndOrganization()
+  const { tenantId, orgId, planName } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
   const router = useRouter()
   const t = useTranslations('reservations')
@@ -344,6 +349,7 @@ export default function ReservationForm() {
       ? {
           tenant_id: tenantId,
           org_id: orgId,
+          planName: planName as SubscriptionPlanName,
           menu_ids: [],
         }
       : 'skip'
@@ -378,6 +384,7 @@ export default function ReservationForm() {
           tenant_id: tenantId,
           org_id: orgId,
           menu_ids: selectedMenus.map((m) => m.id),
+          planName: planName as SubscriptionPlanName,
         }
       : 'skip'
   )

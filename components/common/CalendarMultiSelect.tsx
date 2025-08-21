@@ -46,25 +46,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 400,
-      damping: 25,
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    transition: {
-      duration: 0.2,
-    },
-  },
-};
+
 
 const emptyStateVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -76,7 +58,7 @@ const emptyStateVariants = {
       duration: 0.3,
     },
   },
-};
+}
 
 /**
  * 複数日選択用のCalendarコンポーネント
@@ -88,61 +70,61 @@ function CalendarMultiSelect({
   fromDate,
   disabled,
 }: CalendarMultiSelectProps) {
-  const t = useTranslations('common.calendarMultiSelect');
-  const currentLocale = useLocale() as SupportedLocale;
-  const [dateFnsLocale, setDateFnsLocale] = useState<Locale | null>(null);
+  const t = useTranslations('common.calendarMultiSelect')
+  const currentLocale = useLocale() as SupportedLocale
+  const [dateFnsLocale, setDateFnsLocale] = useState<Locale | null>(null)
 
   // 現在のロケールに基づいてdate-fnsロケールを動的に読み込み
   useEffect(() => {
     const loadLocale = async () => {
-      const locale = await getDateFnsLocale(currentLocale);
-      setDateFnsLocale(locale);
-    };
-    loadLocale();
-  }, [currentLocale]);
-  
+      const locale = await getDateFnsLocale(currentLocale)
+      setDateFnsLocale(locale)
+    }
+    loadLocale()
+  }, [currentLocale])
+
   // 日付選択ハンドラ
   const handleDatesSelect = (dates: Date[] | undefined) => {
-    onDatesChangeAction(dates || []);
-  };
+    onDatesChangeAction(dates || [])
+  }
 
   // 個別の日付削除ハンドラ
   const removeDate = (date: Date) => {
-    const newDates = selectedDates.filter((d) => !isSameDay(d, date));
-    onDatesChangeAction(newDates);
-  };
+    const newDates = selectedDates.filter((d) => !isSameDay(d, date))
+    onDatesChangeAction(newDates)
+  }
 
   // 全ての日付削除ハンドラ
   const clearAllDates = () => {
-    onDatesChangeAction([]);
-  };
+    onDatesChangeAction([])
+  }
 
   // 選択された日付があるかどうか
-  const hasSelectedDates = selectedDates.length > 0;
+  const hasSelectedDates = selectedDates.length > 0
 
   // 日付の昇順ソート (useMemoでパフォーマンス最適化)
   const sortedDates = useMemo(() => {
-    return [...selectedDates].sort((a, b) => a.getTime() - b.getTime());
-  }, [selectedDates]);
+    return [...selectedDates].sort((a, b) => a.getTime() - b.getTime())
+  }, [selectedDates])
 
   // 月ごとにグループ化した選択日付 (useMemoでパフォーマンス最適化)
   const groupedByMonth = useMemo(() => {
-    if (!dateFnsLocale) return [];
-    
-    const groups: Record<string, Date[]> = {};
+    if (!dateFnsLocale) return []
+
+    const groups: Record<string, Date[]> = {}
 
     for (const date of sortedDates) {
       // ロケールに応じたフォーマットを選択
-      const monthFormat = currentLocale === 'ja' ? 'yyyy年MM月' : 'MMMM yyyy';
-      const monthKey = format(date, monthFormat, { locale: dateFnsLocale });
+      const monthFormat = currentLocale === 'ja' ? 'yyyy年MM月' : 'MMMM yyyy'
+      const monthKey = format(date, monthFormat, { locale: dateFnsLocale })
       if (!groups[monthKey]) {
-        groups[monthKey] = [];
+        groups[monthKey] = []
       }
-      groups[monthKey].push(date);
+      groups[monthKey].push(date)
     }
 
-    return Object.entries(groups);
-  }, [sortedDates, dateFnsLocale, currentLocale]);
+    return Object.entries(groups)
+  }, [sortedDates, dateFnsLocale, currentLocale])
 
   // ロケールが読み込み中の場合はローディング表示
   if (!dateFnsLocale) {
@@ -159,7 +141,7 @@ function CalendarMultiSelect({
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -182,7 +164,9 @@ function CalendarMultiSelect({
       <div className="border rounded-md p-4 w-full bg-background border-border">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-bold text-primary flex items-center gap-2">
-            <Badge className="ml-1 text-nowrap text-base">{t('selectedCount', { count: selectedDates.length })}</Badge>{' '}
+            <Badge className="ml-1 text-nowrap text-base">
+              {t('selectedCount', { count: selectedDates.length })}
+            </Badge>{' '}
             {t('selectedDates')}
           </h3>
 
@@ -225,7 +209,6 @@ function CalendarMultiSelect({
                       {dates.map((date) => (
                         <motion.div
                           key={date.toISOString()}
-                          variants={itemVariants}
                           initial="hidden"
                           animate="visible"
                           exit="exit"
@@ -257,10 +240,9 @@ function CalendarMultiSelect({
                             >
                               {(() => {
                                 // ロケールに応じた日付フォーマットを選択
-                                const dateFormat = currentLocale === 'ja' 
-                                  ? 'yyyy年MM月dd日(EEE)' 
-                                  : 'PPP';
-                                return format(date, dateFormat, { locale: dateFnsLocale });
+                                const dateFormat =
+                                  currentLocale === 'ja' ? 'yyyy年MM月dd日(EEE)' : 'PPP'
+                                return format(date, dateFormat, { locale: dateFnsLocale })
                               })()}
                               {isToday(date) && (
                                 <span className="ml-1 text-[10px] bg-amber-200 dark:bg-amber-700 px-1 py-0.5 rounded text-amber-800 dark:text-amber-200">
@@ -292,9 +274,7 @@ function CalendarMultiSelect({
             >
               <CalendarCheck className="w-12 h-12 mb-3 text-muted-foreground" />
               <p className="text-sm font-medium mb-1">{t('emptyStateTitle')}</p>
-              <p className="text-xs max-w-xs">
-                {t('emptyStateDescription')}
-              </p>
+              <p className="text-xs max-w-xs">{t('emptyStateDescription')}</p>
             </motion.div>
           )}
         </div>
