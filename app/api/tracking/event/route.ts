@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { TrackingEventRepository } from '@/services/supabase/repositories/tracking/TrackingEventRepository'
 import { z } from 'zod'
-import { getTenantAndOrg } from '@/lib/auth/getOrganizationAuth'
+import { getOrganizationAuth } from '@/lib/auth/getOrganizationAuth'
 
 const eventSchema = z.object({
   session_id: z.string(),
@@ -20,12 +20,9 @@ const eventSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const { tenantId, orgId } = await getTenantAndOrg()
-    if (!tenantId || !orgId) {
-      return NextResponse.json(
-        { error: 'Tenant or Organization ID is missing.' },
-        { status: 400 }
-      )
+    const { tenantId, orgId } = await getOrganizationAuth()
+    if (!orgId) {
+      return NextResponse.json({ error: 'Organization ID is missing.' }, { status: 400 })
     }
 
     const body = await request.json()
@@ -66,9 +63,6 @@ export async function POST(request: Request) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
-    return NextResponse.json(
-      { error: 'An unknown error occurred' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 })
   }
 }

@@ -11,16 +11,17 @@
  *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
  * ---------------------------------------------------------------
  */
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { paginationOptsValidator } from 'convex/server';
-import { reservationStatusType } from '@/convex/types';
-import { checkAuth } from '@/convex/utils/auth';
-import { AvailableStaff } from '@/hooks/usePriceCalculation';
-import { Doc } from '@/convex/_generated/dataModel';
-import { query } from '@/convex/_generated/server';
-import { api, internal } from '@/convex/_generated/api';
-import { v } from 'convex/values';
+import { Id } from '@/convex/_generated/dataModel'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { paginationOptsValidator } from 'convex/server'
+import { reservationStatusType } from '@/convex/types'
+import { checkAuth } from '@/convex/utils/auth'
+import { AvailableStaff } from '@/hooks/usePriceCalculation'
+import { Doc } from '@/convex/_generated/dataModel'
+import { query } from '@/convex/_generated/server'
+import { api, internal } from '@/convex/_generated/api'
+import { v } from 'convex/values'
 import { getPlanLimits } from '@/convex/utils/helpers'
 import { subscriptionPlanNameType } from '@/convex/types'
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations'
@@ -122,10 +123,72 @@ export const getReservationsForReminder = internalQuery({
 
 export const getWithDetailById = query({
   args: {
-    id: v.id('reservation'),
+    id: v.union(v.id('reservation'), v.string()),
   },
   handler: async (ctx, args) => {
-    return await getReservationWithDetail(ctx, args.id)
+    // UUIDが渡された場合はSupabaseから取得（Convex IDは 'k' 始まり）
+    if (typeof args.id === 'string' && !args.id.startsWith('k')) {
+      try {
+        // Supabaseから予約本体を取得（uid で一意）
+        const { supabaseClientService } = await import('@/services/supabase/SupabaseService')
+        const { data: reservations } = await supabaseClientService.listRecords('reservation', {
+          filters: { uid: args.id },
+          pageSize: 1,
+          select: '*',
+        })
+        const reservation = reservations?.[0]
+        if (!reservation) return null
+
+        // 予約詳細は _convex_id ベースで紐付け
+        const { data: details } = await supabaseClientService.listRecords('reservation_detail', {
+          filters: { _convex_reservation_id: reservation._convex_id },
+          pageSize: 1,
+          select: '*',
+        })
+        const detail = details?.[0] || null
+
+        // UI互換のため最低限のフィールドを補完
+        const mappedReservation = {
+          ...reservation,
+          is_free_nomination: reservation.is_free_nomination ?? false,
+          assigned_staff_id: reservation.assigned_staff_id ?? null,
+          customer_uid: reservation.customer_uid ?? null,
+        }
+        const mappedDetail = detail
+          ? {
+              ...detail,
+              menus:
+                (detail.menus as Array<{
+                  id: string
+                  name: string
+                  price: number
+                  quantity: number
+                }>) ?? [],
+              options:
+                (detail.options as Array<{
+                  id: string
+                  name: string
+                  price: number
+                  quantity: number
+                }>) ?? [],
+              extra_charge: detail.extra_charge ?? 0,
+              coupon_discount: detail.coupon_discount ?? 0,
+              use_points: detail.use_points ?? 0,
+              total_price: detail.total_price ?? 0,
+            }
+          : null
+
+        return {
+          reservation: mappedReservation,
+          reservationDetail: mappedDetail,
+        }
+      } catch (e) {
+        console.error('Failed to fetch reservation from Supabase by UUID:', e)
+        return null
+      }
+    }
+    // Convex ID の場合は従来ロジック
+    return await getReservationWithDetail(ctx, args.id as Id<'reservation'>)
   },
 })
 

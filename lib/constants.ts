@@ -219,25 +219,24 @@ import {
   CreditCard as CreditCardIcon,
   ChartBar as ChartBarIcon,
   Clock as ClockIcon,
-  type LucideIcon
-} from 'lucide-react';
-import type { Role, SubscriptionPlanName } from '@/convex/types';
+  MousePointer as MousePointerIcon,
+  type LucideIcon,
+} from 'lucide-react'
+import type { Role, SubscriptionPlanName } from '@/convex/types'
 
 export type NavItem = {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-  minRole: Role;
-  minPlan: SubscriptionPlanName;
-};
+  name: string
+  href: string
+  icon: LucideIcon
+  minRole: Role
+  minPlan: SubscriptionPlanName
+}
 
 export type NavGroup = {
-  id: string;
-  name: string;
-  items: NavItem[];
-};
-
-
+  id: string
+  name: string
+  items: NavItem[]
+}
 
 export const NAV_ITEMS: NavItem[] = [
   {
@@ -393,6 +392,13 @@ export const NAV_GROUPS: NavGroup[] = [
         name: 'menuAnalytics',
         href: `/dashboard/analytics/menu`,
         icon: FileIcon,
+        minRole: 'owner',
+        minPlan: 'MICRO',
+      },
+      {
+        name: 'trackingAnalytics',
+        href: `/dashboard/analytics/tracking`,
+        icon: MousePointerIcon,
         minRole: 'owner',
         minPlan: 'MICRO',
       },

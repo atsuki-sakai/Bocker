@@ -13,7 +13,6 @@ import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 // Convex環境内では fetchQuery は使用できないためコメントアウト
 // import { fetchQuery } from 'convex/nextjs';
-import { api } from '@/convex/_generated/api'
 import { getAppUrl } from '@/lib/env-config'
 import { SupabaseService } from '@/services/supabase/SupabaseService'
 import { getDayOfWeek, convertHourToTimestamp } from '@/lib/schedules'
@@ -25,10 +24,29 @@ import {
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { CarteRepository } from '@/services/supabase/repositories/carte'
 
+// 予約詳細の型定義
+interface ReservationDetailData {
+  menus: ReservationMenu[];
+  options: ReservationOption[];
+  extra_charge: number;
+  coupon_discount: number;
+  use_points: number;
+  total_price: number;
+  notes?: string;
+  payment_method?: PaymentMethod;
+}
 
+// 予約詳細付き予約データの型定義
+interface ReservationWithDetailData {
+  reservation: Doc<'reservation'>;
+  reservationDetail: ReservationDetailData | null;
+}
 
-export const getReservationWithDetail = async (ctx: QueryCtx, reservationId: Id<'reservation'>) => {
-  const reservation = await ctx.db.get(reservationId);
+export const getReservationWithDetail = async (
+  ctx: QueryCtx,
+  reservationId: Id<'reservation'>
+): Promise<ReservationWithDetailData> => {
+  const reservation = await ctx.db.get(reservationId)
   if (!reservation) {
     throw new ConvexError({
       message: '予約が存在しません',
@@ -40,10 +58,31 @@ export const getReservationWithDetail = async (ctx: QueryCtx, reservationId: Id<
       },
     })
   }
-  const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', (q) =>
-    q.eq('reservation_id', reservationId).eq('is_archive', false)
-  ).first();
-  return { reservation, reservationDetail };
+  const reservationDetail = await ctx.db
+    .query('reservation_detail')
+    .withIndex('by_reservation_archive', (q) =>
+      q.eq('reservation_id', reservationId).eq('is_archive', false)
+    )
+    .first()
+
+  // 型安全な予約詳細データを返す
+  const typedReservationDetail: ReservationDetailData | null = reservationDetail
+    ? {
+        menus: (reservationDetail.menus as ReservationMenu[]) || [],
+        options: (reservationDetail.options as ReservationOption[]) || [],
+        extra_charge: reservationDetail.extra_charge || 0,
+        coupon_discount: reservationDetail.coupon_discount || 0,
+        use_points: reservationDetail.use_points || 0,
+        total_price: reservationDetail.total_price || 0,
+        notes: reservationDetail.notes,
+        payment_method: reservationDetail.payment_method as PaymentMethod | undefined,
+      }
+    : null
+
+  return {
+    reservation,
+    reservationDetail: typedReservationDetail,
+  }
 }
 
 /**

@@ -7,9 +7,16 @@ import { DashboardSection } from '@/components/common'
 import { AnalyticsFilters, type FilterOptions } from '@/components/analytics'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { TrackingSummariesRepository } from '@/services/supabase/repositories/tracking'
-import { BarChart, Users, Link as LinkIcon, Megaphone } from 'lucide-react'
+import { Users, Link as LinkIcon, Megaphone } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -32,7 +39,7 @@ const getInitialFilters = (tenantId: string, orgId: string): FilterOptions => {
 
 // --- Page Component ---
 function AcquisitionAnalyticsPage() {
-  const { tenantId, orgId, isLoaded } = useTenantAndOrganization()
+  const { tenantId, orgId } = useTenantAndOrganization()
   const [filters, setFilters] = useState<FilterOptions | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -167,7 +174,7 @@ function AcquisitionAnalyticsPage() {
           </Alert>
         )}
         <AnalyticsFilters
-          filters={filters}
+          filters={filters || getInitialFilters(tenantId!, orgId!)}
           onFiltersChange={setFilters}
           loading={loading}
           showStaffFilter={false}
@@ -198,7 +205,11 @@ function AcquisitionAnalyticsPage() {
               {renderTable(mediumData, 'メディア (UTM Medium)', <Users className="h-5 w-5" />)}
             </TabsContent>
             <TabsContent value="campaign">
-              {renderTable(campaignData, 'キャンペーン (UTM Campaign)', <Megaphone className="h-5 w-5" />)}
+              {renderTable(
+                campaignData,
+                'キャンペーン (UTM Campaign)',
+                <Megaphone className="h-5 w-5" />
+              )}
             </TabsContent>
           </Tabs>
         )}
