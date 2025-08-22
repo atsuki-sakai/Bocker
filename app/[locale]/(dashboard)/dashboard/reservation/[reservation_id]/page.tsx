@@ -6,6 +6,7 @@ import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
+import { useReservationData } from '@/hooks/useOrganizationReservations'
 import { Loading } from '@/components/common'
 import { DashboardSection } from '@/components/common'
 import type { RowType } from '@/services/supabase/SupabaseService'
@@ -83,23 +84,22 @@ export default function ReservationPage() {
   const [customerLoading, setCustomerLoading] = useState(false)
   const [customerError, setCustomerError] = useState<string | null>(null)
 
-  const reservationData = useQuery(api.reservation.query.getWithDetailById, {
-    id: reservation_id as Id<'reservation'>,
-  })
+  const { data: reservationData, loading: reservationLoading } = useReservationData(
+    reservation_id as string
+  )
   const [status, setStatus] = useState<ReservationStatus>(
-    reservationData?.reservation?.status as ReservationStatus
+    reservationData?.status as ReservationStatus
   )
   const deleteReservation = useMutation(api.reservation.mutation.kill)
   const changeStaff = useMutation(api.reservation.mutation.changeStaffForFreeNomination)
 
   const reservationMenuDetails = useQuery(
     api.menu.query.getDisplayByIds,
-    reservationData && reservationData.reservationDetail
+    reservationData && reservationData.detail && reservationData.source === 'convex'
       ? {
-          menu_ids: reservationData.reservationDetail.menus.map((menu) => menu.id) as Id<'menu'>[],
-          option_ids: reservationData.reservationDetail.options.map(
-            (option) => option.id
-          ) as Id<'option'>[],
+          menu_ids: (reservationData.detail.menus?.map((menu) => menu.id) as Id<'menu'>[]) || [],
+          option_ids:
+            (reservationData.detail.options?.map((option) => option.id) as Id<'option'>[]) || [],
         }
       : 'skip'
   )
@@ -107,10 +107,12 @@ export default function ReservationPage() {
   // 利用可能なスタッフ一覧を取得（スタッフ変更用）
   const availableStaffsData = useQuery(
     api.staff.query.list,
-    reservationData?.reservation?.is_free_nomination
+    reservationData?.isFreeNomination &&
+      reservationData.source === 'convex' &&
+      reservationData.convexData
       ? {
-          tenant_id: reservationData.reservation.tenant_id,
-          org_id: reservationData.reservation.org_id,
+          tenant_id: reservationData.convexData.tenant_id as Id<'tenant'>,
+          org_id: reservationData.convexData.org_id as Id<'organization'>,
           planName: planName as SubscriptionPlanName,
         }
       : 'skip'
@@ -121,14 +123,15 @@ export default function ReservationPage() {
   // 通常の指名スタッフ情報を取得（指名フリーでstaff_idが設定されている場合も含む）
   const staff = useQuery(
     api.staff.query.getRelatedTables,
-    reservationData?.reservation?.staff_id &&
-      (!reservationData?.reservation?.is_free_nomination ||
-        (reservationData?.reservation?.is_free_nomination &&
-          !reservationData?.reservation?.assigned_staff_id))
+    reservationData?.staffId &&
+      reservationData.source === 'convex' &&
+      reservationData.convexData &&
+      (!reservationData?.isFreeNomination ||
+        (reservationData?.isFreeNomination && !reservationData?.convexData?.assigned_staff_id))
       ? {
-          tenant_id: reservationData.reservation.tenant_id,
-          org_id: reservationData.reservation.org_id,
-          staff_id: reservationData.reservation.staff_id as Id<'staff'>,
+          tenant_id: reservationData.convexData.tenant_id as Id<'tenant'>,
+          org_id: reservationData.convexData.org_id as Id<'organization'>,
+          staff_id: reservationData.convexData.staff_id as Id<'staff'>,
         }
       : 'skip'
   )
@@ -136,25 +139,26 @@ export default function ReservationPage() {
   // 指名フリーの場合の割り当てスタッフ情報を取得
   const assignedStaff = useQuery(
     api.staff.query.getRelatedTables,
-    reservationData?.reservation?.is_free_nomination &&
-      reservationData?.reservation?.assigned_staff_id
+    reservationData?.isFreeNomination &&
+      reservationData.source === 'convex' &&
+      reservationData.convexData?.assigned_staff_id
       ? {
-          tenant_id: reservationData.reservation.tenant_id,
-          org_id: reservationData.reservation.org_id,
-          staff_id: reservationData.reservation.assigned_staff_id as Id<'staff'>,
+          tenant_id: reservationData.convexData.tenant_id as Id<'tenant'>,
+          org_id: reservationData.convexData.org_id as Id<'organization'>,
+          staff_id: reservationData.convexData.assigned_staff_id as Id<'staff'>,
         }
       : 'skip'
   )
 
   useEffect(() => {
     if (reservationData) {
-      setStatus(reservationData.reservation.status as ReservationStatus)
+      setStatus(reservationData.status as ReservationStatus)
     }
   }, [reservationData])
 
   useEffect(() => {
     async function fetchCustomerData() {
-      if (!reservationData?.reservation?.customer_uid) {
+      if (!reservationData?.customerUid) {
         return
       }
 
@@ -164,9 +168,9 @@ export default function ReservationPage() {
       try {
         const customerRepository = new CustomerRepository()
         const data = await customerRepository.getCompleteCustomerData(
-          reservationData.reservation.customer_uid,
-          reservationData.reservation.tenant_id,
-          reservationData.reservation.org_id
+          reservationData.customerUid,
+          reservationData.tenantId,
+          reservationData.orgId
         )
         setCustomerData(data)
       } catch (error) {
@@ -178,30 +182,30 @@ export default function ReservationPage() {
     }
 
     fetchCustomerData()
-  }, [
-    reservationData?.reservation?.customer_uid,
-    reservationData?.reservation?.tenant_id,
-    reservationData?.reservation?.org_id,
-    t,
-  ])
+  }, [reservationData?.customerUid, reservationData?.tenantId, reservationData?.orgId, t])
 
   // ローディング条件を指名フリー予約に対応
   const shouldShowLoading = () => {
     // 基本データがない場合
-    if (!reservationData || !reservationMenuDetails) {
+    if (reservationLoading || !reservationData) {
+      return true
+    }
+
+    // Convexデータの場合のみメニュー詳細を待つ
+    if (reservationData.source === 'convex' && !reservationMenuDetails) {
       return true
     }
 
     // 指名フリー予約の場合
-    if (reservationData.reservation.is_free_nomination) {
+    if (reservationData.isFreeNomination && reservationData.source === 'convex') {
       // assigned_staff_idがある場合はassignedStaffのデータを待つ
-      if (reservationData.reservation.assigned_staff_id && !assignedStaff) {
+      if (reservationData.convexData?.assigned_staff_id && !assignedStaff) {
         return true
       }
       // staff_idがあるがassigned_staff_idがない場合は、staffデータを確認
       if (
-        !reservationData.reservation.assigned_staff_id &&
-        reservationData.reservation.staff_id &&
+        !reservationData.convexData?.assigned_staff_id &&
+        reservationData.convexData?.staff_id &&
         !staff
       ) {
         return true
@@ -211,7 +215,7 @@ export default function ReservationPage() {
     }
 
     // 通常の指名予約の場合
-    if (reservationData.reservation.staff_id && !staff) {
+    if (reservationData.source === 'convex' && reservationData.staffId && !staff) {
       return true
     }
 
@@ -233,12 +237,13 @@ export default function ReservationPage() {
 
   const handleUpdateStatus = async () => {
     try {
-      if (!reservationData) return
+      if (!reservationData || reservationData.source !== 'convex' || !reservationData.convexData)
+        return
 
       await fetchMutation(api.reservation.manage.handleReservationManage, {
         mode: 'status',
         payload: {
-          reservationId: reservationData.reservation._id,
+          reservationId: reservationData.convexData._id,
           status: status,
         },
       })
@@ -254,11 +259,12 @@ export default function ReservationPage() {
 
   const handleDeleteReservation = async () => {
     try {
-      if (!reservationData) return
+      if (!reservationData || reservationData.source !== 'convex' || !reservationData.convexData)
+        return
       await deleteReservation({
-        reservation_id: reservationData.reservation._id,
-        tenant_id: reservationData.reservation.tenant_id,
-        org_id: reservationData.reservation.org_id,
+        reservation_id: reservationData.convexData._id,
+        tenant_id: reservationData.convexData.tenant_id,
+        org_id: reservationData.convexData.org_id,
       })
       toast.success(t('reservationDeleted'))
       router.push('/dashboard/reservation')
@@ -270,12 +276,18 @@ export default function ReservationPage() {
   }
 
   const handleStaffChange = async () => {
-    if (!selectedNewStaffId || !reservationData) return
+    if (
+      !selectedNewStaffId ||
+      !reservationData ||
+      reservationData.source !== 'convex' ||
+      !reservationData.convexData
+    )
+      return
 
     try {
       setIsChangingStaff(true)
       const result = await changeStaff({
-        reservation_id: reservationData.reservation._id,
+        reservation_id: reservationData.convexData._id,
         new_staff_id: selectedNewStaffId,
         changed_by: 'admin', // 管理画面からの変更
       })
@@ -317,25 +329,23 @@ export default function ReservationPage() {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">
                 <p
-                  className={`w-fit px-3 py-1 my-2 rounded-md font-bold text-xs ${statusColorMap[reservationData.reservation.status as ReservationStatus]}`}
+                  className={`w-fit px-3 py-1 my-2 rounded-md font-bold text-xs ${statusColorMap[reservationData.status as ReservationStatus]}`}
                 >
-                  {convertReservationStatus(
-                    reservationData.reservation.status as ReservationStatus
-                  )}
+                  {convertReservationStatus(reservationData.status as ReservationStatus)}
                 </p>
               </div>
 
               <div
                 className={`text-primary text-xs font-bold px-3 py-1 rounded-md ${
                   paymentStatusColorMap[
-                    reservationData.reservation.payment_status as keyof typeof paymentStatusColorMap
+                    reservationData.paymentStatus as keyof typeof paymentStatusColorMap
                   ]
                 }`}
               >
-                {convertPaymentStatus(reservationData.reservation.payment_status)}
+                {convertPaymentStatus(reservationData.paymentStatus)}
               </div>
             </div>
-            {reservationData.reservation.is_free_nomination && (
+            {reservationData.isFreeNomination && (
               <div className="mb-4 px-2 py-1.5 bg-palette-5-foreground rounded-md w-fit">
                 <p className="text-xs font-medium text-palette-5">🎯 指名フリー予約</p>
               </div>
@@ -344,15 +354,15 @@ export default function ReservationPage() {
             <div>
               <p className="text-muted-foreground text-sm">{t('dateTime')}:</p>
               <p className="font-medium text-base">
-                {formatUnixTimestamp(reservationData.reservation.start_time_unix ?? 0)} -{' '}
-                {format(new Date(reservationData.reservation.end_time_unix ?? 0), 'HH:mm')}
+                {formatUnixTimestamp(reservationData.startTimeUnix ?? 0)} -{' '}
+                {format(new Date(reservationData.endTimeUnix ?? 0), 'HH:mm')}
               </p>
               <Separator className="my-6 mx-auto w-1/2" />
               <div
                 className={`flex flex-col justify-start bg-neon-foreground border border-neon rounded-md shadow-sm my-3 p-5 w-full ${
-                  reservationData.reservation.status === 'completed' ||
-                  reservationData.reservation.status === 'cancelled' ||
-                  reservationData.reservation.status === 'refunded'
+                  reservationData.status === 'completed' ||
+                  reservationData.status === 'cancelled' ||
+                  reservationData.status === 'refunded'
                     ? 'hidden'
                     : ''
                 }`}
@@ -376,7 +386,7 @@ export default function ReservationPage() {
                   </Select>
                   <Button
                     variant="default"
-                    disabled={reservationData.reservation.status === status}
+                    disabled={reservationData.status === status}
                     onClick={(e) => handleShowUpdateStatusModal(e)}
                   >
                     {t('changeStatus')}
@@ -388,54 +398,55 @@ export default function ReservationPage() {
               <div className="flex flex-col gap-2">
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">メニュー</span> ¥
-                  {reservationData.reservationDetail?.menus
+                  {reservationData.detail?.menus
                     ?.reduce((acc, menu) => acc + menu.quantity * (menu.price ?? 0), 0)
-                    .toLocaleString()}{' '}
+                    .toLocaleString() ?? 0}{' '}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">オプション</span> ¥
-                  {reservationData.reservationDetail?.options
-                    .reduce((acc, option) => acc + option.quantity * (option.price ?? 0), 0)
-                    .toLocaleString()}
+                  {reservationData.detail?.options
+                    ?.reduce((acc, option) => acc + option.quantity * (option.price ?? 0), 0)
+                    .toLocaleString() ?? 0}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">指名料</span>
-                  {reservationData.reservation.is_free_nomination
+                  {reservationData.isFreeNomination
                     ? ' フリー指名(無料)'
-                    : ` ¥${reservationData.reservationDetail?.extra_charge?.toLocaleString() ?? 0}`}
+                    : ` ¥${reservationData.detail?.extraCharge?.toLocaleString() ?? 0}`}
                 </p>
                 <p className="font-bold  text-sm">
                   <span className=" mr-2">小計</span> ¥
-                  {reservationData.reservationDetail?.menus &&
-                  reservationData.reservationDetail?.options &&
-                  reservationData.reservationDetail?.extra_charge
-                    ? reservationData.reservationDetail?.menus?.reduce(
+                  {(() => {
+                    const menuTotal =
+                      reservationData.detail?.menus?.reduce(
                         (acc, menu) => acc + menu.quantity * (menu.price ?? 0),
                         0
-                      ) +
-                      reservationData.reservationDetail?.options?.reduce(
+                      ) ?? 0
+                    const optionTotal =
+                      reservationData.detail?.options?.reduce(
                         (acc, option) => acc + option.quantity * (option.price ?? 0),
                         0
-                      ) +
-                      (reservationData.reservation.is_free_nomination
-                        ? 0
-                        : (reservationData.reservationDetail?.extra_charge ?? 0))
-                    : 0}
+                      ) ?? 0
+                    const extraCharge = reservationData.isFreeNomination
+                      ? 0
+                      : (reservationData.detail?.extraCharge ?? 0)
+                    return (menuTotal + optionTotal + extraCharge).toLocaleString()
+                  })()}
                 </p>
                 <Separator className="my-2 mx-end w-1/2" />
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">クーポン利用</span>- ¥
-                  {reservationData.reservationDetail?.coupon_discount?.toLocaleString() ?? 0}
+                  {reservationData.detail?.couponDiscount?.toLocaleString() ?? 0}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">ポイント利用</span>- ¥
-                  {reservationData.reservationDetail?.use_points ?? 0}
+                  {reservationData.detail?.usePoints ?? 0}
                 </p>
                 <Separator className="my-2 mx-end w-1/2" />
                 <div className="flex items-center mt-3">
                   <p className="text-primary text-base font-bold">
                     <span className="font-medium mr-2">{t('totalAmount')}</span> ¥
-                    {reservationData.reservationDetail?.total_price?.toLocaleString() ?? 0}
+                    {reservationData.detail?.totalPrice?.toLocaleString() ?? 0}
                   </p>
                 </div>
               </div>
@@ -443,9 +454,7 @@ export default function ReservationPage() {
             <div>
               <p className="text-muted-foreground text-sm">{t('paymentMethod')}:</p>
               <p className="font-medium text-base">
-                {convertPaymentMethod(
-                  reservationData.reservationDetail?.payment_method as PaymentMethod
-                )}
+                {convertPaymentMethod(reservationData.detail?.paymentMethod as PaymentMethod)}
               </p>
             </div>
           </div>
@@ -453,7 +462,7 @@ export default function ReservationPage() {
 
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('customerInfo')}</h2>
-          {reservationData?.reservation?.customer_uid ? (
+          {reservationData?.customerUid ? (
             <>
               {customerLoading && (
                 <div className="flex items-center gap-2">
@@ -527,7 +536,7 @@ export default function ReservationPage() {
             <div className="flex items-start gap-4">
               <div>
                 <p className="font-medium text-lg">
-                  {reservationData.reservation.is_free_nomination && assignedStaff
+                  {reservationData.isFreeNomination && assignedStaff
                     ? `${assignedStaff.name} (自動割り当て)`
                     : (staff || assignedStaff)?.name}
                 </p>
@@ -549,15 +558,15 @@ export default function ReservationPage() {
                   </div>
                 )}
                 {/* スタッフ変更は指名フリー予約（is_free_nomination: true）の場合のみ可能 */}
-                {reservationData.reservation.is_free_nomination && (
+                {reservationData.isFreeNomination && (
                   <div className="mt-4">
                     <Button
                       size="sm"
                       onClick={() => setIsStaffChangeModalOpen(true)}
                       disabled={
-                        reservationData.reservation.status === 'completed' ||
-                        reservationData.reservation.status === 'cancelled' ||
-                        reservationData.reservation.status === 'refunded'
+                        reservationData.status === 'completed' ||
+                        reservationData.status === 'cancelled' ||
+                        reservationData.status === 'refunded'
                       }
                     >
                       スタッフを変更
@@ -570,16 +579,16 @@ export default function ReservationPage() {
             <div className="text-muted-foreground">
               <p>スタッフ未割り当て</p>
               {/* スタッフ割り当ては指名フリー予約（is_free_nomination: true）の場合のみ可能 */}
-              {reservationData.reservation.is_free_nomination && (
+              {reservationData.isFreeNomination && (
                 <Button
                   variant="outline"
                   size="sm"
                   className="mt-2"
                   onClick={() => setIsStaffChangeModalOpen(true)}
                   disabled={
-                    reservationData.reservation.status === 'completed' ||
-                    reservationData.reservation.status === 'cancelled' ||
-                    reservationData.reservation.status === 'refunded'
+                    reservationData.status === 'completed' ||
+                    reservationData.status === 'cancelled' ||
+                    reservationData.status === 'refunded'
                   }
                 >
                   スタッフを割り当て
@@ -590,63 +599,98 @@ export default function ReservationPage() {
         </div>
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('reservationContent')}</h2>
-          {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length > 0 && (
+          {reservationData.source === 'convex' &&
+            reservationMenuDetails?.menus?.length &&
+            reservationMenuDetails?.menus?.length > 0 && (
+              <div className="flex flex-col gap-3">
+                {reservationData.detail?.menus?.map((reservationMenuItem, index) => {
+                  const menuDetail = reservationMenuDetails.menus.find(
+                    (detail) => detail._id === reservationMenuItem.id
+                  )
+
+                  if (!menuDetail) return null
+
+                  return (
+                    <div key={index} className="border rounded-lg p-3">
+                      <p className="font-medium text-lg">{menuDetail.name}</p>
+                      <p className="text-muted-foreground text-sm">
+                        {t('quantity')}: {reservationMenuItem.quantity}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        {t('duration')}: {menuDetail.duration_min} {t('minutes')}
+                      </p>
+                      <p className="font-semibold text-md mt-1">
+                        {t('price')}: ¥
+                        {(menuDetail.sale_price ?? menuDetail.unit_price ?? 0).toLocaleString()}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+          {reservationData.source === 'supabase' && reservationData.detail?.menus && (
             <div className="flex flex-col gap-3">
-              {reservationData.reservationDetail?.menus?.map((reservationMenuItem, index) => {
-                const menuDetail = reservationMenuDetails.menus.find(
-                  (detail) => detail._id === reservationMenuItem.id
-                )
-
-                if (!menuDetail) return null
-
-                return (
-                  <div key={index} className="border rounded-lg p-3">
-                    <p className="font-medium text-lg">{menuDetail.name}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {t('quantity')}: {reservationMenuItem.quantity}
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      {t('duration')}: {menuDetail.duration_min} {t('minutes')}
-                    </p>
-                    <p className="font-semibold text-md mt-1">
-                      {t('price')}: ¥
-                      {(menuDetail.sale_price ?? menuDetail.unit_price ?? 0).toLocaleString()}
-                    </p>
-                  </div>
-                )
-              })}
+              {reservationData.detail.menus.map((menuItem, index) => (
+                <div key={index} className="border rounded-lg p-3">
+                  <p className="font-medium text-lg">{menuItem.name}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {t('quantity')}: {menuItem.quantity}
+                  </p>
+                  <p className="font-semibold text-md mt-1">
+                    {t('price')}: ¥{menuItem.price?.toLocaleString() ?? 0}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
 
-          {reservationMenuDetails?.options && reservationMenuDetails?.options?.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
-              <ul className="list-disc list-inside">
-                {reservationMenuDetails.options &&
-                  reservationMenuDetails.options.length > 0 &&
-                  reservationMenuDetails.options.map((option, index) => (
+          {reservationData.source === 'convex' &&
+            reservationMenuDetails?.options &&
+            reservationMenuDetails?.options?.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
+                <ul className="list-disc list-inside">
+                  {reservationMenuDetails.options &&
+                    reservationMenuDetails.options.length > 0 &&
+                    reservationMenuDetails.options.map((option, index) => (
+                      <li key={index} className="text-muted-foreground">
+                        {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
+                        {reservationData.detail?.options?.find((o) => o.id === option._id)
+                          ?.quantity ?? 0}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+          {reservationData.source === 'supabase' &&
+            reservationData.detail?.options &&
+            reservationData.detail.options.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
+                <ul className="list-disc list-inside">
+                  {reservationData.detail.options.map((option, index) => (
                     <li key={index} className="text-muted-foreground">
-                      {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
-                      {reservationData.reservationDetail?.options?.find((o) => o.id === option._id)
-                        ?.quantity ?? 0}
+                      {option.name} - ¥{option.price?.toLocaleString()} x {option.quantity}
                     </li>
                   ))}
-              </ul>
-            </div>
-          )}
-          {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length === 0 && (
+                </ul>
+              </div>
+            )}
+
+          {(!reservationData.detail?.menus || reservationData.detail.menus.length === 0) && (
             <p className="text-muted-foreground">{t('noMenuReserved')}</p>
           )}
         </div>
-        {reservationData.reservationDetail?.notes &&
-          reservationData.reservationDetail?.notes.trim() !== '' && (
-            <div>
-              <h2 className="text-xl font-semibold mb-3">{t('notes')}</h2>
-              <div className="bg-muted p-3 rounded-lg text-muted-foreground">
-                {reservationData.reservationDetail?.notes}
-              </div>
+        {reservationData.detail?.notes && reservationData.detail?.notes.trim() !== '' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-3">{t('notes')}</h2>
+            <div className="bg-muted p-3 rounded-lg text-muted-foreground">
+              {reservationData.detail?.notes}
             </div>
-          )}
+          </div>
+        )}
       </div>
       <Dialog open={isStaffChangeModalOpen} onOpenChange={setIsStaffChangeModalOpen}>
         <DialogContent>
@@ -669,8 +713,8 @@ export default function ReservationPage() {
                   ?.filter((staff) => {
                     // 現在割り当てられているスタッフを除外
                     const currentAssignedStaffId =
-                      reservationData?.reservation?.assigned_staff_id ||
-                      reservationData?.reservation?.staff_id
+                      reservationData?.convexData?.assigned_staff_id ||
+                      reservationData?.convexData?.staff_id
                     return staff._id !== currentAssignedStaffId
                   })
                   ?.map((staff) => (
@@ -735,7 +779,7 @@ export default function ReservationPage() {
             </div>
           </div>
           <DialogDescription className="text-sm text-neon bg-neon-foreground p-4 rounded-lg mt-4">
-            <strong>{convertReservationStatus(reservationData.reservation.status)}</strong>
+            <strong>{convertReservationStatus(reservationData.status)}</strong>
             {'から'}
             <strong>{convertReservationStatus(status)}</strong>へ変更する。
           </DialogDescription>

@@ -45,26 +45,19 @@ interface ReservationWithDetailData {
 export const getReservationWithDetail = async (
   ctx: QueryCtx,
   reservationId: Id<'reservation'>
-): Promise<ReservationWithDetailData> => {
+): Promise<ReservationWithDetailData | null> => {
   const reservation = await ctx.db.get(reservationId)
   if (!reservation) {
-    throw new ConvexError({
-      message: '予約が存在しません',
-      statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-      severity: ERROR_SEVERITY.ERROR,
-      callFunc: 'getReservationWithDetail',
-      details: {
-        reservationId,
-      },
-    })
+    return null
   }
+  
   const reservationDetail = await ctx.db
     .query('reservation_detail')
     .withIndex('by_reservation_archive', (q) =>
       q.eq('reservation_id', reservationId).eq('is_archive', false)
     )
     .first()
-
+    
   // 型安全な予約詳細データを返す
   const typedReservationDetail: ReservationDetailData | null = reservationDetail
     ? {

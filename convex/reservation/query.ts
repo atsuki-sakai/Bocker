@@ -131,13 +131,24 @@ export const getWithDetailById = query({
       try {
         // Supabaseから予約本体を取得（uid で一意）
         const { supabaseClientService } = await import('@/services/supabase/SupabaseService')
+
         const { data: reservations } = await supabaseClientService.listRecords('reservation', {
           filters: { uid: args.id },
           pageSize: 1,
           select: '*',
         })
         const reservation = reservations?.[0]
-        if (!reservation) return null
+        if (!reservation) {
+          throw new ConvexError({
+            message: '予約が存在しません',
+            statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+            severity: ERROR_SEVERITY.ERROR,
+            callFunc: 'getWithDetailById',
+            details: {
+              reservationId: args.id,
+            },
+          })
+        }
 
         // 予約詳細は _convex_id ベースで紐付け
         const { data: details } = await supabaseClientService.listRecords('reservation_detail', {
@@ -184,11 +195,32 @@ export const getWithDetailById = query({
         }
       } catch (e) {
         console.error('Failed to fetch reservation from Supabase by UUID:', e)
-        return null
+        throw new ConvexError({
+          message: 'Supabaseからの予約取得に失敗しました',
+          statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
+          severity: ERROR_SEVERITY.ERROR,
+          callFunc: 'getWithDetailById',
+          details: {
+            reservationId: args.id,
+            error: e instanceof Error ? e.message : String(e),
+          },
+        })
       }
     }
     // Convex ID の場合は従来ロジック
-    return await getReservationWithDetail(ctx, args.id as Id<'reservation'>)
+    const result = await getReservationWithDetail(ctx, args.id as Id<'reservation'>)
+    if (!result) {
+      throw new ConvexError({
+        message: '予約が存在しません',
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'getWithDetailById',
+        details: {
+          reservationId: args.id,
+        },
+      })
+    }
+    return result
   },
 })
 
