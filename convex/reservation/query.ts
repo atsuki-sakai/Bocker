@@ -11,16 +11,17 @@
  *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
  * ---------------------------------------------------------------
  */
-import { format } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { paginationOptsValidator } from 'convex/server';
-import { reservationStatusType } from '@/convex/types';
-import { checkAuth } from '@/convex/utils/auth';
-import { AvailableStaff } from '@/hooks/usePriceCalculation';
-import { Doc } from '@/convex/_generated/dataModel';
-import { query } from '@/convex/_generated/server';
-import { api, internal } from '@/convex/_generated/api';
-import { v } from 'convex/values';
+import { Id } from '@/convex/_generated/dataModel'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { paginationOptsValidator } from 'convex/server'
+import { reservationStatusType } from '@/convex/types'
+import { checkAuth } from '@/convex/utils/auth'
+import { AvailableStaff } from '@/hooks/usePriceCalculation'
+import { Doc } from '@/convex/_generated/dataModel'
+import { query } from '@/convex/_generated/server'
+import { api, internal } from '@/convex/_generated/api'
+import { v } from 'convex/values'
 import { getPlanLimits } from '@/convex/utils/helpers'
 import { subscriptionPlanNameType } from '@/convex/types'
 import { validateDateStrFormat, validateStringLength } from '@/convex/utils/validations'
@@ -122,7 +123,7 @@ export const getReservationsForReminder = internalQuery({
 
 export const getWithDetailById = query({
   args: {
-    id: v.id('reservation'),
+    id: v.union(v.id('reservation'), v.string()),
   },
   handler: async (ctx, args) => {
     const result = await getReservationWithDetail(ctx, args.id)

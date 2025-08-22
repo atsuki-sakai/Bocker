@@ -44,4 +44,8 @@ crons.interval(
   internal.reservation.action.sendHourlyReminders
 )
 
+// ✅ COMPLETED: トラッキングデータ集計機能はSupabaseに完全移行済み
+// 実装: supabase/migrations/20250821000001_tracking_daily_cleanup_integration.sql
+// Supabase実行中: 'daily-tracking-aggregation-with-cleanup' (15 17 * * *)
+
 export default crons
