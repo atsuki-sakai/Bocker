@@ -84,6 +84,7 @@ export type IntegratedReservation = {
   customerName: string
   staffName: string | undefined
   isFreeNomination: boolean
+  assignedStaffId: string | undefined
   status: ReservationStatus
   paymentStatus: ReservationPaymentStatus
   date: string
@@ -185,6 +186,7 @@ export function useReservationData(reservationId: string) {
             status: result.reservation.status as ReservationStatus,
             paymentStatus: result.reservation.payment_status as ReservationPaymentStatus,
             isFreeNomination: result.reservation.is_free_nomination ?? false,
+            assignedStaffId: result.reservation.assigned_staff_id || undefined,
             date: result.reservation.date,
             startTimeUnix: Number(result.reservation.start_time_unix),
             endTimeUnix: Number(result.reservation.end_time_unix),
@@ -240,6 +242,7 @@ export function useReservationData(reservationId: string) {
           status: convexData.reservation.status,
           paymentStatus: convexData.reservation.payment_status,
           isFreeNomination: convexData.reservation.is_free_nomination ?? false,
+          assignedStaffId: convexData.reservation.assigned_staff_id || undefined,
           date: convexData.reservation.date,
           startTimeUnix: convexData.reservation.start_time_unix,
           endTimeUnix: convexData.reservation.end_time_unix,
@@ -396,6 +399,7 @@ export function useOrganizationReservations({
         status: res.status,
         paymentStatus: res.payment_status,
         isFreeNomination: res.is_free_nomination ?? false,
+        assignedStaffId: res.assigned_staff_id,
         date: res.date,
         startTimeUnix: res.start_time_unix,
         endTimeUnix: res.end_time_unix,
@@ -516,6 +520,7 @@ export function useOrganizationReservations({
             status: item.reservation.status as ReservationStatus,
             paymentStatus: item.reservation.payment_status as ReservationPaymentStatus,
             isFreeNomination: item.reservation.is_free_nomination ?? false,
+            assignedStaffId: item.reservation.assigned_staff_id || undefined,
             date: item.reservation.date,
             startTimeUnix: Number(item.reservation.start_time_unix),
             endTimeUnix: Number(item.reservation.end_time_unix),
