@@ -125,7 +125,19 @@ export const getWithDetailById = query({
     id: v.id('reservation'),
   },
   handler: async (ctx, args) => {
-    return await getReservationWithDetail(ctx, args.id)
+    const result = await getReservationWithDetail(ctx, args.id)
+    if (!result) {
+      throw new ConvexError({
+        message: '予約が存在しません',
+        statusCode: ERROR_STATUS_CODE.NOT_FOUND,
+        severity: ERROR_SEVERITY.ERROR,
+        callFunc: 'getWithDetailById',
+        details: {
+          reservationId: args.id,
+        },
+      })
+    }
+    return result
   },
 })
 
