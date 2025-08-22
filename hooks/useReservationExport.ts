@@ -5,16 +5,22 @@ import { Id, Doc } from '@/convex/_generated/dataModel';
 import { ReservationRepository } from '@/services/supabase/repositories';
 import { toast } from 'sonner';
 import type { IntegratedReservation } from './useOrganizationReservations';
-import type { ReservationStatus, ReservationMenu, ReservationOption } from '@/convex/types';
-import type { RowType } from '@/services/supabase/SupabaseService';
+import type {
+  PaymentMethod,
+  ReservationStatus,
+  ReservationMenu,
+  ReservationOption,
+  ReservationPaymentStatus,
+} from '@/convex/types'
+import type { RowType } from '@/services/supabase/SupabaseService'
 
 type UseReservationExportOptions = {
-  tenantId: string;
-  orgId: string;
-  status?: string;
-  startDate?: string;
-  endDate?: string;
-};
+  tenantId: string
+  orgId: string
+  status?: string
+  startDate?: string
+  endDate?: string
+}
 
 type UseReservationExportReturn = {
   exportToCsv: () => Promise<void>
@@ -80,6 +86,7 @@ export function useReservationExport({
           status: res.status,
           paymentStatus: res.payment_status,
           isFreeNomination: res.is_free_nomination ?? false,
+          assignedStaffId: res.assigned_staff_id,
           date: res.date,
           startTimeUnix: res.start_time_unix,
           endTimeUnix: res.end_time_unix,
@@ -148,9 +155,10 @@ export function useReservationExport({
           staffId: item.reservation.staff_id,
           customerName: item.reservation.customer_name,
           staffName: item.reservation.staff_name,
-          status: item.reservation.status,
-          paymentStatus: item.reservation.payment_status,
+          status: item.reservation.status as ReservationStatus,
+          paymentStatus: item.reservation.payment_status as ReservationPaymentStatus,
           isFreeNomination: item.reservation.is_free_nomination ?? false,
+          assignedStaffId: item.reservation.assigned_staff_id || undefined,
           date: item.reservation.date,
           startTimeUnix: Number(item.reservation.start_time_unix),
           endTimeUnix: Number(item.reservation.end_time_unix),
@@ -166,7 +174,7 @@ export function useReservationExport({
                   : [],
                 totalPrice:
                   typeof item.detail.total_price === 'number' ? item.detail.total_price : undefined,
-                paymentMethod: item.detail.payment_method,
+                paymentMethod: item.detail.payment_method as PaymentMethod,
                 couponId: item.detail.coupon_id || undefined,
                 couponDiscount:
                   typeof item.detail.coupon_discount === 'number'

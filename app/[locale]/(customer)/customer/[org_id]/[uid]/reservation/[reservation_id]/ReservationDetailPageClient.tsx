@@ -113,6 +113,7 @@ export function ReservationDetailPageClient({
 
         setReservationData({
           id: res._id,
+          _convex_id: res._id,
           source: 'convex',
           tenantId: res.tenant_id,
           orgId: res.org_id,
@@ -181,6 +182,7 @@ export function ReservationDetailPageClient({
 
           setReservationData({
             id: reservation.uid,
+            _convex_id: reservation._convex_id,
             source: 'supabase',
             tenantId: reservation.tenant_id,
             orgId: reservation.org_id,

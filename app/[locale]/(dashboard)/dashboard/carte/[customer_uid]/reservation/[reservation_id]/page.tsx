@@ -152,7 +152,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
       // カルテ情報の取得
       const carte = await carteRepo.findByCustomer(tenantId, orgId, customerUid)
 
-      // カルテ詳細の取得
+      // カルテ詳細の取得 // FIXME: 予約を完了にしてSupabaseに予約を移動した際にカルテ詳細の取得ができていない
       const carteDetail = await carteDetailRepo.findByReservation(tenantId, orgId, reservationId)
 
       setCarteData({
@@ -409,6 +409,8 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
       </DashboardSection>
     )
   }
+
+  console.log('[CarteDetailPage] carteData:', carteData)
 
   const firstName = customerData.customer?.first_name ?? null
   const lastName = customerData.customer?.last_name ?? null

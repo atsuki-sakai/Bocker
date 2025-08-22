@@ -87,9 +87,11 @@ export default function ReservationPage() {
   const { data: reservationData, loading: reservationLoading } = useReservationData(
     reservation_id as string
   )
+
   const [status, setStatus] = useState<ReservationStatus>(
     reservationData?.status as ReservationStatus
   )
+  const [isStatusInitialized, setIsStatusInitialized] = useState(false)
   const deleteReservation = useMutation(api.reservation.mutation.kill)
   const changeStaff = useMutation(api.reservation.mutation.changeStaffForFreeNomination)
 
@@ -151,10 +153,11 @@ export default function ReservationPage() {
   )
 
   useEffect(() => {
-    if (reservationData) {
+    if (reservationData && !isStatusInitialized) {
       setStatus(reservationData.status as ReservationStatus)
+      setIsStatusInitialized(true)
     }
-  }, [reservationData])
+  }, [reservationData, isStatusInitialized])
 
   useEffect(() => {
     async function fetchCustomerData() {
@@ -400,13 +403,13 @@ export default function ReservationPage() {
                   <span className="font-medium mr-2">メニュー</span> ¥
                   {reservationData.detail?.menus
                     ?.reduce((acc, menu) => acc + menu.quantity * (menu.price ?? 0), 0)
-                    .toLocaleString() ?? 0}{' '}
+                    .toLocaleString()}{' '}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">オプション</span> ¥
                   {reservationData.detail?.options
                     ?.reduce((acc, option) => acc + option.quantity * (option.price ?? 0), 0)
-                    .toLocaleString() ?? 0}
+                    .toLocaleString()}
                 </p>
                 <p className="text-muted-foreground text-xs">
                   <span className="font-medium mr-2">指名料</span>
@@ -416,22 +419,21 @@ export default function ReservationPage() {
                 </p>
                 <p className="font-bold  text-sm">
                   <span className=" mr-2">小計</span> ¥
-                  {(() => {
-                    const menuTotal =
-                      reservationData.detail?.menus?.reduce(
+                  {reservationData.detail?.menus &&
+                  reservationData.detail?.options &&
+                  reservationData.detail?.extraCharge
+                    ? reservationData.detail?.menus?.reduce(
                         (acc, menu) => acc + menu.quantity * (menu.price ?? 0),
                         0
-                      ) ?? 0
-                    const optionTotal =
+                      ) +
                       reservationData.detail?.options?.reduce(
                         (acc, option) => acc + option.quantity * (option.price ?? 0),
                         0
-                      ) ?? 0
-                    const extraCharge = reservationData.isFreeNomination
-                      ? 0
-                      : (reservationData.detail?.extraCharge ?? 0)
-                    return (menuTotal + optionTotal + extraCharge).toLocaleString()
-                  })()}
+                      ) +
+                      (reservationData.isFreeNomination
+                        ? 0
+                        : (reservationData.detail?.extraCharge ?? 0))
+                    : 0}
                 </p>
                 <Separator className="my-2 mx-end w-1/2" />
                 <p className="text-muted-foreground text-xs">
@@ -599,87 +601,51 @@ export default function ReservationPage() {
         </div>
         <div className="border-b pb-4">
           <h2 className="text-xl font-semibold mb-3">{t('reservationContent')}</h2>
-          {reservationData.source === 'convex' &&
-            reservationMenuDetails?.menus?.length &&
-            reservationMenuDetails?.menus?.length > 0 && (
-              <div className="flex flex-col gap-3">
-                {reservationData.detail?.menus?.map((reservationMenuItem, index) => {
-                  const menuDetail = reservationMenuDetails.menus.find(
-                    (detail) => detail._id === reservationMenuItem.id
-                  )
-
-                  if (!menuDetail) return null
-
-                  return (
-                    <div key={index} className="border rounded-lg p-3">
-                      <p className="font-medium text-lg">{menuDetail.name}</p>
-                      <p className="text-muted-foreground text-sm">
-                        {t('quantity')}: {reservationMenuItem.quantity}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        {t('duration')}: {menuDetail.duration_min} {t('minutes')}
-                      </p>
-                      <p className="font-semibold text-md mt-1">
-                        {t('price')}: ¥
-                        {(menuDetail.sale_price ?? menuDetail.unit_price ?? 0).toLocaleString()}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-          {reservationData.source === 'supabase' && reservationData.detail?.menus && (
+          {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length > 0 && (
             <div className="flex flex-col gap-3">
-              {reservationData.detail.menus.map((menuItem, index) => (
-                <div key={index} className="border rounded-lg p-3">
-                  <p className="font-medium text-lg">{menuItem.name}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {t('quantity')}: {menuItem.quantity}
-                  </p>
-                  <p className="font-semibold text-md mt-1">
-                    {t('price')}: ¥{menuItem.price?.toLocaleString() ?? 0}
-                  </p>
-                </div>
-              ))}
+              {reservationData.detail?.menus?.map((reservationMenuItem, index) => {
+                const menuDetail = reservationMenuDetails.menus.find(
+                  (detail) => detail._id === reservationMenuItem.id
+                )
+
+                if (!menuDetail) return null
+
+                return (
+                  <div key={index} className="border rounded-lg p-3">
+                    <p className="font-medium text-lg">{menuDetail.name}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {t('quantity')}: {reservationMenuItem.quantity}
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      {t('duration')}: {menuDetail.duration_min} {t('minutes')}
+                    </p>
+                    <p className="font-semibold text-md mt-1">
+                      {t('price')}: ¥
+                      {(menuDetail.sale_price ?? menuDetail.unit_price ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {reservationData.source === 'convex' &&
-            reservationMenuDetails?.options &&
-            reservationMenuDetails?.options?.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
-                <ul className="list-disc list-inside">
-                  {reservationMenuDetails.options &&
-                    reservationMenuDetails.options.length > 0 &&
-                    reservationMenuDetails.options.map((option, index) => (
-                      <li key={index} className="text-muted-foreground">
-                        {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
-                        {reservationData.detail?.options?.find((o) => o.id === option._id)
-                          ?.quantity ?? 0}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
-
-          {reservationData.source === 'supabase' &&
-            reservationData.detail?.options &&
-            reservationData.detail.options.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
-                <ul className="list-disc list-inside">
-                  {reservationData.detail.options.map((option, index) => (
+          {reservationMenuDetails?.options && reservationMenuDetails?.options?.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold mb-2">{t('options')}</h3>
+              <ul className="list-disc list-inside">
+                {reservationMenuDetails.options &&
+                  reservationMenuDetails.options.length > 0 &&
+                  reservationMenuDetails.options.map((option, index) => (
                     <li key={index} className="text-muted-foreground">
-                      {option.name} - ¥{option.price?.toLocaleString()} x {option.quantity}
+                      {option.name} - ¥{option.unit_price?.toLocaleString()} x{' '}
+                      {reservationData.detail?.options?.find((o) => o.id === option._id)
+                        ?.quantity ?? 0}
                     </li>
                   ))}
-                </ul>
-              </div>
-            )}
-
-          {(!reservationData.detail?.menus || reservationData.detail.menus.length === 0) && (
+              </ul>
+            </div>
+          )}
+          {reservationMenuDetails?.menus?.length && reservationMenuDetails?.menus?.length === 0 && (
             <p className="text-muted-foreground">{t('noMenuReserved')}</p>
           )}
         </div>
@@ -713,8 +679,7 @@ export default function ReservationPage() {
                   ?.filter((staff) => {
                     // 現在割り当てられているスタッフを除外
                     const currentAssignedStaffId =
-                      reservationData?.convexData?.assigned_staff_id ||
-                      reservationData?.convexData?.staff_id
+                      reservationData?.assignedStaffId || reservationData?.staffId
                     return staff._id !== currentAssignedStaffId
                   })
                   ?.map((staff) => (

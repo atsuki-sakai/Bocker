@@ -101,11 +101,14 @@ export class CarteDetailRepository extends BaseRepository<'carte_detail'> {
   ): Promise<RowType<'carte_detail'> | null> {
     console.log(`[CarteDetailRepository] findByReservation: tenantId=${tenantId}, orgId=${orgId}, reservationId=${reservationId}`);
     
-    return this.findOne({ 
-      tenant_id: tenantId,
-      org_id: orgId,
-      reservation_id: reservationId 
-    } as Partial<RowType<'carte_detail'>>, options);
+    return this.findOne(
+      {
+        tenant_id: tenantId,
+        org_id: orgId,
+        reservation_id: reservationId,
+      } as Partial<RowType<'carte_detail'>>,
+      options
+    )
   }
 
   /**

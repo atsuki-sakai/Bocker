@@ -220,6 +220,8 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
     pageSize: 10,
   })
 
+  console.log('[CartePage] Reservations:', reservations)
+
   // 初回データ取得
   useEffect(() => {
     if (customerUid && tenantId && orgId && isLoaded) {
@@ -966,7 +968,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                     )
                     .map((item) => (
                       <Link
-                        href={`/dashboard/carte/${customerUid}/reservation/${item.id}`}
+                        href={`/dashboard/carte/${customerUid}/reservation/${item.source === 'convex' ? item.id : item._convex_id}`}
                         key={item.id}
                       >
                         <Card
@@ -989,7 +991,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="w-4 h-4 text-muted-foreground" />
                                   <span className="font-medium">
-                                    {format(new Date(), 'yyyy年MM月dd日', {
+                                    {format(new Date(item.startTimeUnix), 'yyyy年MM月dd日', {
                                       locale: locale === 'ja' ? ja : enUS,
                                     })}
                                   </span>

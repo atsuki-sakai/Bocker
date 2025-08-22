@@ -692,199 +692,197 @@ const CouponMenuViewInner = ({
 
   return (
     <div className="w-full space-y-4 md:space-y-8">
-
-              {/* Filter Section */}
-              <Card className="p-4 border-border">
-          <p className="text-xs text-muted-foreground mb-2 border-b border-border pb-2">
-            予約したいメニューを絞り込めます。カテゴリまたは性別を選択してください。
-          </p>
-          <div className="space-y-4">
-            <div className="flex gap-2 justify-between">
-              {/* Gender Filter */}
-              <Popover open={showGenderPopover} onOpenChange={setShowGenderPopover}>
-                <div className="flex flex-col justify-between items-start mb-2">
-                  <div className="flex justify-between items-end">
-                    {selectedGenders.length > 0 ? (
-                      <p className="text-base font-bold text-muted-foreground rounded-md">
-                        <span className="mr-0.5">{selectedGenders.length}</span>
-                        <span className="text-xs">性別選択中</span>
-                      </p>
-                    ) : (
-                      <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
-                        全性別を表示中
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end items-center gap-4">
-                    <PopoverTrigger asChild>
-                      <Button size="sm" onClick={() => setShowGenderPopover(true)}>
-                        {'性別で絞り込む'}
-                      </Button>
-                    </PopoverTrigger>
-                  </div>
+      {/* Filter Section */}
+      <Card className="p-4 border-border">
+        <p className="text-xs text-muted-foreground mb-2 border-b border-border pb-2">
+          予約したいメニューを絞り込めます。カテゴリまたは性別を選択してください。
+        </p>
+        <div className="space-y-4">
+          <div className="flex gap-2 justify-between">
+            {/* Gender Filter */}
+            <Popover open={showGenderPopover} onOpenChange={setShowGenderPopover}>
+              <div className="flex flex-col justify-between items-start mb-2">
+                <div className="flex justify-between items-end">
+                  {selectedGenders.length > 0 ? (
+                    <p className="text-base font-bold text-muted-foreground rounded-md">
+                      <span className="mr-0.5">{selectedGenders.length}</span>
+                      <span className="text-xs">性別選択中</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
+                      全性別を表示中
+                    </p>
+                  )}
                 </div>
-                <PopoverContent
-                  className="w-[240px] p-2"
-                  onOpenAutoFocus={(event) => event.preventDefault()}
-                >
-                  <Command>
-                    <div className="flex justify-between items-center">
-                      <CommandInput placeholder="性別を検索…" />
-                      <Button size="sm" variant="ghost" onClick={() => setShowGenderPopover(false)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <CommandList className="max-h-[400px] overflow-y-auto">
-                      {GENDER_VALUES.filter((gender) => gender !== 'unselected').map((gender) => (
-                        <CommandItem
-                          key={gender}
-                          className="cursor-pointer"
-                          onSelect={() => toggleGender(gender)}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <span
-                              className={`${selectedGenders.includes(gender) ? 'font-bold' : ''}`}
-                            >
-                              {convertGender(gender)}
-                            </span>
-                            {selectedGenders.includes(gender) && (
-                              <Check className="w-4 h-4 font-bold text-accent-2" />
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
 
-              {/* Category Filter */}
-              <Popover open={showPopover} onOpenChange={setShowPopover}>
-                <div className="flex flex-col justify-between items-start mb-2">
-                  <div className="flex justify-between items-end mb-2">
-                    {selectedCategories.length > 0 ? (
-                      <p className="text-base font-bold text-muted-foreground rounded-md">
-                        <span className="mr-0.5">{selectedCategories.length}</span>
-                        <span className="text-xs">件選択中</span>
-                      </p>
-                    ) : (
-                      <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
-                        全カテゴリを表示中
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end items-center gap-4">
-                    <PopoverTrigger asChild>
-                      <Button size="sm" onClick={() => setShowPopover(true)}>
-                        {'カテゴリを絞り込む'}
-                      </Button>
-                    </PopoverTrigger>
-                  </div>
+                <div className="flex justify-end items-center gap-4">
+                  <PopoverTrigger asChild>
+                    <Button size="sm" onClick={() => setShowGenderPopover(true)}>
+                      {'性別で絞り込む'}
+                    </Button>
+                  </PopoverTrigger>
                 </div>
-                <PopoverContent
-                  className="w-[240px] p-2"
-                  onOpenAutoFocus={(event) => event.preventDefault()}
-                >
-                  <Command>
-                    <div className="flex justify-between items-center">
-                      <CommandInput placeholder="カテゴリを検索…" />
-                      <Button size="sm" variant="ghost" onClick={() => setShowPopover(false)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <CommandList className="max-h-[400px] overflow-y-auto">
-                      {uniqueCategories.map((category) => (
-                        <CommandItem
-                          key={category}
-                          className="cursor-pointer"
-                          onSelect={() => toggleCategory(category as MenuCategory)}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <span
-                              className={`${
-                                selectedCategories.includes(category as MenuCategory)
-                                  ? 'font-bold'
-                                  : ''
-                              }`}
-                            >
-                              {category}
-                            </span>
-                            {selectedCategories.includes(category as MenuCategory) && (
-                              <Check className="w-4 h-4 font-bold text-accent-2" />
-                            )}
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Selected Filters Display */}
-            {(selectedCategories.length > 0 || selectedGenders.length > 0 || targetType) && (
-              <div className="flex items-center gap-2">
-                {selectedCategories.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">カテゴリ:</p>
-                    <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
-                      {selectedCategories.map((category, index) => {
-                        return (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
-                          >
-                            <span className="text-xs text-nowrap">{category}</span>
-                            <button
-                              onClick={() => {
-                                setSelectedCategories(
-                                  selectedCategories.filter((_, i) => i !== index)
-                                )
-                              }}
-                            >
-                              <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {selectedGenders.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">性別:</p>
-                    <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
-                      {selectedGenders.map((gender, index) => {
-                        return (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
-                          >
-                            <span className="text-xs text-nowrap">{convertGender(gender)}</span>
-                            <button
-                              onClick={() => {
-                                setSelectedGenders(selectedGenders.filter((_, i) => i !== index))
-                              }}
-                            >
-                              <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
-            )}
+              <PopoverContent
+                className="w-[240px] p-2"
+                onOpenAutoFocus={(event) => event.preventDefault()}
+              >
+                <Command>
+                  <div className="flex justify-between items-center">
+                    <CommandInput placeholder="性別を検索…" />
+                    <Button size="sm" variant="ghost" onClick={() => setShowGenderPopover(false)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <CommandList className="max-h-[400px] overflow-y-auto">
+                    {GENDER_VALUES.filter((gender) => gender !== 'unselected').map((gender) => (
+                      <CommandItem
+                        key={gender}
+                        className="cursor-pointer"
+                        onSelect={() => toggleGender(gender)}
+                      >
+                        <div className="flex justify-between items-center w-full">
+                          <span
+                            className={`${selectedGenders.includes(gender) ? 'font-bold' : ''}`}
+                          >
+                            {convertGender(gender)}
+                          </span>
+                          {selectedGenders.includes(gender) && (
+                            <Check className="w-4 h-4 font-bold text-accent-2" />
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Category Filter */}
+            <Popover open={showPopover} onOpenChange={setShowPopover}>
+              <div className="flex flex-col justify-between items-start mb-2">
+                <div className="flex justify-between items-end mb-2">
+                  {selectedCategories.length > 0 ? (
+                    <p className="text-base font-bold text-muted-foreground rounded-md">
+                      <span className="mr-0.5">{selectedCategories.length}</span>
+                      <span className="text-xs">件選択中</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs px-3 py-1 bg-secondary font-bold border border-border text-muted-foreground rounded-md">
+                      全カテゴリを表示中
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end items-center gap-4">
+                  <PopoverTrigger asChild>
+                    <Button size="sm" onClick={() => setShowPopover(true)}>
+                      {'カテゴリを絞り込む'}
+                    </Button>
+                  </PopoverTrigger>
+                </div>
+              </div>
+              <PopoverContent
+                className="w-[240px] p-2"
+                onOpenAutoFocus={(event) => event.preventDefault()}
+              >
+                <Command>
+                  <div className="flex justify-between items-center">
+                    <CommandInput placeholder="カテゴリを検索…" />
+                    <Button size="sm" variant="ghost" onClick={() => setShowPopover(false)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <CommandList className="max-h-[400px] overflow-y-auto">
+                    {uniqueCategories.map((category) => (
+                      <CommandItem
+                        key={category}
+                        className="cursor-pointer"
+                        onSelect={() => toggleCategory(category as MenuCategory)}
+                      >
+                        <div className="flex justify-between items-center w-full">
+                          <span
+                            className={`${
+                              selectedCategories.includes(category as MenuCategory)
+                                ? 'font-bold'
+                                : ''
+                            }`}
+                          >
+                            {category}
+                          </span>
+                          {selectedCategories.includes(category as MenuCategory) && (
+                            <Check className="w-4 h-4 font-bold text-accent-2" />
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
-        </Card>
+
+          {/* Selected Filters Display */}
+          {(selectedCategories.length > 0 || selectedGenders.length > 0 || targetType) && (
+            <div className="flex items-center gap-2">
+              {selectedCategories.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">カテゴリ:</p>
+                  <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
+                    {selectedCategories.map((category, index) => {
+                      return (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
+                        >
+                          <span className="text-xs text-nowrap">{category}</span>
+                          <button
+                            onClick={() => {
+                              setSelectedCategories(
+                                selectedCategories.filter((_, i) => i !== index)
+                              )
+                            }}
+                          >
+                            <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selectedGenders.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">性別:</p>
+                  <div className="flex flex-wrap gap-1 bg-muted p-2 rounded-md">
+                    {selectedGenders.map((gender, index) => {
+                      return (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center gap-1 px-2 py-0.5 bg-background border border-border text-muted-foreground rounded-md"
+                        >
+                          <span className="text-xs text-nowrap">{convertGender(gender)}</span>
+                          <button
+                            onClick={() => {
+                              setSelectedGenders(selectedGenders.filter((_, i) => i !== index))
+                            }}
+                          >
+                            <X className="w-4 h-4 ml-1 text-destructive bg-destructive-foreground rounded-full p-0.5" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
       {/* Coupon Section */}
       <div className="w-full max-w-3xl mx-auto">
         <div className="space-y-3 md:space-y-6">
-
           {/* Selected Coupon Display */}
           {selectCoupon && (
             <div className="border-neon bg-neon-foreground p-2 rounded-md border-2">
@@ -906,11 +904,17 @@ const CouponMenuViewInner = ({
               </div>
               <div className="pt-0 pb-3 md:pb-6">
                 <div className="space-y-1 md:space-y-2">
-                  <p className="font-medium text-sm md:text-base text-neon line-clamp-1">{selectCoupon.name}</p>
+                  <p className="font-medium text-sm md:text-base text-neon line-clamp-1">
+                    {selectCoupon.name}
+                  </p>
                   {selectedMenus.length > 0 ? (
-                    <p className="text-xs md:text-sm text-neon">¥ {appliedDiscount.toLocaleString()} - OFF</p>
+                    <p className="text-xs md:text-sm text-neon">
+                      ¥ {appliedDiscount.toLocaleString()} - OFF
+                    </p>
                   ) : (
-                    <p className="text-[10px] md:text-xs text-neon/80">割引額はメニュー選択後に確定します</p>
+                    <p className="text-[10px] md:text-xs text-neon/80">
+                      割引額はメニュー選択後に確定します
+                    </p>
                   )}
                   {selectedMenus.length > 0 &&
                     selectCoupon &&
@@ -930,26 +934,35 @@ const CouponMenuViewInner = ({
                     })()}
 
                   {/* 適用外メニューリスト */}
-                  {selectCoupon && excludedMenuDetails?.menus && excludedMenuDetails.menus.length > 0 && (
-                    <div className="mt-2 md:mt-3 pt-2 border-t border-neon/20">
-                      <div className="flex items-center gap-1 mb-1">
-                        <AlertTriangle size={12} className="text-neon/80" />
-                        <p className="text-[10px] md:text-xs text-neon/80 font-medium">
-                          適用外メニュー ({excludedMenuDetails.menus.length}件)
-                        </p>
+                  {selectCoupon &&
+                    excludedMenuDetails?.menus &&
+                    excludedMenuDetails.menus.length > 0 && (
+                      <div className="mt-2 md:mt-3 pt-2 border-t border-neon/20">
+                        <div className="flex items-center gap-1 mb-1">
+                          <AlertTriangle size={12} className="text-neon/80" />
+                          <p className="text-[10px] md:text-xs text-neon/80 font-medium">
+                            適用外メニュー ({excludedMenuDetails.menus.length}件)
+                          </p>
+                        </div>
+                        <div className="max-h-12 md:max-h-16 overflow-y-auto space-y-1">
+                          {excludedMenuDetails.menus.map((menu) => (
+                            <div
+                              key={menu._id}
+                              className="flex justify-between items-center text-[10px] md:text-xs bg-neon/10 p-0.5 rounded"
+                            >
+                              <span className="text-neon/80 truncate flex-1">{menu.name}</span>
+                              <span className="text-neon/60 ml-2 text-nowrap">
+                                ¥
+                                {(menu.sale_price && menu.sale_price > 0
+                                  ? menu.sale_price
+                                  : menu.unit_price
+                                )?.toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="max-h-12 md:max-h-16 overflow-y-auto space-y-1">
-                        {excludedMenuDetails.menus.map((menu) => (
-                          <div key={menu._id} className="flex justify-between items-center text-[10px] md:text-xs bg-neon/10 p-0.5 rounded">
-                            <span className="text-neon/80 truncate flex-1">{menu.name}</span>
-                            <span className="text-neon/60 ml-2 text-nowrap">
-                              ¥{(menu.sale_price && menu.sale_price > 0 ? menu.sale_price : menu.unit_price)?.toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             </div>
@@ -970,55 +983,57 @@ const CouponMenuViewInner = ({
                 利用可能なクーポン ({availableCoupons.length}件)
               </p>
               <div className="flex overflow-x-auto gap-3 w-full snap-x snap-mandatory scrollbar-hide pb-2">
-              {availableCoupons.map(({ coupon, applicableMenus }) => {
-                const isSelected = selectCoupon?._id === coupon._id
+                {availableCoupons.map(({ coupon, applicableMenus }) => {
+                  const isSelected = selectCoupon?._id === coupon._id
 
-                return (
-                  <Card
-                    key={coupon._id}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-md min-w-[280px] md:min-w-[320px] snap-start ${
-                      isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                    }`}
-                    onClick={() => handleCouponSelect(coupon)}
-                  >
-                    <CardContent className="p-3 md:p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-3">
-                          <h4 className="font-medium text-sm md:text-base mb-1 text-neon line-clamp-1">{coupon.name}</h4>
-                          <div className="flex items-center space-x-2 md:space-x-4 text-xs md:text-sm text-muted-foreground">
-                            <span className="flex items-center">
-                              <Tag className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                              {coupon.discount_type === 'percentage'
-                                ? `${coupon.percentage_discount_value}%割引`
-                                : `¥${(coupon.fixed_discount_value ?? 0).toLocaleString()}割引`}
-                            </span>
+                  return (
+                    <Card
+                      key={coupon._id}
+                      className={`cursor-pointer transition-all duration-200 hover:shadow-md min-w-[280px] md:min-w-[320px] snap-start ${
+                        isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => handleCouponSelect(coupon)}
+                    >
+                      <CardContent className="p-3 md:p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 mr-3">
+                            <h4 className="font-medium text-sm md:text-base mb-1 text-neon line-clamp-1">
+                              {coupon.name}
+                            </h4>
+                            <div className="flex items-center space-x-2 md:space-x-4 text-xs md:text-sm text-muted-foreground">
+                              <span className="flex items-center">
+                                <Tag className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                {coupon.discount_type === 'percentage'
+                                  ? `${coupon.percentage_discount_value}%割引`
+                                  : `¥${(coupon.fixed_discount_value ?? 0).toLocaleString()}割引`}
+                              </span>
+                            </div>
+                            {selectedMenus.length > 0 ? (
+                              <p className="text-xs md:text-sm text-primary font-medium mt-1 md:mt-2">
+                                この注文での割引額: ¥
+                                {calculateDiscount(coupon, applicableMenus).toLocaleString()}
+                              </p>
+                            ) : (
+                              <p className="text-[10px] md:text-xs text-muted-foreground mt-1 md:mt-2">
+                                割引額はメニュー選択後に確定します
+                              </p>
+                            )}
+                            {applicableMenus.length > 0 && (
+                              <p className="text-[10px] md:text-xs text-muted-foreground mt-1 line-clamp-1">
+                                適用対象: {applicableMenus.map((menu) => menu.name).join(', ')}
+                              </p>
+                            )}
                           </div>
-                          {selectedMenus.length > 0 ? (
-                            <p className="text-xs md:text-sm text-primary font-medium mt-1 md:mt-2">
-                              この注文での割引額: ¥
-                              {calculateDiscount(coupon, applicableMenus).toLocaleString()}
-                            </p>
+                          {isSelected ? (
+                            <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-neon flex-shrink-0" />
                           ) : (
-                            <p className="text-[10px] md:text-xs text-muted-foreground mt-1 md:mt-2">
-                              割引額はメニュー選択後に確定します
-                            </p>
-                          )}
-                          {applicableMenus.length > 0 && (
-                            <p className="text-[10px] md:text-xs text-muted-foreground mt-1 line-clamp-1">
-                              適用対象: {applicableMenus.map((menu) => menu.name).join(', ')}
-                            </p>
+                            <div className="h-5 w-5 md:h-6 md:w-6 border-2 border-muted-foreground rounded-full flex-shrink-0" />
                           )}
                         </div>
-                        {isSelected ? (
-                          <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-neon flex-shrink-0" />
-                        ) : (
-                          <div className="h-5 w-5 md:h-6 md:w-6 border-2 border-muted-foreground rounded-full flex-shrink-0" />
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -1068,7 +1083,11 @@ const CouponMenuViewInner = ({
                           ? 'ring-2 ring-blue-200 bg-background'
                           : ''
                       }`}
-                      onClick={() => !isBlocked && !isCouponExcluded && handleMenuSelect(menu, isMultipleSelection)}
+                      onClick={() =>
+                        !isBlocked &&
+                        !isCouponExcluded &&
+                        handleMenuSelect(menu, isMultipleSelection)
+                      }
                     >
                       <div className="px-2 pt-6 flex justify-between items-center relative">
                         <div className="absolute -top-2 -right-2 z-10">
@@ -1185,12 +1204,15 @@ const CouponMenuViewInner = ({
                       key={menu._id}
                       className="pl-2 md:pl-4 basis-full md:basis-1/2 lg:basis-1/2 mb-4"
                     >
-                      {(isBlocked || isCouponExcluded) ? (
+                      {isBlocked || isCouponExcluded ? (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
                             <TooltipContent>
-                              <p>{reason || (isCouponExcluded && '選択中のクーポンでは利用できません')}</p>
+                              <p>
+                                {reason ||
+                                  (isCouponExcluded && '選択中のクーポンでは利用できません')}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -1210,8 +1232,6 @@ const CouponMenuViewInner = ({
             </Carousel>
           </div>
         )}
-
-
 
         {/* Menu Details Dialog */}
         <Dialog
@@ -1385,6 +1405,7 @@ const CouponMenuViewInner = ({
         {/* Menu Categories */}
         <div className="mt-4 space-y-8">
           {Object.entries(filteredMenusToDisplay)
+            .filter(([categoryStr]) => categoryStr !== '人気メニュー')
             .sort(([catA], [catB]) => {
               const order: MenuCategoryWithSet[] = ['セットメニュー', ...MENU_CATEGORY_VALUES]
               const indexA = order.indexOf(catA as MenuCategoryWithSet)
@@ -1459,7 +1480,9 @@ const CouponMenuViewInner = ({
                                     : ''
                                 }`}
                                 onClick={() =>
-                                  !isBlocked && !isCouponExcluded && handleMenuSelect(menu, isMultipleSelection)
+                                  !isBlocked &&
+                                  !isCouponExcluded &&
+                                  handleMenuSelect(menu, isMultipleSelection)
                                 }
                               >
                                 <div className="absolute -top-4 -right-4 z-10">
@@ -1468,11 +1491,13 @@ const CouponMenuViewInner = ({
                                       選択不可
                                     </span>
                                   )}
-                                  {selectedCoupon && !isMenuExcludedByCoupon(menu) && !isBlocked && (
-                                    <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                      適用対象
-                                    </span>
-                                  )}
+                                  {selectedCoupon &&
+                                    !isMenuExcludedByCoupon(menu) &&
+                                    !isBlocked && (
+                                      <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        適用対象
+                                      </span>
+                                    )}
                                   {menu.categories?.includes('人気メニュー' as MenuCategory) && (
                                     <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
                                       人気メニュー
@@ -1585,14 +1610,15 @@ const CouponMenuViewInner = ({
 
                             return (
                               <div key={menu._id}>
-                                {(isBlocked || isCouponExcluded) ? (
+                                {isBlocked || isCouponExcluded ? (
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
                                       <TooltipContent>
                                         <p>
                                           {reason ||
-                                            (isCouponExcluded && '選択中のクーポンでは利用できません')}
+                                            (isCouponExcluded &&
+                                              '選択中のクーポンでは利用できません')}
                                         </p>
                                       </TooltipContent>
                                     </Tooltip>
@@ -1626,9 +1652,13 @@ const CouponMenuViewInner = ({
               <div className="flex justify-between items-center p-2 bg-muted rounded-md">
                 <div>
                   <span className="text-xs font-bold">
-                    {availableCoupons.filter((c) => c.coupon._id === selectedCoupon).map((c) => c.coupon.name)}
+                    {availableCoupons
+                      .filter((c) => c.coupon._id === selectedCoupon)
+                      .map((c) => c.coupon.name)}
                   </span>
-                  <p className="text-xs md:text-sm text-neon">¥ {appliedDiscount.toLocaleString()} - OFF</p>
+                  <p className="text-xs md:text-sm text-neon">
+                    ¥ {appliedDiscount.toLocaleString()} - OFF
+                  </p>
                 </div>
               </div>
             </div>
@@ -1636,7 +1666,9 @@ const CouponMenuViewInner = ({
         )}
         {selectedMenusArray.length > 0 && (
           <div className="my-8">
-            <h3 className="text-base font-medium mb-2">選択中のメニュー {selectedMenusArray.length}点</h3>
+            <h3 className="text-base font-medium mb-2">
+              選択中のメニュー {selectedMenusArray.length}点
+            </h3>
             <div className="space-y-2">
               {selectedMenusArray.map((menu) => (
                 <div
