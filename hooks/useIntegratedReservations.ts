@@ -194,6 +194,7 @@ export function useIntegratedReservations({
         const detail = item.detail;
         return {
           id: res._id,
+          _convex_id: res._id,
           source: 'convex' as const,
           tenantId: res.tenant_id,
           orgId: res.org_id,
@@ -208,19 +209,21 @@ export function useIntegratedReservations({
           startTimeUnix: res.start_time_unix,
           endTimeUnix: res.end_time_unix,
           createdAt: new Date(res._creationTime),
-          detail: detail ? {
-            menus: detail.menus || undefined,
-            options: detail.options || undefined,
-            totalPrice: detail.total_price || undefined,
-            extraCharge: detail.extra_charge || undefined,
-            paymentMethod: detail.payment_method,
-            couponId: detail.coupon_id || undefined,
-            couponDiscount: detail.coupon_discount || undefined,
-            usePoints: detail.use_points || undefined,
-            notes: detail.notes || undefined,
-          } : undefined,
+          detail: detail
+            ? {
+                menus: detail.menus || undefined,
+                options: detail.options || undefined,
+                totalPrice: detail.total_price || undefined,
+                extraCharge: detail.extra_charge || undefined,
+                paymentMethod: detail.payment_method,
+                couponId: detail.coupon_id || undefined,
+                couponDiscount: detail.coupon_discount || undefined,
+                usePoints: detail.use_points || undefined,
+                notes: detail.notes || undefined,
+              }
+            : undefined,
           convexData: res,
-        };
+        }
       });
   }, [convexResults, status]);
   
