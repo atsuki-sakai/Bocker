@@ -11,7 +11,7 @@
  *   → これらは必ずmutation/helpers（checkDoubleBooking）側で担保すること
  * ---------------------------------------------------------------
  */
-import { Id } from '@/convex/_generated/dataModel'
+
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { paginationOptsValidator } from 'convex/server'
@@ -123,7 +123,7 @@ export const getReservationsForReminder = internalQuery({
 
 export const getWithDetailById = query({
   args: {
-    id: v.union(v.id('reservation'), v.string()),
+    id: v.id('reservation'),
   },
   handler: async (ctx, args) => {
     const result = await getReservationWithDetail(ctx, args.id)
