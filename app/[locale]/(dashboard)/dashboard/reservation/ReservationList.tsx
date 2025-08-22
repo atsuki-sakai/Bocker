@@ -159,6 +159,8 @@ export default function ReservationList() {
     pageSize: 20,
   })
 
+  console.log('[ReservationList] Reservations:', reservations)
+
   // スタッフリストを予約データから抽出
   const staffList = useMemo(() => {
     const uniqueStaff = reservations
