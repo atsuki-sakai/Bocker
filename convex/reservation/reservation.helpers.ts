@@ -13,7 +13,6 @@ import { ConvexError } from 'convex/values';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 // Convex環境内では fetchQuery は使用できないためコメントアウト
 // import { fetchQuery } from 'convex/nextjs';
-import { api } from '@/convex/_generated/api'
 import { getAppUrl } from '@/lib/env-config'
 import { SupabaseService } from '@/services/supabase/SupabaseService'
 import { getDayOfWeek, convertHourToTimestamp } from '@/lib/schedules'
@@ -25,25 +24,23 @@ import {
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import { CarteRepository } from '@/services/supabase/repositories/carte'
 
-
-
-export const getReservationWithDetail = async (ctx: QueryCtx, reservationId: Id<'reservation'>) => {
-  const reservation = await ctx.db.get(reservationId);
+export const getReservationWithDetail = async (
+  ctx: QueryCtx,
+  reservationId: Id<'reservation'>
+) => {
+  const reservation = await ctx.db.get(reservationId)
   if (!reservation) {
-    throw new ConvexError({
-      message: '予約が存在しません',
-      statusCode: ERROR_STATUS_CODE.NOT_FOUND,
-      severity: ERROR_SEVERITY.ERROR,
-      callFunc: 'getReservationWithDetail',
-      details: {
-        reservationId,
-      },
-    })
+    return null
   }
-  const reservationDetail = await ctx.db.query('reservation_detail').withIndex('by_reservation_archive', (q) =>
-    q.eq('reservation_id', reservationId).eq('is_archive', false)
-  ).first();
-  return { reservation, reservationDetail };
+  
+  const reservationDetail = await ctx.db
+    .query('reservation_detail')
+    .withIndex('by_reservation_archive', (q) =>
+      q.eq('reservation_id', reservationId).eq('is_archive', false)
+    )
+    .first()
+    
+  return { reservation, reservationDetail }
 }
 
 /**
