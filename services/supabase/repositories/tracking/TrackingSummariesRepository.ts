@@ -18,6 +18,122 @@ export class TrackingSummariesRepository extends BaseRepository<'tracking_summar
   }
 
   /**
+   * 期間内のトップソースを取得します。
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param fromDate - 開始日 (YYYY-MM-DD)
+   * @param toDate - 終了日 (YYYY-MM-DD)
+   * @param limit - 取得件数制限
+   * @returns トップソースの統計情報
+   */
+  async getTopSources(
+    tenantId: string,
+    orgId: string,
+    fromDate: string,
+    toDate: string,
+    limit: number = 10
+  ): Promise<Array<{
+    source: string;
+    total_sessions: number;
+    unique_users: number;
+    conversions: number;
+    conversion_rate: number;
+  }>> {
+    console.log(`[TrackingSummariesRepository] getTopSources: from=${fromDate}, to=${toDate}, limit=${limit}`);
+
+    const { data: summaries } = await this.findByDimensionAndDateRange(
+      tenantId,
+      orgId,
+      'utm_source',
+      fromDate,
+      toDate,
+      { pageSize: 1000 }
+    );
+
+    const stats = new Map<string, { total_sessions: number; unique_users: number; conversions: number }>();
+
+    summaries.forEach(summary => {
+      const source = summary.dimension_value;
+
+      if (!stats.has(source)) {
+        stats.set(source, { total_sessions: 0, unique_users: 0, conversions: 0 });
+      }
+
+      const current = stats.get(source)!;
+      current.total_sessions += summary.total_count;
+      current.unique_users += summary.unique_user_count || 0;
+      current.conversions += summary.conversion_count || 0;
+    });
+
+    return Array.from(stats.entries())
+      .map(([source, s]) => ({
+        source,
+        ...s,
+        conversion_rate: s.total_sessions > 0 ? (s.conversions / s.total_sessions) * 100 : 0,
+      }))
+      .sort((a, b) => b.total_sessions - a.total_sessions)
+      .slice(0, limit);
+  }
+
+    /**
+   * 期間内のトップ媒体を取得します。
+   * @param tenantId - テナントID
+   * @param orgId - 組織ID
+   * @param fromDate - 開始日 (YYYY-MM-DD)
+   * @param toDate - 終了日 (YYYY-MM-DD)
+   * @param limit - 取得件数制限
+   * @returns トップ媒体の統計情報
+   */
+    async getTopMediums(
+      tenantId: string,
+      orgId: string,
+      fromDate: string,
+      toDate: string,
+      limit: number = 10
+    ): Promise<Array<{
+      medium: string;
+      total_sessions: number;
+      unique_users: number;
+      conversions: number;
+      conversion_rate: number;
+    }>> {
+      console.log(`[TrackingSummariesRepository] getTopMediums: from=${fromDate}, to=${toDate}, limit=${limit}`);
+
+      const { data: summaries } = await this.findByDimensionAndDateRange(
+        tenantId,
+        orgId,
+        'utm_medium',
+        fromDate,
+        toDate,
+        { pageSize: 1000 }
+      );
+
+      const stats = new Map<string, { total_sessions: number; unique_users: number; conversions: number }>();
+
+      summaries.forEach(summary => {
+        const medium = summary.dimension_value;
+
+        if (!stats.has(medium)) {
+          stats.set(medium, { total_sessions: 0, unique_users: 0, conversions: 0 });
+        }
+
+        const current = stats.get(medium)!;
+        current.total_sessions += summary.total_count;
+        current.unique_users += summary.unique_user_count || 0;
+        current.conversions += summary.conversion_count || 0;
+      });
+
+      return Array.from(stats.entries())
+        .map(([medium, s]) => ({
+          medium,
+          ...s,
+          conversion_rate: s.total_sessions > 0 ? (s.conversions / s.total_sessions) * 100 : 0,
+        }))
+        .sort((a, b) => b.total_sessions - a.total_sessions)
+        .slice(0, limit);
+    }
+
+  /**
    * 新しい集計サマリーを作成します。
    * @param summaryData - 集計データ
    * @returns 作成された集計情報

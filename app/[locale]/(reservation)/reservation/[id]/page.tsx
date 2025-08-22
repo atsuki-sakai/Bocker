@@ -19,6 +19,7 @@ import { Loading } from '@/components/common'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
+import { useAnalytics } from '@/hooks/useAnalytics'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { ZodTextField } from '@/components/common'
 import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
@@ -39,6 +40,7 @@ export default function ReservePage() {
   const params = useParams()
   const router = useRouter()
   const { showErrorToast } = useErrorHandler()
+  const { trackConversion } = useAnalytics()
   const orgId = params.id as Id<'organization'>
   const customerRepository = useMemo(() => new CustomerRepository(), [])
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
@@ -171,6 +173,9 @@ export default function ReservePage() {
             toast.error(registrationResult.error || 'アカウント作成に失敗しました')
             return
           }
+
+          // Track signup conversion
+          trackConversion('signup', { email: data.email })
 
           // セッション作成
           const sessionResponse = await fetch('/api/auth/session', {

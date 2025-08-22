@@ -4,6 +4,11 @@ import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from './i18n/routing'
 
+// In-memory store for rate limiting
+const ipRequestCounts = new Map<string, number[]>()
+const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 20 // Max requests per window
+
 // メンテナンスモードが有効かどうか
 const isMaintenance = false
 
@@ -93,6 +98,25 @@ const getPathnameWithoutLocale = (pathname: string): string => {
 // Clerkミドルウェアの設定
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl // 現在のパスを取得
+
+  // Rate limit tracking API
+  if (pathname.startsWith('/api/tracking/event')) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ?? req.headers.get('x-real-ip') ?? '127.0.0.1'
+    const now = Date.now()
+
+    const requests = ipRequestCounts.get(ip) ?? []
+    const requestsInWindow = requests.filter(
+      (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+    )
+
+    if (requestsInWindow.length >= RATE_LIMIT_MAX_REQUESTS) {
+      return new NextResponse('Too Many Requests', { status: 429 })
+    }
+
+    requestsInWindow.push(now)
+    ipRequestCounts.set(ip, requestsInWindow)
+  }
+
   const pathnameWithoutLocale = getPathnameWithoutLocale(pathname)
 
   // ★ manifest.jsonリクエストをルートにリダイレクト ★

@@ -32,7 +32,7 @@ export const getReservationWithDetail = async (
   if (!reservation) {
     return null
   }
-  
+
   const reservationDetail = await ctx.db
     .query('reservation_detail')
     .withIndex('by_reservation_archive', (q) =>

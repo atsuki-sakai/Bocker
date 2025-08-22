@@ -2,10 +2,7 @@
   {
     "origin": [
       "http://localhost:3000",
-      "http://localhost:3001",
-      "https://*.vercel.app",
-      "https://bocker.jp",
-      "https://bocker-project.vercel.app"
+      "https://bocker.jp"
     ],
     "method": ["GET", "HEAD", "PUT", "POST", "OPTIONS"],
     "responseHeader": [

@@ -70,6 +70,7 @@ import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
 import { RowType } from '@/services/supabase/SupabaseService'
+import { useAnalytics } from '@/hooks/useAnalytics'
 
 // 曜日をソートするための順序を定義
 const dayOrder: Record<string, number> = {
@@ -151,6 +152,7 @@ export default function CalendarPage() {
   const orgId = params.id as Id<'organization'>
   const { liff } = useLiff()
   const { showErrorToast } = useErrorHandler()
+  const { trackConversion } = useAnalytics()
 
   // ユーティリティ関数: 自動割り当てスタッフかどうかをチェック
   const isAutoAssignedStaff = (staff: StaffDisplay | 'free' | null | undefined): boolean => {
@@ -901,6 +903,13 @@ export default function CalendarPage() {
         }
 
         const reservationId = result.reservationId
+
+        // Track conversion event
+        trackConversion('reservation', {
+          payment_method: 'cash',
+          total_price: calculateTotal(),
+          reservation_id: reservationId,
+        })
 
         if (sessionCustomer.lineUserId && organizationComplete.config) {
           // Lineにメッセージ予約の確認用Flexメッセージを作成

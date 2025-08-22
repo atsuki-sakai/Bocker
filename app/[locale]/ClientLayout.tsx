@@ -10,6 +10,7 @@ import { ThemeProvider } from 'next-themes'
 import { useTheme } from 'next-themes'
 import { dark } from '@clerk/themes'
 import GoogleAnalytics from '@/components/common/GoogleAnalytics'
+import { AnalyticsTracker } from '@/hooks/useAnalytics'
 
 export default function RootLayout({
   children,
@@ -34,6 +35,7 @@ export default function RootLayout({
         <ConvexClientProvider>
           <ConvexQueryCacheProvider>
             <GoogleAnalytics />
+            <AnalyticsTracker />
             <div className="pb-12 md:pb-20">{children}</div>
             <Toaster position="bottom-right" richColors />
           </ConvexQueryCacheProvider>
