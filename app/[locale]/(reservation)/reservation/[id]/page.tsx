@@ -203,7 +203,7 @@ export default function ReservePage() {
         showErrorToast(error)
       }
     },
-    [tenantId, orgId, organization, customerRepository, router, showErrorToast]
+    [tenantId, orgId, organization, customerRepository, router, showErrorToast, trackConversion]
   )
 
   useEffect(() => {
