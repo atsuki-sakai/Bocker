@@ -7,5 +7,5 @@ export default async function TrackingPage() {
     return <div>Organization ID is missing.</div>
   }
 
-  return <TrackingDashboard />
+  return <TrackingDashboard orgId={orgId} />
 }

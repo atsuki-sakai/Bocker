@@ -4,10 +4,24 @@ import { v4 as uuidv4 } from 'uuid'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { sha256 } from '@/lib/crypto'
 
-const SESSION_COOKIE_NAME = 'bcker_tracking_session'
-const UTM_PARAMS_KEY = 'bcker_utm_params'
+const SESSION_COOKIE_NAME = 'bocker_tracking_session'
+const UTM_PARAMS_KEY = 'bocker_utm_params'
 
 // --- Helper Functions ---
+
+/**
+ * Prevents duplicate page view tracking for the same session and pathname.
+ * Returns true if tracking should proceed, false if it's a duplicate.
+ */
+const preventDuplicatePageView = (sessionId: string, pathname: string): boolean => {
+  const trackingKey = `tracked_${sessionId}_${pathname}`
+  if (sessionStorage.getItem(trackingKey)) {
+    console.log('[Analytics] Duplicate page view prevented:', { sessionId, pathname })
+    return false // 既に送信済み
+  }
+  sessionStorage.setItem(trackingKey, 'true')
+  return true // 送信OK
+}
 
 /**
  * Gets the session ID from cookies or creates a new one.
@@ -87,30 +101,37 @@ export const useAnalytics = () => {
 
   const trackPageView = useCallback(() => {
     const sessionId = getSessionId()
+    
+    // 重複チェック
+    if (!preventDuplicatePageView(sessionId, pathname)) {
+      return // 重複のため送信をスキップ
+    }
+
     const utmParams = getUtmParams()
 
-    sendTrackingEvent({
+    const eventData = {
       session_id: sessionId,
       event_type: 'page_view',
       page_url: pathname,
       page_title: document.title,
       ...utmParams,
-    })
+    }
+
+    console.log('[Analytics] Sending page_view:', eventData)
+    sendTrackingEvent(eventData)
   }, [pathname])
 
   const trackConversion = useCallback(
-    async (conversionType: string, customData?: Record<string, any>) => {
+    async (conversionType: string, customData?: Record<string, unknown>) => {
       const sessionId = getSessionId()
       const utmParams = getUtmParams()
-      let processedCustomData = { ...customData }
+      const processedCustomData = { ...customData }
 
       // Hash email if it exists
       if (processedCustomData?.email && typeof processedCustomData.email === 'string') {
         const salt = process.env.NEXT_PUBLIC_PII_SALT
         if (!salt) {
-          console.warn(
-            'NEXT_PUBLIC_PII_SALT is not defined. Email will not be tracked.'
-          )
+          console.warn('NEXT_PUBLIC_PII_SALT is not defined. Email will not be tracked.')
           delete processedCustomData.email
         } else {
           const email = processedCustomData.email
@@ -134,15 +155,40 @@ export const useAnalytics = () => {
   return { trackPageView, trackConversion }
 }
 
+// --- Helper Function for Route Filtering ---
+
+/**
+ * Determines if the current route should be tracked.
+ * Only tracks (reservation) and (customer) routes, excluding complete pages.
+ */
+const shouldTrackRoute = (pathname: string): boolean => {
+  // 受付完了ページは除外
+  if (pathname.includes('/complete')) {
+    console.log('[Analytics] Route check - Complete page excluded:', { pathname })
+    return false
+  }
+  
+  const shouldTrack = pathname.includes('/reservation/')
+  console.log('[Analytics] Route check:', { pathname, shouldTrack })
+  return shouldTrack
+}
+
 // --- Component to integrate tracking ---
 
 export const AnalyticsTracker = () => {
   const { trackPageView } = useAnalytics()
+  const pathname = usePathname()
 
-  // Effect to track page views on route change
+  // Effect to track page views on route change (only for specific routes)
   useEffect(() => {
-    trackPageView()
-  }, [trackPageView])
+    console.log('[Analytics] AnalyticsTracker mounted/updated:', { pathname })
+    if (shouldTrackRoute(pathname)) {
+      console.log('[Analytics] Triggering trackPageView')
+      trackPageView()
+    } else {
+      console.log('[Analytics] Route not tracked')
+    }
+  }, [trackPageView, pathname])
 
   return null // This component renders nothing
 }

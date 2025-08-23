@@ -57,15 +57,19 @@ const CustomTooltip = ({
       </p>
       <div className="space-y-1">
         <p className="text-sm" style={{ color: payload[0]?.color }}>
-          <span className="font-medium">売上: </span>
+          <span className="font-medium">
+            {valueFormatter?.toString().includes('¥') ? '売上: ' : 'イベント数: '}
+          </span>
           {valueFormatter
             ? valueFormatter(payload[0]?.value)
             : `¥${payload[0]?.value.toLocaleString()}`}
         </p>
         {data?.bookingCount !== undefined && (
           <p className="text-sm text-muted-foreground">
-            <span className="font-medium">予約数: </span>
-            {data.bookingCount}件
+            <span className="font-medium">
+              {valueFormatter?.toString().includes('¥') ? '予約数: ' : 'コンバージョン: '}
+            </span>
+            {data.bookingCount}{valueFormatter?.toString().includes('¥') ? '件' : '件'}
           </p>
         )}
       </div>
