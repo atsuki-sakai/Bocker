@@ -19,6 +19,8 @@ import { BarChart } from '@/components/analytics'
 import { cn } from '@/lib/utils'
 import { format, subDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { TrackingURLGenerator } from '@/components/tracking/TrackingURLGenerator'
+import { Plus, Settings } from 'lucide-react'
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -87,6 +89,7 @@ export default function TrackingDashboard({ orgId }: TrackingDashboardProps) {
     from: subDays(new Date(), 30),
     to: new Date(),
   })
+  const [showURLGenerator, setShowURLGenerator] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -137,15 +140,47 @@ export default function TrackingDashboard({ orgId }: TrackingDashboardProps) {
 
   return (
     <div className="space-y-6">
-      {/* ヘッダー・フィルター */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      {/* URL生成ツールの表示切替 */}
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">🔍 集客効果分析</h1>
           <p className="text-sm text-muted-foreground mt-1">
             お客様がどこからサロンを見つけて予約に至ったかを分析します
           </p>
         </div>
+        <Button
+          onClick={() => setShowURLGenerator(!showURLGenerator)}
+          className="flex items-center gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          {showURLGenerator ? 'URL生成ツールを閉じる' : 'URL生成ツール'}
+        </Button>
+      </div>
 
+      {/* URL生成ツール */}
+      {showURLGenerator && (
+        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 bg-muted/10">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              トラッキングURL生成
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              UTMパラメータ付きURLを生成して、Instagram投稿や広告の効果を測定しましょう
+            </p>
+          </div>
+          <TrackingURLGenerator
+            defaultBaseUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/reservation`}
+            onURLGenerated={(url, config) => {
+              console.log('Generated URL:', url)
+              console.log('Config:', config)
+            }}
+          />
+        </div>
+      )}
+
+      {/* ヘッダー・フィルター */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-end">
         <div className="flex flex-col sm:flex-row gap-2">
           <Select value={dimensionType} onValueChange={setDimensionType}>
             <SelectTrigger className="w-[200px]">
