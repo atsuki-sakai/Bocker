@@ -171,7 +171,6 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   }, [
     tenantId,
     orgId,
-    isCustomerLogin,
     login,
     isClicked,
     authState,

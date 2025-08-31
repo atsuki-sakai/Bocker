@@ -26,7 +26,6 @@ const StartAuthSchema = z.object({
   next: z.string().optional(), // Safe redirect path after successful auth
 })
 
-type StartAuthRequest = z.infer<typeof StartAuthSchema>
 
 /**
  * POST /api/auth/line/start
@@ -120,7 +119,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const finalAuthUrl = authUrl.toString()
     
     console.log('[LineAuth:Start] Authorization URL generated:', {
-      url: finalAuthUrl.replace(/[?&](state|nonce|code_challenge)=[^&]+/g, (match, param) => 
+      url: finalAuthUrl.replace(/[?&](state|nonce|code_challenge)=[^&]+/g, (match) => 
         match.replace(/=([^&]+)/, `=${match.split('=')[1].substring(0, 8)}...`)
       ),
       cookieSet: cookieName,

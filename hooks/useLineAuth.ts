@@ -45,6 +45,7 @@ export interface UseLineAuthOptions {
 // Authentication success response
 export interface AuthSuccessData {
   success: boolean
+  customerUid?: string
   line_user_id?: string
   line_name?: string
   message?: string
