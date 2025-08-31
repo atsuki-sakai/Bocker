@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { fetchMutation } from 'convex/nextjs'
 import { useRouter } from 'next/navigation'
+import { Id } from '@/convex/_generated/dataModel'
 
 import type {
   StaffTimelineData,
@@ -17,6 +18,7 @@ import type {
   StaffSchedule,
   ScheduleBar,
 } from '@/hooks/useTimelineData'
+import { SubscriptionPlanName } from '@/convex/types'
 import { Loader2 } from 'lucide-react'
 import { RESERVATION_COLORS, FREE_NOMINATION_COLORS } from '@/hooks/useTimelineData'
 import { Loading } from '@/components/common'
@@ -32,6 +34,8 @@ import {
   ChevronRight,
   UserCheck,
   Shuffle,
+  Plus,
+  Minus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -47,6 +51,19 @@ import { useQueryWithStatus } from '@/hooks/useQueryWithStatus'
 import { api } from '@/convex/_generated/api'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { useDebounce } from 'use-debounce'
+import type { ReservationMenu, ReservationOption } from '@/convex/types'
+import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
+import type { RowType } from '@/services/supabase/SupabaseService'
+import { useQuery } from 'convex/react'
 
 // 1スロット（10分）の幅(px) - 隙間をなくすために調整
 const SLOT_WIDTH = 32
@@ -235,12 +252,16 @@ ScheduleBarComponent.displayName = 'ScheduleBarComponent'
 const StaffTimelineRow = memo(
   ({
     staffData,
+    selectedDate,
     timeSlots,
     onReservationClick,
+    handleTimeSlotClick,
   }: {
     staffData: StaffTimelineData
+    selectedDate: Date
     timeSlots: TimeSlot[]
     onReservationClick: (reservation: ReservationWithDetails) => void
+    handleTimeSlotClick: (staffId: Id<'staff'>, slot: TimeSlot, date: Date) => void
   }) => {
     const t = useTranslations('reservations')
     const reservationBars = useReservationBars(staffData.reservations)
@@ -297,8 +318,13 @@ const StaffTimelineRow = memo(
               return (
                 <div
                   key={slot.index}
+                  data-staff-id={staffData.staff._id}
+                  data-selected-date={format(selectedDate, 'yyyy-MM-dd', {
+                    locale: ja,
+                  })}
+                  onClick={() => handleTimeSlotClick(staffData.staff._id, slot, selectedDate)}
                   className={cn(
-                    'h-full transition-colors',
+                    'h-full transition-colors cursor-pointer',
                     // 太い線を削除し、通常のボーダーのみ使用
                     slot.minutes % 60 === 0
                       ? 'w-24 border-l border-border'
@@ -312,19 +338,19 @@ const StaffTimelineRow = memo(
             })}
           </div>
 
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 pointer-events-none">
             {scheduleBars.map((bar, index) => (
-              <ScheduleBarComponent key={`${bar.schedule.type}-${index}`} schedule={bar} />
+              <div key={`${bar.schedule.type}-${index}`} className="pointer-events-auto">
+                <ScheduleBarComponent schedule={bar} />
+              </div>
             ))}
           </div>
           {/* 予約バー */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 pointer-events-none">
             {reservationBars.map((bar, index) => (
-              <ReservationBarComponent
-                key={`${bar.reservation._id}-${index}`}
-                bar={bar}
-                onReservationClick={onReservationClick}
-              />
+              <div key={`${bar.reservation._id}-${index}`} className="pointer-events-auto">
+                <ReservationBarComponent bar={bar} onReservationClick={onReservationClick} />
+              </div>
             ))}
           </div>
         </div>
@@ -483,6 +509,440 @@ const ReservationDetailDialog = memo(
 
 ReservationDetailDialog.displayName = 'ReservationDetailDialog'
 
+// ■ 予約作成ダイアログ
+const ReservationCreateDialog = memo(
+  ({
+    slot,
+    date,
+    selectedStaffId,
+    isOpen,
+    onClose,
+  }: {
+    slot: TimeSlot | undefined
+    date: Date | undefined
+    selectedStaffId: Id<'staff'> | undefined
+    isOpen: boolean
+    onClose: () => void
+  }) => {
+    const { tenantId, orgId, planName } = useTenantAndOrganization()
+    const [selectedMenus, setSelectedMenus] = useState<ReservationMenu[]>([])
+    const [selectedOptions, setSelectedOptions] = useState<ReservationOption[]>([])
+    const [searchName, setSearchName] = useState<string>('')
+    const [debouncedSearchName] = useDebounce(searchName, 500)
+    const [customers, setCustomers] = useState<RowType<'customer'>[]>([])
+    const [isLoadingCustomers, setIsLoadingCustomers] = useState<boolean>(false)
+    const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
+    const customerRepository = useMemo(() => new CustomerRepository(), [])
+
+    // 初期データ取得（メニュー・オプション）
+    const initialFormData = useQueryWithStatus(
+      api.reservation.query.getReservationFormData,
+      tenantId && orgId && planName
+        ? {
+            tenant_id: tenantId,
+            org_id: orgId,
+            planName: planName as SubscriptionPlanName,
+            menu_ids: [],
+          }
+        : 'skip'
+    )
+
+    const staff = useQuery(
+      api.staff.query.getRelatedTables,
+      tenantId && orgId && selectedStaffId
+        ? {
+            tenant_id: tenantId as Id<'tenant'>,
+            org_id: orgId as Id<'organization'>,
+            staff_id: selectedStaffId as Id<'staff'>,
+          }
+        : 'skip'
+    )
+
+    const menus = useMemo(() => initialFormData.data?.menus || [], [initialFormData.data?.menus])
+    const options = useMemo(
+      () => initialFormData.data?.options || [],
+      [initialFormData.data?.options]
+    )
+
+    // 価格/時間計算（手動）
+    const menuTotalPrice = useMemo(() => {
+      return selectedMenus.reduce((sum, item) => {
+        const menu = menus.find((m) => m._id === item.id)
+        if (!menu) return sum
+        const price =
+          menu.sale_price && menu.sale_price > 0 ? menu.sale_price : menu.unit_price || 0
+        return sum + price * (item.quantity || 1)
+      }, 0)
+    }, [selectedMenus, menus])
+
+    const optionTotalPrice = useMemo(() => {
+      return selectedOptions.reduce((sum, item) => {
+        const opt = options.find((o) => o._id === item.id)
+        if (!opt) return sum
+        const price = opt.sale_price && opt.sale_price > 0 ? opt.sale_price : opt.unit_price || 0
+        return sum + price * (item.quantity || 1)
+      }, 0)
+    }, [selectedOptions, options])
+
+    const totalTimeMinutes = useMemo(() => {
+      const menuTime = selectedMenus.reduce((sum, item) => {
+        const menu = menus.find((m) => m._id === item.id)
+        return sum + (menu?.duration_min ?? 0)
+      }, 0)
+      const optionTime = selectedOptions.reduce((sum, item) => {
+        const opt = options.find((o) => o._id === item.id)
+        return sum + (opt?.duration_min ?? 0) * (item.quantity || 1)
+      }, 0)
+      return menuTime + optionTime
+    }, [selectedMenus, selectedOptions, menus, options])
+
+    const [includeNominationFee, setIncludeNominationFee] = useState<boolean>(true)
+    const displayExtraCharge = includeNominationFee ? (staff?.extra_charge ?? 0) : 0
+    const displayTotalPrice = (menuTotalPrice || 0) + (optionTotalPrice || 0) + displayExtraCharge
+
+    // 顧客検索
+    useEffect(() => {
+      const run = async () => {
+        if (!tenantId || !orgId || debouncedSearchName.trim() === '') {
+          setCustomers([])
+          return
+        }
+        setIsLoadingCustomers(true)
+        try {
+          const result = await customerRepository.findBySearchableText(
+            tenantId,
+            orgId,
+            debouncedSearchName,
+            { page: 1, pageSize: 20 }
+          )
+          setCustomers(result.data)
+        } finally {
+          setIsLoadingCustomers(false)
+        }
+      }
+      run()
+    }, [tenantId, orgId, debouncedSearchName, customerRepository])
+
+    // メニュー追加/削除
+    const incMenu = useCallback((menuId: Id<'menu'>, name: string, price: number) => {
+      setSelectedMenus((prev) => {
+        const idx = prev.findIndex((m) => m.id === menuId)
+        if (idx >= 0) {
+          const next = [...prev]
+          next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 }
+          return next
+        }
+        return [...prev, { id: menuId, name, price, quantity: 1 }]
+      })
+    }, [])
+    const decMenu = useCallback((menuId: Id<'menu'>) => {
+      setSelectedMenus((prev) => {
+        const idx = prev.findIndex((m) => m.id === menuId)
+        if (idx < 0) return prev
+        const item = prev[idx]
+        if (item.quantity <= 1) return prev.filter((m) => m.id !== menuId)
+        const next = [...prev]
+        next[idx] = { ...item, quantity: item.quantity - 1 }
+        return next
+      })
+    }, [])
+
+    // オプション追加/削除（数量）
+    const incOption = useCallback((optionId: Id<'option'>, name: string, price: number) => {
+      setSelectedOptions((prev) => {
+        const idx = prev.findIndex((o) => o.id === optionId)
+        if (idx >= 0) {
+          const next = [...prev]
+          next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 }
+          return next
+        }
+        return [...prev, { id: optionId, name, price, quantity: 1 }]
+      })
+    }, [])
+    const decOption = useCallback((optionId: Id<'option'> | string) => {
+      setSelectedOptions((prev) => {
+        const idx = prev.findIndex((o) => o.id === optionId)
+        if (idx < 0) return prev
+        const item = prev[idx]
+        if (item.quantity <= 1) return prev.filter((o) => o.id !== optionId)
+        const next = [...prev]
+        next[idx] = { ...item, quantity: item.quantity - 1 }
+        return next
+      })
+    }, [])
+
+    if (!slot || !date || !selectedStaffId || !staff) return null
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="w-[92vw] max-h-[80vh] overflow-y-auto max-w-screen-sm md:max-w-2xl rounded-md lg:max-w-3xl overflow-x-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">予約を作成</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4" />
+                <span>{format(date, 'yyyy-MM-dd')}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span>{slot.timeLabel} 〜</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-primary">担当スタッフ</label>
+              <div className="mt-1 flex items-center gap-2 text-sm">
+                <User className="w-4 h-4 text-primary" />
+                <span>{staff.name}</span>
+              </div>
+            </div>
+
+            {/* メニュー選択（Accordion） */}
+            <Accordion type="single" collapsible className="w-full max-w-[300px] md:max-w-none">
+              <AccordionItem value="menus" className="border border-border rounded-md w-full ">
+                <AccordionTrigger className="px-3 py-2 text-sm w-full">
+                  メニューを選択
+                </AccordionTrigger>
+                <AccordionContent className="px-2 md:px-3 pb-3 ">
+                  <div className="space-y-2 max-h-48 overflow-auto overflow-x-hidden pr-1 w-full max-w-full">
+                    {menus.length === 0 && (
+                      <p className="text-xs text-muted-foreground">メニューがありません</p>
+                    )}
+                    {menus.map((menu) => {
+                      const price =
+                        menu.sale_price && menu.sale_price > 0
+                          ? menu.sale_price
+                          : menu.unit_price || 0
+                      const count = selectedMenus.find((m) => m.id === menu._id)?.quantity || 0
+                      return (
+                        <div
+                          key={menu._id}
+                          className="flex items-center justify-between gap-2 border border-border rounded-md p-2 w-full max-w-full"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                            {menu.images?.[0]?.thumbnail_url && (
+                              <Image
+                                src={menu.images[0].thumbnail_url}
+                                alt={menu.name ?? ''}
+                                width={32}
+                                height={32}
+                                className="rounded-full"
+                              />
+                            )}
+                            <div className="min-w-0 max-w-full overflow-hidden">
+                              <p className="text-sm font-medium truncate">{menu.name}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                ￥{price?.toLocaleString()}／{menu.duration_min}分
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => decMenu(menu._id)}
+                              disabled={count === 0}
+                              className="h-7 w-7"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                            <span className="w-5 text-center text-sm">{count}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => incMenu(menu._id, menu.name ?? '', price || 0)}
+                              className="h-7 w-7"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* オプション選択（Accordion） */}
+            <Accordion type="single" collapsible className="w-full max-w-[300px] md:max-w-none">
+              <AccordionItem value="options" className="border border-border rounded-md w-full">
+                <AccordionTrigger className="px-3 py-2 text-sm w-full">
+                  オプションを選択
+                </AccordionTrigger>
+                <AccordionContent className="px-2 md:px-3 pb-3 w-full">
+                  <div className="space-y-2 max-h-40 overflow-auto overflow-x-hidden pr-1 w-full max-w-full">
+                    {options.length === 0 && (
+                      <p className="text-xs text-muted-foreground">オプションがありません</p>
+                    )}
+                    {options.map((opt) => {
+                      const price =
+                        opt.sale_price && opt.sale_price > 0 ? opt.sale_price : opt.unit_price || 0
+                      const count = selectedOptions.find((o) => o.id === opt._id)?.quantity || 0
+                      return (
+                        <div
+                          key={opt._id}
+                          className="flex items-center justify-between gap-2 border border-border rounded-md p-2 w-full max-w-full"
+                        >
+                          <div className="min-w-0 max-w-full overflow-hidden">
+                            <p className="text-sm font-medium truncate">{opt.name}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              ￥{price?.toLocaleString()}／{opt.duration_min}分
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => decOption(opt._id)}
+                              disabled={count === 0}
+                              className="h-7 w-7"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                            <span className="w-5 text-center text-sm">{count}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => incOption(opt._id, opt.name ?? '', price || 0)}
+                              className="h-7 w-7"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* 顧客選択（Accordion） */}
+            <Accordion type="single" collapsible className="w-full max-w-[300px] md:max-w-none">
+              <AccordionItem
+                value="customer"
+                className="border border-border rounded-md w-full h-full"
+              >
+                <AccordionTrigger className="px-3 py-2 text-sm w-full">顧客を選択</AccordionTrigger>
+                <AccordionContent className="px-2 md:px-3 pb-3 space-y-2 w-full h-full">
+                  <Input
+                    placeholder="お名前・電話・メールなどで検索"
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                  />
+                  <div className="flex flex-col gap-2 w-full max-w-full overflow-x-hidden">
+                    {isLoadingCustomers ? (
+                      <div className="text-xs text-muted-foreground">検索中...</div>
+                    ) : customers.length === 0 ? (
+                      <div className="text-xs text-muted-foreground">該当する顧客がいません</div>
+                    ) : (
+                      customers.map((c) => (
+                        <button
+                          key={c.uid}
+                          type="button"
+                          className={cn(
+                            'w-full max-w-full text-left p-2 rounded-md border transition-colors',
+                            selectedCustomer?.uid === c.uid
+                              ? 'border-accent-2 bg-accent-2-foreground'
+                              : 'border-border hover:bg-muted'
+                          )}
+                          onClick={() => setSelectedCustomer(c)}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm truncate min-w-0 max-w-full">
+                              {`${c.last_name ?? ''}${c.first_name ?? ''}`.trim() ||
+                                c.line_user_name ||
+                                c.email ||
+                                '名称未登録'}
+                            </span>
+                            {c.phone && (
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {c.phone}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  {selectedCustomer && (
+                    <Badge variant="outline" className="w-full justify-start">
+                      選択中:{' '}
+                      {`${selectedCustomer.last_name ?? ''}${selectedCustomer.first_name ?? ''}`.trim() ||
+                        selectedCustomer.line_user_name ||
+                        selectedCustomer.email}
+                    </Badge>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* サマリー（Accordion） */}
+            <Accordion
+              type="single"
+              collapsible
+              value="summary"
+              className="w-full max-w-[300px] md:max-w-none"
+            >
+              <AccordionItem value="summary" className="border border-border rounded-md w-full">
+                <AccordionTrigger className="px-3 py-2 text-sm w-full">サマリー</AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 w-full">
+                  <div className="border border-border rounded-md p-3 space-y-2 text-sm">
+                    {/* 指名料トグル */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">指名料を含める</span>
+                      <Switch
+                        checked={includeNominationFee}
+                        onCheckedChange={(v) => setIncludeNominationFee(!!v)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>メニュー小計</span>
+                      <span>￥{menuTotalPrice.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>オプション小計</span>
+                      <span>￥{optionTotalPrice.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>指名料</span>
+                      <span>￥{displayExtraCharge.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between font-semibold">
+                      <span>合計</span>
+                      <span>￥{displayTotalPrice.toLocaleString()}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      施術時間目安: {totalTimeMinutes}分
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            <div className="flex gap-2 pt-5">
+              <Button variant="outline" className="w-full" onClick={onClose}>
+                閉じる
+              </Button>
+              <Button
+                className="w-full"
+                disabled={selectedMenus.length === 0 || !selectedCustomer}
+                onClick={onClose}
+              >
+                続ける
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+)
+
+ReservationCreateDialog.displayName = 'ReservationCreateDialog'
+
 // ■ 統計情報コンポーネント
 const StatsCards = memo(({ totalReservations }: { totalReservations: number }) => {
   const t = useTranslations('reservations')
@@ -614,6 +1074,12 @@ export default function ReservationTimeLine() {
 
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [reservationCounts, setReservationCounts] = useState<{ date: string; count: number }[]>([])
+  const [isReservationCreateDialogOpen, setIsReservationCreateDialogOpen] = useState(false)
+  const [createReservationInfo, setCreateReservationInfo] = useState<{
+    slot: TimeSlot
+    date: Date
+    selectedStaffId: Id<'staff'>
+  } | null>(null)
 
   // ■ データ取得（最適化されたカスタムフック使用）
   const targetDateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -836,9 +1302,14 @@ export default function ReservationTimeLine() {
               {staffTimelineData.map((staffData) => (
                 <StaffTimelineRow
                   key={staffData.staff._id}
+                  selectedDate={selectedDate}
                   staffData={staffData}
                   timeSlots={halfHourSlots}
                   onReservationClick={handleReservationClick}
+                  handleTimeSlotClick={(staffId, slot, date) => {
+                    setCreateReservationInfo({ slot, date, selectedStaffId: staffId })
+                    setIsReservationCreateDialogOpen(true)
+                  }}
                 />
               ))}
             </div>
@@ -851,6 +1322,13 @@ export default function ReservationTimeLine() {
         reservation={selectedReservation}
         isOpen={isDetailDialogOpen}
         onClose={handleCloseDetailDialog}
+      />
+      <ReservationCreateDialog
+        slot={createReservationInfo?.slot}
+        date={createReservationInfo?.date}
+        selectedStaffId={createReservationInfo?.selectedStaffId}
+        isOpen={isReservationCreateDialogOpen}
+        onClose={() => setIsReservationCreateDialogOpen(false)}
       />
     </div>
   )
