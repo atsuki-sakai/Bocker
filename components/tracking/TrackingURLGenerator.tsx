@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { Copy, ExternalLink, QrCode, Share, Download } from 'lucide-react'
+import { Copy, ExternalLink, QrCode } from 'lucide-react'
 import { toast } from 'sonner'
 import { UTMBuilder } from './UTMBuilder'
 import { UTMPresets } from './UTMPresets'
@@ -63,7 +63,7 @@ export function TrackingURLGenerator({
       })
 
       toast.success('URLを生成しました')
-    } catch (error) {
+    } catch {
       toast.error('有効なURLを入力してください')
     }
   }
@@ -73,7 +73,7 @@ export function TrackingURLGenerator({
     try {
       await navigator.clipboard.writeText(text)
       toast.success('クリップボードにコピーしました')
-    } catch (error) {
+    } catch {
       toast.error('コピーに失敗しました')
     }
   }

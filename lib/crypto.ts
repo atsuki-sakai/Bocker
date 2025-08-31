@@ -63,7 +63,7 @@ export function seal(plaintext: string): string {
     const iv = crypto.randomBytes(12);
     
     // Create cipher with AES-256-GCM
-    const cipher = crypto.createCipherGCM("aes-256-gcm", key, iv);
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
     
     // Encrypt the plaintext
     const encrypted = Buffer.concat([
@@ -118,7 +118,7 @@ export function open(sealedData: string): string {
     const encrypted = buffer.subarray(28);      // Remaining: Encrypted data
     
     // Create decipher with AES-256-GCM
-    const decipher = crypto.createDecipherGCM("aes-256-gcm", key, iv);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
     
     // Set the authentication tag for verification
     decipher.setAuthTag(authTag);
@@ -131,7 +131,7 @@ export function open(sealedData: string): string {
     
     return decrypted.toString("utf8");
     
-  } catch (error) {
+  } catch {
     // Don't leak specific decryption errors for security
     throw new Error("Decryption failed - data may be corrupted or tampered");
   }

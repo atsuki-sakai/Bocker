@@ -102,7 +102,7 @@ export function UTMPresets({ onSelectPreset, selectedPreset }: UTMPresetsProps) 
       id: `custom-${Date.now()}`,
       name: newPreset.name,
       description: newPreset.description || '',
-      category: newPreset.category as any,
+      category: newPreset.category as 'social' | 'ads' | 'email' | 'custom',
       utm_parameters: newPreset.utm_parameters || {},
       created_at: new Date(),
       is_default: false,
@@ -406,7 +406,7 @@ function PresetDialog({ preset, isEditing, onChange, onSave, onCancel }: PresetD
           <Label htmlFor="category">カテゴリ</Label>
           <Select
             value={preset.category || 'custom'}
-            onValueChange={(value) => onChange({ ...preset, category: value as any })}
+            onValueChange={(value) => onChange({ ...preset, category: value as 'social' | 'ads' | 'email' | 'custom' })}
           >
             <SelectTrigger>
               <SelectValue />
