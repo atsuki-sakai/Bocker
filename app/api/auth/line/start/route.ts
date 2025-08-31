@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createPreAuth, ccFromVerifier, OAUTH_COOKIE_PREFIX, OAUTH_TTL_MS } from '@/lib/line-oauth'
-import { seal } from '@/lib/crypto'
+import { seal } from '@/lib/crypto-server'
 import { z } from 'zod'
 
 /**

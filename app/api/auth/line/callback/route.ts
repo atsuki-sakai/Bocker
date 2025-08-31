@@ -1,7 +1,7 @@
 // /app/api/auth/line/callback/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { open } from '@/lib/crypto'
+import { open } from '@/lib/crypto-server'
 import { extractState, validatePreAuth, OAUTH_COOKIE_PREFIX, safeNext, type PreAuth } from '@/lib/line-oauth'
 import { verifyLineIdToken, type LineIdTokenPayload } from '@/lib/verify-line-idtoken'
 import { storeTokens, type LineTokens } from '@/lib/auth/token-manager'

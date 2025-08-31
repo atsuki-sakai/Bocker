@@ -1,5 +1,5 @@
 // /lib/auth/token-manager.ts
-import { seal, open, constantTimeEqual } from '@/lib/crypto'
+import { seal, open, constantTimeEqual } from '@/lib/crypto-server'
 import { cookies } from 'next/headers'
 
 /**

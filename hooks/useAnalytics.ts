@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react'
 import Cookies from 'js-cookie'
 import { v4 as uuidv4 } from 'uuid'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { sha256 } from '@/lib/crypto'
+import { sha256 } from '@/lib/crypto-client'
 
 const SESSION_COOKIE_NAME = 'bocker_tracking_session'
 const UTM_PARAMS_KEY = 'bocker_utm_params'
