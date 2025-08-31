@@ -194,6 +194,9 @@ importers:
       inngest:
         specifier: ^3.40.1
         version: 3.40.1(@vercel/node@5.3.0(rollup@4.46.4))(next@15.3.3(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(@playwright/test@1.55.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(typescript@5.9.2)
+      jose:
+        specifier: ^6.1.0
+        version: 6.1.0
       js-cookie:
         specifier: ^3.0.5
         version: 3.0.5
@@ -5846,6 +5849,9 @@ packages:
 
   jose@5.9.6:
     resolution: {integrity: sha512-AMlnetc9+CV9asI19zHmrgS/WYsWUwCn2R7RzlbJWD7F9eWYUTGyBmU9o6PxngtLGOiDGPRu+Uc4fhKzbpteZQ==}
+
+  jose@6.1.0:
+    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
 
   js-cookie@3.0.5:
     resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
@@ -14217,6 +14223,8 @@ snapshots:
   jiti@1.21.7: {}
 
   jose@5.9.6: {}
+
+  jose@6.1.0: {}
 
   js-cookie@3.0.5: {}
 
