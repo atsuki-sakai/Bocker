@@ -62,8 +62,19 @@ import {
 import { useDebounce } from 'use-debounce'
 import type { ReservationMenu, ReservationOption } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
-import type { RowType } from '@/services/supabase/SupabaseService'
+import type { RowType, InsertType } from '@/services/supabase/SupabaseService'
 import { useQuery } from 'convex/react'
+import { GENDER_VALUES, Gender } from '@/convex/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { convertGender } from '@/convex/types'
 
 // 1スロット（10分）の幅(px) - 隙間をなくすために調整
 const SLOT_WIDTH = 32
@@ -534,6 +545,17 @@ const ReservationCreateDialog = memo(
     const [selectedCustomer, setSelectedCustomer] = useState<RowType<'customer'> | null>(null)
     const customerRepository = useMemo(() => new CustomerRepository(), [])
 
+    // 新規顧客作成用state
+    const [isNewCustomer, setIsNewCustomer] = useState<boolean>(false)
+    const [newCustomerData, setNewCustomerData] = useState({
+      first_name: '',
+      last_name: '',
+      phone: '',
+      email: '',
+      gender: undefined as Gender | undefined,
+      memo: '',
+    })
+
     // 初期データ取得（メニュー・オプション）
     const initialFormData = useQueryWithStatus(
       api.reservation.query.getReservationFormData,
@@ -671,6 +693,147 @@ const ReservationCreateDialog = memo(
       })
     }, [])
 
+    // 予約作成処理
+    const [isCreating, setIsCreating] = useState(false)
+    const { showErrorToast } = useErrorHandler()
+
+    const handleCreateReservation = useCallback(async () => {
+      if (!tenantId || !orgId || !selectedStaffId || !slot || !date || selectedMenus.length === 0) {
+        toast.error('必要な情報が不足しています')
+        return
+      }
+
+      setIsCreating(true)
+      try {
+        let customerId: string
+
+        if (isNewCustomer) {
+          // 新規顧客作成
+          if (!newCustomerData.first_name || !newCustomerData.last_name) {
+            toast.error('名前（姓・名）は必須です')
+            return
+          }
+
+          const customerCoreData: InsertType<'customer'> = {
+            uid: crypto.randomUUID(),
+            tenant_id: tenantId,
+            org_id: orgId,
+            first_name: newCustomerData.first_name.trim(),
+            last_name: newCustomerData.last_name.trim(),
+            phone: newCustomerData.phone.trim() || null,
+            email: newCustomerData.email.trim() || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+
+          const customerDetailData: Omit<
+            InsertType<'customer_detail'>,
+            'uid' | 'customer_uid' | 'created_at' | 'updated_at' | 'is_archive'
+          > = {
+            email: newCustomerData.email.trim() || null,
+            gender: newCustomerData.gender || null,
+            notes: newCustomerData.memo.trim() || null,
+          }
+
+          const newCustomer = await customerRepository.createCustomerWithDetailsAndPoints(
+            customerCoreData,
+            customerDetailData,
+            0
+          )
+          customerId = newCustomer.customer?.uid || ''
+        } else {
+          if (!selectedCustomer) {
+            toast.error('顧客を選択してください')
+            return
+          }
+          customerId = selectedCustomer.uid
+        }
+
+        // 予約作成
+
+        // 開始時刻と終了時刻をUnixタイムスタンプで計算
+        const startTimeUnix =
+          Math.floor(Date.now() / 1000) +
+          Math.floor((slot.minutes / 60) * 3600) +
+          (slot.minutes % 60) * 60
+        const endTimeUnix = startTimeUnix + totalTimeMinutes * 60
+
+        await fetchMutation(api.reservation.manage.handleReservationManage, {
+          mode: 'create',
+          payload: {
+            tenant_id: tenantId,
+            org_id: orgId,
+            customer_uid: customerId,
+            staff_id: selectedStaffId,
+            customer_name: isNewCustomer
+              ? `${newCustomerData.last_name}${newCustomerData.first_name}`
+              : `${selectedCustomer?.last_name ?? ''}${selectedCustomer?.first_name ?? ''}`.trim() ||
+                selectedCustomer?.phone ||
+                '不明',
+            staff_name: staff?.name || '',
+            is_free_nomination: !includeNominationFee,
+            status: 'confirmed',
+            date: format(date, 'yyyy-MM-dd'),
+            start_time_unix: startTimeUnix,
+            end_time_unix: endTimeUnix,
+            total_price: displayTotalPrice,
+            coupon_id: undefined,
+            payment_method: 'cash',
+            stripe_checkout_session_id: undefined,
+            payment_status: 'pending',
+            menus: selectedMenus,
+            options: selectedOptions,
+            extra_charge: displayExtraCharge,
+            use_points: 0,
+            coupon_discount: 0,
+            notes: '',
+            featured_hair_images: [],
+          },
+        })
+
+        toast.success('予約を作成しました')
+        onClose()
+
+        // フォームリセット
+        setSelectedMenus([])
+        setSelectedOptions([])
+        setSelectedCustomer(null)
+        setIsNewCustomer(false)
+        setNewCustomerData({
+          first_name: '',
+          last_name: '',
+          phone: '',
+          email: '',
+          gender: undefined,
+          memo: '',
+        })
+        setSearchName('')
+      } catch (error) {
+        showErrorToast(error)
+      } finally {
+        setIsCreating(false)
+      }
+    }, [
+      tenantId,
+      orgId,
+      selectedStaffId,
+      slot,
+      date,
+      selectedMenus,
+      selectedOptions,
+      isNewCustomer,
+      newCustomerData,
+      selectedCustomer,
+      customerRepository,
+      displayTotalPrice,
+      includeNominationFee,
+      totalTimeMinutes,
+      onClose,
+      showErrorToast,
+      staff?.name,
+      displayExtraCharge,
+    ])
+
     if (!slot || !date || !selectedStaffId || !staff) return null
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -682,18 +845,26 @@ const ReservationCreateDialog = memo(
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4" />
-                <span>{format(date, 'yyyy-MM-dd')}</span>
+                <span className="font-bold text-lg text-link-foreground">
+                  {format(date, 'yyyy-MM-dd')}
+                </span>
               </div>
 
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>{slot.timeLabel} 〜</span>
+                <span className="font-bold text-lg text-link-foreground">{slot.timeLabel} 〜</span>
               </div>
             </div>
             <div>
               <label className="text-sm font-semibold text-primary">担当スタッフ</label>
               <div className="mt-1 flex items-center gap-2 text-sm">
-                <User className="w-4 h-4 text-primary" />
+                <Image
+                  src={staff.images[0].thumbnail_url || ''}
+                  alt={staff.name}
+                  width={80}
+                  height={80}
+                  className="object-contain rounded-full overflow-hidden"
+                />
                 <span>{staff.name}</span>
               </div>
             </div>
@@ -867,7 +1038,7 @@ const ReservationCreateDialog = memo(
                       ))
                     )}
                   </div>
-                  {selectedCustomer && (
+                  {selectedCustomer && !isNewCustomer && (
                     <Badge variant="outline" className="w-full justify-start">
                       選択中:{' '}
                       {`${selectedCustomer.last_name ?? ''}${selectedCustomer.first_name ?? ''}`.trim() ||
@@ -875,9 +1046,135 @@ const ReservationCreateDialog = memo(
                         selectedCustomer.email}
                     </Badge>
                   )}
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <Switch
+                      checked={isNewCustomer}
+                      onCheckedChange={(checked) => {
+                        setIsNewCustomer(checked)
+                        if (checked) {
+                          setSelectedCustomer(null)
+                          setSearchName('')
+                        }
+                      }}
+                    />
+                    <Label className="text-sm">新規顧客として登録</Label>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* 新規顧客フォーム */}
+            {isNewCustomer && (
+              <Accordion type="single" collapsible className="w-full max-w-[300px] md:max-w-none">
+                <AccordionItem
+                  value="new-customer"
+                  className="border border-border rounded-md w-full"
+                >
+                  <AccordionTrigger className="px-3 py-2 text-sm w-full">
+                    新規顧客情報
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">姓 *</Label>
+                        <Input
+                          placeholder="山田"
+                          value={newCustomerData.last_name}
+                          onChange={(e) =>
+                            setNewCustomerData((prev) => ({
+                              ...prev,
+                              last_name: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">名 *</Label>
+                        <Input
+                          placeholder="太郎"
+                          value={newCustomerData.first_name}
+                          onChange={(e) =>
+                            setNewCustomerData((prev) => ({
+                              ...prev,
+                              first_name: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">電話番号</Label>
+                      <Input
+                        placeholder="090-1234-5678"
+                        value={newCustomerData.phone}
+                        onChange={(e) =>
+                          setNewCustomerData((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">メールアドレス</Label>
+                      <Input
+                        type="email"
+                        placeholder="example@example.com"
+                        value={newCustomerData.email}
+                        onChange={(e) =>
+                          setNewCustomerData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">性別</Label>
+                      <Select
+                        value={newCustomerData.gender || ''}
+                        onValueChange={(value) =>
+                          setNewCustomerData((prev) => ({
+                            ...prev,
+                            gender: (value as Gender) || undefined,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="選択してください" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GENDER_VALUES.map((gender) => (
+                            <SelectItem key={gender} value={gender}>
+                              {convertGender(gender)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">メモ</Label>
+                      <Textarea
+                        placeholder="特記事項があれば記入してください"
+                        value={newCustomerData.memo}
+                        onChange={(e) =>
+                          setNewCustomerData((prev) => ({
+                            ...prev,
+                            memo: e.target.value,
+                          }))
+                        }
+                        rows={3}
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
 
             {/* サマリー（Accordion） */}
             <Accordion
@@ -928,10 +1225,22 @@ const ReservationCreateDialog = memo(
               </Button>
               <Button
                 className="w-full"
-                disabled={selectedMenus.length === 0 || !selectedCustomer}
-                onClick={onClose}
+                disabled={
+                  isCreating ||
+                  selectedMenus.length === 0 ||
+                  (!selectedCustomer && !isNewCustomer) ||
+                  (isNewCustomer && (!newCustomerData.first_name || !newCustomerData.last_name))
+                }
+                onClick={handleCreateReservation}
               >
-                続ける
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    作成中...
+                  </>
+                ) : (
+                  '予約を作成'
+                )}
               </Button>
             </div>
           </div>
