@@ -2,18 +2,18 @@
 
 import React, { memo, useCallback, useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, Loader2 } from 'lucide-react'
-import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
-import { useLiff } from '@/hooks/useLiff'
+import { ChevronRight, Loader2, RefreshCw } from 'lucide-react'
+import { useLineAuth } from '@/hooks/useLineAuth'
 import { toast } from 'sonner'
 import { Id } from '@/convex/_generated/dataModel'
-import { cleanupLineAuthState } from '@/lib/auth/lineAuthCleanup'
 
-// LINEログイン成功時のレスポンス型
+// LINEログイン成功時のレスポンス型 (updated for new auth system)
 interface LineLoginSuccessData {
   customerUid?: string
   success: boolean
   message?: string
+  line_user_id?: string
+  line_name?: string
 }
 
 interface OptimizedLineLoginButtonProps {
@@ -23,6 +23,8 @@ interface OptimizedLineLoginButtonProps {
   onSuccess?: (data: LineLoginSuccessData) => void
   className?: string
   children?: React.ReactNode
+  scope?: string
+  autoRefresh?: boolean
 }
 
 const CLICK_TIMEOUT = 10000 // 10秒のタイムアウト
@@ -34,46 +36,63 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   onSuccess,
   className = '',
   children,
+  scope = 'profile openid',
+  autoRefresh = true,
 }: OptimizedLineLoginButtonProps) {
   const [isClicked, setIsClicked] = useState(false)
-  const [isAuthChecking, setIsAuthChecking] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // LINE APIが設定されているかチェック
-  const { liff } = useLiff()
-  
-  const { handleLineAuth, isProcessing, isLiffLoading } = useLineAuthHandler({
-    onSuccess: (data) => {
-      console.log('[OptimizedLineLoginButton] Login successful:', data)
+  // LINE OAuth 2.1 authentication hook
+  const {
+    authState,
+    tokenState,
+    isAuthenticated,
+    isLoading,
+    isRefreshing,
+    needsRefresh,
+    login,
+    error: authError
+  } = useLineAuth({
+    tenantId,
+    orgId,
+    isCustomerLogin,
+    scope,
+    autoRefresh,
+    onAuthSuccess: (data) => {
+      console.log('[OptimizedLineLoginButton] Authentication successful:', data)
       setIsClicked(false)
-      setIsAuthChecking(false)
-      setRetryCount(0) // 成功時にリトライカウントをリセット
+      setRetryCount(0)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
       }
       if (onSuccess) {
-        onSuccess(data)
+        onSuccess({
+          success: true,
+          customerUid: data.customerUid,
+          message: data.message,
+          line_user_id: data.line_user_id,
+          line_name: data.line_name,
+        })
       }
     },
-    onError: (error) => {
-      console.error('[OptimizedLineLoginButton] Error:', error)
+    onAuthError: (error) => {
+      console.error('[OptimizedLineLoginButton] Authentication error:', error)
       setIsClicked(false)
-      setIsAuthChecking(false)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
       }
-      // エラーは useLineAuthHandler 内で処理される
+      // Error is handled by useLineAuth hook, but we can add custom handling here if needed
+    },
+    onTokenRefreshed: () => {
+      console.log('[OptimizedLineLoginButton] Token refreshed successfully')
     },
   })
 
-  // コンポーネントマウント時にクリーンアップ
+  // コンポーネントマウント時の設定とクリーンアップ
   useEffect(() => {
-    // 古い認証情報をクリーンアップ
-    cleanupLineAuthState().catch(console.warn)
-
     // アンマウント時のクリーンアップ
     return () => {
       if (timeoutRef.current) {
@@ -85,23 +104,25 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   const handleClick = useCallback(async () => {
     console.log('[OptimizedLineLoginButton] Click initiated', {
       isClicked,
-      isProcessing,
-      isLiffLoading,
+      authState,
+      tokenState,
+      isLoading,
+      isRefreshing,
       tenantId,
       orgId,
       retryCount,
     })
 
     // 二重クリック防止
-    if (isClicked || isProcessing) {
+    if (isClicked || isLoading || isRefreshing) {
       console.log('[OptimizedLineLoginButton] Click blocked - already processing')
       return
     }
 
-    // LIFFが読み込み中の場合
-    if (isLiffLoading) {
+    // 認証システムが読み込み中の場合
+    if (authState === 'loading') {
       const remainingTime = Math.max(10 - retryCount * 2, 3) // 最低3秒待機
-      toast.info(`LINEログイン機能を読み込み中です。${remainingTime}秒後にもう一度お試しください。`)
+      toast.info(`認証システムを読み込み中です。${remainingTime}秒後にもう一度お試しください。`)
 
       // 自動リトライ機能
       if (retryCount < 3) {
@@ -119,29 +140,29 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       return
     }
 
-    // 処理開始前に古い認証情報をクリーンアップ
-    await cleanupLineAuthState().catch(console.warn)
+    // 既に認証済みの場合
+    if (isAuthenticated) {
+      toast.info('既にログイン済みです')
+      console.log('[OptimizedLineLoginButton] Already authenticated')
+      return
+    }
 
     setIsClicked(true)
-    setIsAuthChecking(true)
 
     // タイムアウト設定
     timeoutRef.current = setTimeout(() => {
       console.warn('[OptimizedLineLoginButton] Click timeout reached')
       setIsClicked(false)
-      setIsAuthChecking(false)
       toast.error('認証処理がタイムアウトしました。もう一度お試しください。')
     }, CLICK_TIMEOUT)
 
     try {
-      console.log('[OptimizedLineLoginButton] Starting LINE auth...')
-      await handleLineAuth(tenantId, orgId, isCustomerLogin)
+      console.log('[OptimizedLineLoginButton] Starting LINE OAuth 2.1 authentication...')
+      await login()
     } catch (error) {
-      console.error('[OptimizedLineLoginButton] Unexpected error:', error)
-      // エラーはuseLineAuthHandler内で処理されるが、念のためフォールバック
+      console.error('[OptimizedLineLoginButton] Login initiation failed:', error)
       toast.error('ログイン処理で予期しないエラーが発生しました')
       setIsClicked(false)
-      setIsAuthChecking(false)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
@@ -151,32 +172,34 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     tenantId,
     orgId,
     isCustomerLogin,
-    handleLineAuth,
+    login,
     isClicked,
-    isProcessing,
-    isLiffLoading,
+    authState,
+    tokenState,
+    isLoading,
+    isRefreshing,
+    isAuthenticated,
     retryCount,
   ])
 
-  const isDisabled = isProcessing || isLiffLoading || isClicked || isAuthChecking || !tenantId || !orgId
+  const isDisabled = isLoading || isRefreshing || isClicked || !tenantId || !orgId || authState === 'error'
   
   // デバッグ情報を表示（開発環境のみ）
   if (process.env.NODE_ENV === 'development') {
     console.log('[OptimizedLineLoginButton] Render state:', {
-      isProcessing,
-      isLiffLoading,
+      authState,
+      tokenState,
+      isLoading,
+      isRefreshing,
       isClicked,
-      isAuthChecking,
       isDisabled,
+      isAuthenticated,
+      needsRefresh,
       hasOrgId: !!orgId,
       hasTenantId: !!tenantId,
-      retryCount
+      retryCount,
+      error: authError?.message,
     })
-  }
-
-  // LINE APIが設定されていない場合は何も表示しない
-  if (!liff) {
-    return null
   }
 
   return (
@@ -185,23 +208,34 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       onClick={handleClick}
       disabled={isDisabled}
       aria-label="LINEでログイン"
-      aria-busy={isProcessing}
+      aria-busy={isLoading || isRefreshing}
     >
       <div className="flex items-center justify-center space-x-2">
-        {isProcessing || isClicked ? (
+        {isRefreshing ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-            <span className="font-bold text-base">処理中...</span>
+            <RefreshCw className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <span className="font-bold text-base">トークン更新中...</span>
           </>
-        ) : isAuthChecking ? (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-            <span className="font-bold text-base">認証確認中...</span>
-          </>
-        ) : isLiffLoading ? (
+        ) : isLoading || authState === 'loading' ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
             <span className="font-bold text-base">読み込み中...</span>
+          </>
+        ) : isClicked ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            <span className="font-bold text-base">認証開始中...</span>
+          </>
+        ) : authState === 'error' ? (
+          <>
+            <span className="font-bold text-base text-red-600">認証エラー</span>
+          </>
+        ) : isAuthenticated ? (
+          <>
+            <span className="font-bold text-base text-green-600">ログイン済み</span>
+            {needsRefresh && (
+              <RefreshCw className="h-4 w-4 text-orange-500" aria-hidden="true" />
+            )}
           </>
         ) : (
           <>
