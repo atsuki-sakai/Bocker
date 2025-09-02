@@ -1,35 +1,28 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Copy, ExternalLink, QrCode } from 'lucide-react'
 import { toast } from 'sonner'
 import { UTMBuilder } from './UTMBuilder'
 import { UTMPresets } from './UTMPresets'
-import {
-  UTMParameters,
-  Preset,
-  URLGeneratorConfig,
-} from '@/types/tracking'
+import { UTMParameters, Preset, URLGeneratorConfig } from '@/types/tracking'
 
 interface TrackingURLGeneratorProps {
   defaultBaseUrl?: string
   onURLGenerated?: (url: string, config: URLGeneratorConfig) => void
 }
 
-export function TrackingURLGenerator({ 
+export function TrackingURLGenerator({
   defaultBaseUrl = '',
   onURLGenerated,
 }: TrackingURLGeneratorProps) {
-  const [baseUrl, setBaseUrl] = useState(defaultBaseUrl)
   const [utmParameters, setUtmParameters] = useState<UTMParameters>({})
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null)
   const [generateQR, setGenerateQR] = useState(false)
@@ -37,14 +30,14 @@ export function TrackingURLGenerator({
 
   // URLを生成
   const generateURL = () => {
-    if (!baseUrl.trim()) {
+    if (!defaultBaseUrl.trim()) {
       toast.error('ベースURLを入力してください')
       return
     }
 
     try {
-      const url = new URL(baseUrl)
-      
+      const url = new URL(defaultBaseUrl)
+
       // UTMパラメータを追加
       Object.entries(utmParameters).forEach(([key, value]) => {
         if (value && value.trim()) {
@@ -57,7 +50,7 @@ export function TrackingURLGenerator({
 
       // コールバックを呼び出し
       onURLGenerated?.(finalUrl, {
-        base_url: baseUrl,
+        base_url: defaultBaseUrl,
         utm_parameters: utmParameters,
         generate_qr: generateQR,
       })
@@ -89,7 +82,7 @@ export function TrackingURLGenerator({
       toast.error('先にURLを生成してください')
       return
     }
-    
+
     // QRコード生成サービスを使用（Google Chart API）
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedUrl)}`
     window.open(qrUrl, '_blank')
@@ -108,28 +101,13 @@ export function TrackingURLGenerator({
     // プリセットの選択状態をクリア（手動編集された場合）
     if (selectedPreset) {
       const isPresetMatch = Object.keys(selectedPreset.utm_parameters).every(
-        (key) => selectedPreset.utm_parameters[key as keyof UTMParameters] === params[key as keyof UTMParameters]
+        (key) =>
+          selectedPreset.utm_parameters[key as keyof UTMParameters] ===
+          params[key as keyof UTMParameters]
       )
       if (!isPresetMatch) {
         setSelectedPreset(null)
       }
-    }
-  }
-
-  // URLプレビュー用のテキスト
-  const previewUrl = () => {
-    if (!baseUrl.trim()) return ''
-    
-    try {
-      const url = new URL(baseUrl)
-      Object.entries(utmParameters).forEach(([key, value]) => {
-        if (value && value.trim()) {
-          url.searchParams.set(key, value.trim())
-        }
-      })
-      return url.toString()
-    } catch {
-      return ''
     }
   }
 
@@ -142,42 +120,48 @@ export function TrackingURLGenerator({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>トラッキングURL生成</CardTitle>
-          <CardDescription>
-            UTMパラメータ付きのトラッキングURLを生成して、マーケティング効果を測定できます
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="base-url">ベースURL</Label>
-              <Input
-                id="base-url"
-                type="url"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder="https://your-salon.com/reservation"
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                トラッキングしたいページのURLを入力してください
-              </p>
+      {/* UTMパラメータ活用ガイド */}
+      <div className="p-4 border-l-4 border-l-blue-500 bg-blue-50/50 rounded-md">
+        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+          📚 UTMパラメータ活用ガイド
+        </h4>
+        <div className="text-xs text-muted-foreground space-y-2">
+          <p>
+            <strong>UTMパラメータ</strong>
+            とは、URLに付加する特別なパラメータで、お客様がどの経路からサロンを見つけて予約したかを詳しく分析できます。
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div>
+              <p className="font-medium mb-1">🔍 5つのパラメータ：</p>
+              <ul className="space-y-1 text-xs ml-3">
+                <li>
+                  • <strong>Source</strong>: 流入元（instagram, google等）
+                </li>
+                <li>
+                  • <strong>Medium</strong>: 媒体タイプ（social, cpc等）
+                </li>
+                <li>
+                  • <strong>Campaign</strong>: キャンペーン名
+                </li>
+                <li>
+                  • <strong>Term</strong>: キーワード（検索語句等）
+                </li>
+                <li>
+                  • <strong>Content</strong>: コンテンツ識別（広告バナー等）
+                </li>
+              </ul>
             </div>
-
-            {/* URL プレビュー */}
-            {baseUrl && (
-              <div className="p-3 bg-muted/50 rounded-md">
-                <Label className="text-xs text-muted-foreground">プレビュー</Label>
-                <div className="mt-1 break-all font-mono text-sm">
-                  {previewUrl() || '無効なURL'}
-                </div>
-              </div>
-            )}
+            <div>
+              <p className="font-medium mb-1">💡 分析できること：</p>
+              <ul className="space-y-1 text-xs ml-3">
+                <li>• どのSNSから予約が多いか</li>
+                <li>• どのキャンペーンが効果的か</li>
+                <li>• 広告費用対効果の測定</li>
+              </ul>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Tabs defaultValue="manual" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
@@ -186,10 +170,7 @@ export function TrackingURLGenerator({
         </TabsList>
 
         <TabsContent value="presets" className="space-y-4">
-          <UTMPresets
-            onSelectPreset={handlePresetSelect}
-            selectedPreset={selectedPreset}
-          />
+          <UTMPresets onSelectPreset={handlePresetSelect} selectedPreset={selectedPreset} />
         </TabsContent>
 
         <TabsContent value="manual" className="space-y-4">
@@ -199,6 +180,7 @@ export function TrackingURLGenerator({
             onReset={() => {
               setUtmParameters({})
               setSelectedPreset(null)
+              setGeneratedUrl('')
             }}
           />
         </TabsContent>
@@ -210,11 +192,7 @@ export function TrackingURLGenerator({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="generate-qr"
-                  checked={generateQR}
-                  onCheckedChange={setGenerateQR}
-                />
+                <Switch id="generate-qr" checked={generateQR} onCheckedChange={setGenerateQR} />
                 <Label htmlFor="generate-qr">QRコードも生成する</Label>
               </div>
               <Button onClick={generateURL} className="flex items-center gap-2">
@@ -229,9 +207,7 @@ export function TrackingURLGenerator({
                 <div>
                   <Label className="text-sm font-medium">生成されたURL</Label>
                   <div className="mt-2 p-3 bg-muted/50 rounded-md">
-                    <div className="break-all font-mono text-sm mb-3">
-                      {generatedUrl}
-                    </div>
+                    <div className="break-all font-mono text-sm mb-3">{generatedUrl}</div>
                     <div className="flex flex-wrap gap-2">
                       <Button
                         variant="outline"
@@ -300,49 +276,13 @@ export function TrackingURLGenerator({
                     })}
                     {Object.values(utmParameters).every((v) => !v) && (
                       <p className="text-sm text-muted-foreground">
-                        UTMパラメータが設定されていません
+                        UTMパラメータが設定されてません
                       </p>
                     )}
                   </div>
                 </div>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 使い方ガイド */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">使い方ガイド</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div>
-            <h4 className="font-medium">1. ベースURLを設定</h4>
-            <p className="text-muted-foreground">
-              トラッキングしたいページのURLを入力します（例：予約ページ、キャンペーンページ）
-            </p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="font-medium">2. UTMパラメータを設定</h4>
-            <p className="text-muted-foreground">
-              プリセットを選択するか、手動でUTMパラメータを設定します
-            </p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="font-medium">3. URLを生成・共有</h4>
-            <p className="text-muted-foreground">
-              生成されたURLをInstagram投稿、Google広告、メール配信等で使用します
-            </p>
-          </div>
-          <Separator />
-          <div>
-            <h4 className="font-medium">4. 効果測定</h4>
-            <p className="text-muted-foreground">
-              ダッシュボードでトラッキングデータを確認し、マーケティング効果を分析します
-            </p>
           </div>
         </CardContent>
       </Card>

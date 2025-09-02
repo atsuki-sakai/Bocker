@@ -60,15 +60,15 @@ interface TrackingData {
 }
 
 const COLORS = [
-  '#4E79A7', // ブルー
-  '#F28E2B', // オレンジ
-  '#E15759', // レッド
-  '#76B7B2', // ティール
-  '#59A14F', // グリーン
-  '#EDC948', // イエロー
-  '#B07AA1', // パープル
-  '#FF9DA7', // ピンク
-  '#9C755F', // ブラウン
+  '#4E79A7',
+  '#F28E2B',
+  '#E15759',
+  '#76B7B2',
+  '#59A14F',
+  '#EDC948',
+  '#B07AA1',
+  '#FF9DA7',
+  '#9C755F',
 ]
 
 const dimensionTypes = [
@@ -79,16 +79,20 @@ const dimensionTypes = [
 
 interface TrackingDashboardProps {
   orgId: string
+  initialData?: TrackingData
+  initialDimensionType?: string
+  initialDateRange?: DateRange
 }
 
-export default function TrackingDashboard({ orgId }: TrackingDashboardProps) {
-  const [data, setData] = useState<TrackingData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [dimensionType, setDimensionType] = useState('utm_source')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
+export default function TrackingDashboard({
+  initialData,
+  initialDimensionType = 'utm_source',
+  initialDateRange = { from: subDays(new Date(), 30), to: new Date() },
+}: TrackingDashboardProps) {
+  const [data, setData] = useState<TrackingData | null>(initialData ?? null)
+  const [loading, setLoading] = useState(!initialData)
+  const [dimensionType, setDimensionType] = useState(initialDimensionType)
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(initialDateRange)
   const [showURLGenerator, setShowURLGenerator] = useState(false)
 
   const fetchData = useCallback(async () => {
@@ -100,12 +104,7 @@ export default function TrackingDashboard({ orgId }: TrackingDashboardProps) {
         endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : '',
       })
 
-      const response = await fetch(`/api/tracking/summaries?${params}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Organization-Id': orgId,
-        },
-      })
+      const response = await fetch(`/api/tracking/summaries?${params}`)
       if (response.ok) {
         const result = await response.json()
         setData(result)
@@ -117,11 +116,13 @@ export default function TrackingDashboard({ orgId }: TrackingDashboardProps) {
     } finally {
       setLoading(false)
     }
-  }, [dimensionType, dateRange, orgId])
+  }, [dimensionType, dateRange])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    if (!initialData) {
+      fetchData()
+    }
+  }, [fetchData, initialData])
 
   if (loading) {
     return <Loading />
