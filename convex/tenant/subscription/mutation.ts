@@ -33,26 +33,46 @@ export const upsertSubscription = mutation({
     validateStringLength(args.price_id, 'price_id');
     validateStringLength(args.plan_name, 'plan_name');
 
-    // サブスクリプションが存在する場合は更新、存在しない場合は新規作成
-    const existingSubscription = await ctx.db.query('subscription')
+    // 既存レコード探索戦略（重複作成防止）
+    // 1) subscription_id で一致（通常の更新シナリオ）
+    // 2) tenant_id で一致（テナント:サブスクリプション = 1:1 の想定）
+    // 3) stripe_customer_id で一致（顧客IDは変わらないため安全なフォールバック）
+    let existingSubscription = await ctx.db
+      .query('subscription')
       .withIndex('by_stripe_subscription_archive', q =>
-        q.eq('stripe_subscription_id', args.stripe_subscription_id)
-        .eq('is_archive', false)
+        q.eq('stripe_subscription_id', args.stripe_subscription_id).eq('is_archive', false)
       )
       .first();
-    if (existingSubscription) {
-      return await updateRecord(ctx, existingSubscription._id, {
-        ...args,
-        current_period_start: args.current_period_start * 1000,
-        current_period_end: args.current_period_end * 1000,
-      });
-    }else{
-      return await createRecord(ctx,"subscription", {
-        ...args,
-        current_period_start: args.current_period_start * 1000,
-        current_period_end: args.current_period_end * 1000,
-      });
+
+    if (!existingSubscription) {
+      existingSubscription = await ctx.db
+        .query('subscription')
+        .withIndex('by_tenant_archive', q => q.eq('tenant_id', args.tenant_id).eq('is_archive', false))
+        .first();
     }
+
+    if (!existingSubscription) {
+      existingSubscription = await ctx.db
+        .query('subscription')
+        .withIndex('by_stripe_customer_archive', q =>
+          q.eq('stripe_customer_id', args.stripe_customer_id).eq('is_archive', false)
+        )
+        .first();
+    }
+
+    const payload = {
+      ...args,
+      current_period_start: args.current_period_start * 1000,
+      current_period_end: args.current_period_end * 1000,
+    };
+
+    if (existingSubscription) {
+      // 既存レコードを更新（新しい subscription_id に置き換わるケースもここで吸収）
+      return await updateRecord(ctx, existingSubscription._id, payload);
+    }
+
+    // 見つからなければ新規作成
+    return await createRecord(ctx, 'subscription', payload);
   },
 });
 
