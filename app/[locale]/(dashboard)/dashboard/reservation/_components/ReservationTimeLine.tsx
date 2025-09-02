@@ -751,12 +751,18 @@ const ReservationCreateDialog = memo(
 
         // 予約作成
 
-        // 開始時刻と終了時刻をUnixタイムスタンプで計算
-        const startTimeUnix =
-          Math.floor(Date.now() / 1000) +
-          Math.floor((slot.minutes / 60) * 3600) +
-          (slot.minutes % 60) * 60
-        const endTimeUnix = startTimeUnix + totalTimeMinutes * 60
+        // 開始/終了時刻を「選択日付の5:00起点」で計算
+        const START_HOUR = 5
+        const base = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0)
+        // タイムラインは 5:00 → 翌日5:00 表示。5:00未満のスロットは翌日扱いにする
+        if (slot.minutes < START_HOUR * 60) {
+          base.setDate(base.getDate() + 1)
+        }
+        const target = new Date(base)
+        target.setMinutes(target.getMinutes() + slot.minutes)
+        // Note: All codebase utilities expect Unix time in milliseconds
+        const startTimeUnix = target.getTime()
+        const endTimeUnix = startTimeUnix + totalTimeMinutes * 60 * 1000
 
         await fetchMutation(api.reservation.manage.handleReservationManage, {
           mode: 'create',
@@ -773,7 +779,8 @@ const ReservationCreateDialog = memo(
             staff_name: staff?.name || '',
             is_free_nomination: !includeNominationFee,
             status: 'confirmed',
-            date: format(date, 'yyyy-MM-dd'),
+            // 予約日付も開始時刻ベース（5時跨ぎに対応）
+            date: format(new Date(startTimeUnix), 'yyyy-MM-dd'),
             start_time_unix: startTimeUnix,
             end_time_unix: endTimeUnix,
             total_price: displayTotalPrice,
@@ -858,13 +865,19 @@ const ReservationCreateDialog = memo(
             <div>
               <label className="text-sm font-semibold text-primary">担当スタッフ</label>
               <div className="mt-1 flex items-center gap-2 text-sm">
-                <Image
-                  src={staff.images[0].thumbnail_url || ''}
-                  alt={staff.name}
-                  width={80}
-                  height={80}
-                  className="object-contain rounded-full overflow-hidden"
-                />
+                {staff.images && staff.images.length > 0 && staff.images[0]?.thumbnail_url ? (
+                  <Image
+                    src={staff.images[0].thumbnail_url}
+                    alt={staff.name}
+                    width={80}
+                    height={80}
+                    className="object-contain rounded-full overflow-hidden"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <User className="w-6 h-6 text-primary" />
+                  </div>
+                )}
                 <span>{staff.name}</span>
               </div>
             </div>
