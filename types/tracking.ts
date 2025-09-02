@@ -20,6 +20,8 @@ export const PresetSchema = z.object({
   utm_parameters: UTMParametersSchema,
   created_at: z.date(),
   is_default: z.boolean().default(false),
+  copied_from: z.string().optional(), // コピー元のプリセットID
+  is_saved: z.boolean().default(true), // 手動作成時の保存状態
 })
 
 export type Preset = z.infer<typeof PresetSchema>
@@ -42,7 +44,7 @@ export const PRESET_CATEGORIES = {
 } as const
 
 // デフォルトプリセット
-export const DEFAULT_PRESETS: Omit<Preset, 'id' | 'created_at'>[] = [
+export const DEFAULT_PRESETS: Omit<Preset, 'id' | 'created_at' | 'copied_from' | 'is_saved'>[] = [
   {
     name: 'Instagram投稿',
     description: 'Instagram投稿用のパラメータ',
