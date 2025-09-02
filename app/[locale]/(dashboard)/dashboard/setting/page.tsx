@@ -48,6 +48,28 @@ function SettingPage() {
               <ReferralCard />
             </AccordionContent>
           </AccordionItem>
+          <AccordionItem value="feature-request">
+            <AccordionTrigger>
+              <p className="text-sm font-bold text-accent-2">
+                機能改善リクエスト
+              </p>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="p-4 border rounded-lg">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Bockerをより使いやすくするための機能改善やご要望をお聞かせください。
+                </p>
+                <a
+                  href="https://forms.gle/4C7mMJPdn4axGEPY7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
+                >
+                  機能改善リクエストフォームを開く
+                </a>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
         <OrgConfigForm />
       </TabsContent>
