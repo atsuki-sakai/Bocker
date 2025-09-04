@@ -35,6 +35,7 @@ export interface VerificationOptions {
   channelId: string;        // LINE Channel ID for audience verification
   expectedNonce?: string;   // Expected nonce value for replay protection
   clockTolerance?: number;  // Clock skew tolerance in seconds (default: 60)
+  channelSecret?: string;   // Optional: LINE Channel Secret for HS256 verification (DB-driven)
 }
 
 /**
@@ -55,7 +56,7 @@ export async function verifyLineIdToken(
   idToken: string,
   options: VerificationOptions
 ): Promise<LineIdTokenPayload> {
-  const { channelId, expectedNonce, clockTolerance = 60 } = options;
+  const { channelId, expectedNonce, clockTolerance = 60, channelSecret } = options;
 
   if (!idToken) {
     throw new Error("ID token is required");
@@ -78,7 +79,7 @@ export async function verifyLineIdToken(
     switch (header.alg) {
       case "HS256":
         // Web Login: Verify with Channel Secret (HMAC-SHA256)
-        payload = await verifyHS256Token(idToken, channelId, clockTolerance);
+        payload = await verifyHS256Token(idToken, channelId, clockTolerance, channelSecret);
         break;
 
       case "ES256":
@@ -114,11 +115,12 @@ export async function verifyLineIdToken(
 async function verifyHS256Token(
   idToken: string,
   channelId: string,
-  clockTolerance: number
+  clockTolerance: number,
+  providedChannelSecret?: string
 ): Promise<jose.JWTPayload> {
-  const channelSecret = process.env.LINE_CHANNEL_SECRET;
+  const channelSecret = providedChannelSecret ?? process.env.LINE_CHANNEL_SECRET;
   if (!channelSecret) {
-    throw new Error("LINE_CHANNEL_SECRET environment variable is required for HS256 verification");
+    throw new Error("LINE channel secret is required for HS256 verification");
   }
 
   const secret = new TextEncoder().encode(channelSecret);

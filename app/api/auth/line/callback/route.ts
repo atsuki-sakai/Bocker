@@ -5,6 +5,8 @@ import { open } from '@/lib/crypto-server'
 import { extractState, validatePreAuth, OAUTH_COOKIE_PREFIX, safeNext, type PreAuth } from '@/lib/line-oauth'
 import { verifyLineIdToken, type LineIdTokenPayload } from '@/lib/verify-line-idtoken'
 import { storeTokens, type LineTokens } from '@/lib/auth/token-manager'
+import { fetchQuery } from 'convex/nextjs'
+import { api } from '@/convex/_generated/api'
 import { z } from 'zod'
 
 /**
@@ -140,8 +142,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     
     console.log('[LineAuth:Callback] PreAuth validated successfully, exchanging code for tokens')
     
+    // Fetch LINE channel config from Convex using tenant/org stored in PreAuth
+    const apiConfig = (preAuth.tenantId && preAuth.orgId)
+      ? await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
+          tenant_id: preAuth.tenantId as any,
+          org_id: preAuth.orgId as any,
+        })
+      : null
+
+    const channelId = apiConfig?.line_channel_id
+    const channelSecret = apiConfig?.line_channel_secret
+    if (!channelId || !channelSecret) {
+      console.error('[LineAuth:Callback] Missing LINE config in DB', { tenantId: preAuth.tenantId, orgId: preAuth.orgId })
+      return NextResponse.redirect(
+        new URL('/?error=config_missing&message=LINE設定（ClientID/Secret）が未設定です', request.url)
+      )
+    }
+
     // Exchange authorization code for tokens
-    const tokens = await exchangeCodeForTokens(code, preAuth.cv, request.url)
+    const tokens = await exchangeCodeForTokens(code, preAuth.cv, request.url, channelId, channelSecret)
     
     if (!tokens) {
       console.error('[LineAuth:Callback] Token exchange failed')
@@ -153,13 +172,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Verify ID token with expected nonce
     let idTokenPayload: LineIdTokenPayload
     try {
-      const channelId = process.env.LINE_CHANNEL_ID
-      if (!channelId) {
-        throw new Error('LINE_CHANNEL_ID not configured')
-      }
-      
       idTokenPayload = await verifyLineIdToken(tokens.id_token, {
         channelId,
+        channelSecret,
         expectedNonce: preAuth.nonce,
         clockTolerance: 60, // 60 seconds tolerance
       })
@@ -192,6 +207,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     
     await storeTokens(lineTokens)
+
+    // Persist tenant/org context in HttpOnly cookies for future refresh calls
+    try {
+      const cookieStore = await cookies()
+      const ctxCookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+        maxAge: 90 * 24 * 60 * 60, // 90 days
+      }
+      if (preAuth.tenantId) cookieStore.set('line_ctx_tid', preAuth.tenantId, ctxCookieOptions)
+      if (preAuth.orgId) cookieStore.set('line_ctx_oid', preAuth.orgId, ctxCookieOptions)
+    } catch (e) {
+      console.warn('[LineAuth:Callback] Failed to persist LINE context cookies', e)
+    }
     
     console.log('[LineAuth:Callback] Tokens stored successfully:', {
       expiresIn: tokens.expires_in,
@@ -249,15 +280,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 async function exchangeCodeForTokens(
   code: string, 
   codeVerifier: string, 
-  requestUrl: string
+  requestUrl: string,
+  channelId: string,
+  channelSecret: string,
 ): Promise<LineTokenResponse | null> {
   try {
-    const channelId = process.env.LINE_CHANNEL_ID
-    const channelSecret = process.env.LINE_CHANNEL_SECRET
-    
-    if (!channelId || !channelSecret) {
-      throw new Error('LINE_CHANNEL_ID or LINE_CHANNEL_SECRET not configured')
-    }
+    // channelId/secret are provided from DB
     
     // Build redirect URI (must match the one used in authorization)
     const callbackUrl = new URL('/api/auth/line/callback', requestUrl)

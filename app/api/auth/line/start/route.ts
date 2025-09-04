@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createPreAuth, ccFromVerifier, OAUTH_COOKIE_PREFIX, OAUTH_TTL_MS } from '@/lib/line-oauth'
+import { fetchQuery } from 'convex/nextjs'
+import { api } from '@/convex/_generated/api'
 import { seal } from '@/lib/crypto-server'
 import { z } from 'zod'
 
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(
         { 
           error: 'Invalid request parameters',
+          message: 'Invalid request parameters',
           details: validation.error.flatten().fieldErrors 
         },
         { status: 400 }
@@ -50,12 +53,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     const { tenantId, orgId, isCustomerLogin, redirectUri, scope, next } = validation.data
     
-    // Validate LINE channel configuration
-    const channelId = process.env.LINE_CHANNEL_ID
+    // Fetch LINE channel configuration from Convex (DB) by tenant/org
+    const apiConfig = await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
+      tenant_id: tenantId as any,
+      org_id: orgId as any,
+    })
+    const channelId = apiConfig?.line_channel_id
     if (!channelId) {
-      console.error('[LineAuth:Start] LINE_CHANNEL_ID not configured')
+      console.error('[LineAuth:Start] line_channel_id not configured in DB', { tenantId, orgId })
       return NextResponse.json(
-        { error: 'LINE authentication not configured' },
+        { error: 'LINE authentication not configured', message: 'LINEログイン設定が見つかりません（line_channel_id未設定）' },
         { status: 500 }
       )
     }

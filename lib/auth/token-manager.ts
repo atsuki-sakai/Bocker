@@ -1,6 +1,8 @@
 // /lib/auth/token-manager.ts
 import { seal, open, constantTimeEqual } from '@/lib/crypto-server'
 import { cookies } from 'next/headers'
+import { fetchQuery } from 'convex/nextjs'
+import { api } from '@/convex/_generated/api'
 
 /**
  * LINE Token Management System
@@ -246,12 +248,22 @@ export async function refreshLineToken(): Promise<LineTokens | null> {
     
     // LINE official token refresh endpoint
     const LINE_TOKEN_ENDPOINT = 'https://api.line.me/oauth2/v2.1/token'
-    
-    const clientId = process.env.LINE_CHANNEL_ID
-    const clientSecret = process.env.LINE_CHANNEL_SECRET
-    
+
+    // Resolve tenant/org context from cookies to load LINE client credentials from DB
+    const cookieStore = await cookies()
+    const tenantId = cookieStore.get('line_ctx_tid')?.value
+    const orgId = cookieStore.get('line_ctx_oid')?.value
+    if (!tenantId || !orgId) {
+      throw new Error('LINE context not found (tenant/org). Please re-authenticate.')
+    }
+    const apiConfig = await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
+      tenant_id: tenantId as any,
+      org_id: orgId as any,
+    })
+    const clientId = apiConfig?.line_channel_id
+    const clientSecret = apiConfig?.line_channel_secret
     if (!clientId || !clientSecret) {
-      throw new Error('LINE_CHANNEL_ID or LINE_CHANNEL_SECRET not configured')
+      throw new Error('LINE client credentials not configured in DB')
     }
     
     // Prepare refresh request per LINE OAuth 2.1 spec

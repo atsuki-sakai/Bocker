@@ -260,8 +260,17 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to start authentication')
+        let errorMessage = `Failed to start authentication (HTTP ${response.status})`
+        try {
+          const errorData = await response.json()
+          errorMessage =
+            errorData?.message ||
+            errorData?.error ||
+            errorMessage
+        } catch (_) {
+          // ignore JSON parse error and use default message
+        }
+        throw new Error(errorMessage)
       }
 
       const { authorizationUrl } = await response.json()
