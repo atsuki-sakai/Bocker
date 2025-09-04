@@ -2,31 +2,29 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 /**
  * Modern LINE OAuth Authentication Hook
- * 
+ *
  * Provides comprehensive LINE authentication management with:
  * - Automatic token refresh monitoring
- * - Secure authentication flow initiation  
+ * - Secure authentication flow initiation
  * - Token state monitoring with server-side validation
  * - Error handling with user-friendly messages
  * - TypeScript support for better DX
  */
 
 // Authentication states
-export type LineAuthState = 
-  | 'loading'          // Initial loading or checking auth state
-  | 'authenticated'    // User is authenticated with valid tokens
-  | 'unauthenticated'  // User is not authenticated
-  | 'refreshing'       // Token is being refreshed
-  | 'error'           // Authentication error occurred
+export type LineAuthState =
+  | 'loading' // Initial loading or checking auth state
+  | 'authenticated' // User is authenticated with valid tokens
+  | 'unauthenticated' // User is not authenticated
+  | 'refreshing' // Token is being refreshed
+  | 'error' // Authentication error occurred
 
 // Token states from server
-export type ServerTokenState = 
-  | 'valid' | 'near_expiry' | 'expired' | 'missing' | 'invalid'
+export type ServerTokenState = 'valid' | 'near_expiry' | 'expired' | 'missing' | 'invalid'
 
 // Hook configuration options
 export interface UseLineAuthOptions {
@@ -35,8 +33,8 @@ export interface UseLineAuthOptions {
   isCustomerLogin?: boolean
   redirectUri?: string
   scope?: string
-  autoRefresh?: boolean           // Enable automatic token refresh (default: true)
-  refreshCheckInterval?: number   // Interval for checking token status in ms (default: 60000)
+  autoRefresh?: boolean // Enable automatic token refresh (default: true)
+  refreshCheckInterval?: number // Interval for checking token status in ms (default: 60000)
   onAuthSuccess?: (data: AuthSuccessData) => void
   onAuthError?: (error: Error) => void
   onTokenRefreshed?: () => void
@@ -61,7 +59,7 @@ interface TokenStatusResponse {
   isValid: boolean
 }
 
-// Refresh response from server API  
+// Refresh response from server API
 interface RefreshResponse {
   success: boolean
   message: string
@@ -76,7 +74,7 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   // Configuration with defaults
   const {
     tenantId,
-    orgId, 
+    orgId,
     isCustomerLogin = false,
     scope = 'profile openid',
     autoRefresh = true,
@@ -96,7 +94,6 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   // Refs for cleanup and abort control
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const router = useRouter()
 
   /**
    * Check current authentication status from server
@@ -120,12 +117,12 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       }
 
       const data: TokenStatusResponse = await response.json()
-      
+
       console.log('[useLineAuth] Auth status:', data)
-      
+
       setTokenState(data.tokenState)
       setExpiresAt(data.expiresAt ? new Date(data.expiresAt) : null)
-      
+
       if (data.isAuthenticated) {
         setAuthState('authenticated')
         setError(null)
@@ -134,17 +131,15 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
         setAuthState('unauthenticated')
         return false
       }
-
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return false
       }
-      
+
       console.error('[useLineAuth] Auth status check error:', error)
       setAuthState('error')
       setError(error instanceof Error ? error : new Error('Authentication check failed'))
       return false
-      
     } finally {
       abortControllerRef.current = null
     }
@@ -176,7 +171,7 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
 
       if (!response.ok || !data.success) {
         console.warn('[useLineAuth] Token refresh failed:', data)
-        
+
         if (data.error === 'refresh_failed' || data.error === 'no_tokens') {
           setAuthState('unauthenticated')
           setTokenState('missing')
@@ -188,18 +183,17 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       }
 
       console.log('[useLineAuth] Token refreshed successfully')
-      
+
       setTokenState(data.tokenState || 'valid')
       setExpiresAt(data.expiresAt ? new Date(data.expiresAt) : null)
       setAuthState('authenticated')
       setError(null)
-      
+
       if (onTokenRefreshed) {
         onTokenRefreshed()
       }
 
       return true
-
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return false
@@ -209,7 +203,6 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       setAuthState('error')
       setError(error instanceof Error ? error : new Error('Token refresh failed'))
       return false
-
     } finally {
       setIsRefreshing(false)
       abortControllerRef.current = null
@@ -219,87 +212,107 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   /**
    * Start LINE OAuth authentication flow
    */
-  const login = useCallback(async (customRedirectUri?: string): Promise<void> => {
-    if (!tenantId || !orgId) {
-      const error = new Error('Tenant ID and Organization ID are required for authentication')
-      setError(error)
-      if (onAuthError) onAuthError(error)
-      return
-    }
+  const login = useCallback(
+    async (customRedirectUri?: string): Promise<void> => {
+      if (!tenantId || !orgId) {
+        const error = new Error('Tenant ID and Organization ID are required for authentication')
+        setError(error)
+        if (onAuthError) onAuthError(error)
+        return
+      }
 
-    try {
-      setAuthState('loading')
-      setError(null)
+      try {
+        setAuthState('loading')
+        setError(null)
 
-      // Determine redirect URI - use environment URL for consistency
-      const redirectUri = customRedirectUri || (() => {
-        const locale = window.location.pathname.split('/')[1] || 'ja'
-        
-        // Use environment-configured URL to avoid issues with dynamic domains (tunnels, etc.)
-        const baseUrl = process.env.NEXT_PUBLIC_DEVELOP_URL 
-          ? new URL(process.env.NEXT_PUBLIC_DEVELOP_URL).origin
-          : window.location.origin
-          
-        return `${baseUrl}/${locale}/reservation/auth/callback`
-      })()
+        // Determine redirect URI
+        // - Prefer provided customRedirectUri
+        // - On localhost, allow overriding with NEXT_PUBLIC_DEVELOP_URL (if set)
+        // - Otherwise, use the current origin to avoid mismatches in production
+        const redirectUri =
+          customRedirectUri ||
+          (() => {
+            const locale = window.location.pathname.split('/')[1] || 'ja'
 
-      console.log('[useLineAuth] Starting authentication flow:', {
-        tenantId,
-        orgId,
-        isCustomerLogin,
-        redirectUri,
-        scope,
-      })
+            const getBaseUrl = () => {
+              const host = window.location.hostname
+              const origin = window.location.origin
 
-      // Request authorization start from server
-      const response = await fetch('/api/auth/line/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
+              // When running on localhost, allow explicit dev URL override
+              if (
+                (host === 'localhost' || host === '127.0.0.1') &&
+                process.env.NEXT_PUBLIC_DEVELOP_URL
+              ) {
+                try {
+                  return new URL(process.env.NEXT_PUBLIC_DEVELOP_URL).origin
+                } catch {
+                  return origin
+                }
+              }
+
+              // Default: rely on current origin (works for preview/prod)
+              return origin
+            }
+
+            const baseUrl = getBaseUrl()
+            return `${baseUrl}/${locale}/reservation/auth/callback`
+          })()
+
+        console.log('[useLineAuth] Starting authentication flow:', {
           tenantId,
           orgId,
           isCustomerLogin,
           redirectUri,
           scope,
-        }),
-      })
+        })
 
-      if (!response.ok) {
-        let errorMessage = `Failed to start authentication (HTTP ${response.status})`
-        try {
-          const errorData = await response.json()
-          errorMessage =
-            errorData?.message ||
-            errorData?.error ||
-            errorMessage
-        } catch (_) {
-          // ignore JSON parse error and use default message
+        // Request authorization start from server
+        const response = await fetch('/api/auth/line/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            tenantId,
+            orgId,
+            isCustomerLogin,
+            redirectUri,
+            scope,
+          }),
+        })
+
+        if (!response.ok) {
+          let errorMessage = `Failed to start authentication (HTTP ${response.status})`
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData?.message || errorData?.error || errorMessage
+          } catch {
+            // ignore JSON parse error and use default message
+          }
+          throw new Error(errorMessage)
         }
-        throw new Error(errorMessage)
+
+        const { authorizationUrl } = await response.json()
+
+        console.log('[useLineAuth] Redirecting to LINE authorization...')
+
+        // Redirect to LINE OAuth authorization
+        window.location.href = authorizationUrl
+      } catch (error) {
+        console.error('[useLineAuth] Login initiation failed:', error)
+        const authError = error instanceof Error ? error : new Error('Authentication failed')
+
+        setAuthState('error')
+        setError(authError)
+
+        if (onAuthError) {
+          onAuthError(authError)
+        }
+
+        toast.error(authError.message)
       }
-
-      const { authorizationUrl } = await response.json()
-
-      console.log('[useLineAuth] Redirecting to LINE authorization...')
-      
-      // Redirect to LINE OAuth authorization
-      window.location.href = authorizationUrl
-
-    } catch (error) {
-      console.error('[useLineAuth] Login initiation failed:', error)
-      const authError = error instanceof Error ? error : new Error('Authentication failed')
-      
-      setAuthState('error')
-      setError(authError)
-      
-      if (onAuthError) {
-        onAuthError(authError)
-      }
-      
-      toast.error(authError.message)
-    }
-  }, [tenantId, orgId, isCustomerLogin, scope, onAuthError])
+    },
+    [tenantId, orgId, isCustomerLogin, scope, onAuthError]
+  )
 
   /**
    * Logout and clear authentication tokens
@@ -307,7 +320,7 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   const logout = useCallback(async (): Promise<void> => {
     try {
       setAuthState('loading')
-      
+
       console.log('[useLineAuth] Logging out...')
 
       // Clear tokens on server
@@ -321,9 +334,8 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       setTokenState('missing')
       setExpiresAt(null)
       setError(null)
-      
-      console.log('[useLineAuth] Logout successful')
 
+      console.log('[useLineAuth] Logout successful')
     } catch (error) {
       console.error('[useLineAuth] Logout failed:', error)
       // Even if server logout fails, clear local state
@@ -394,24 +406,24 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   // URL parameter handling for auth callbacks
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    
+
     if (urlParams.get('auth_success') === 'true') {
       const lineUserId = urlParams.get('line_user_id')
       const lineName = urlParams.get('line_name')
-      
+
       console.log('[useLineAuth] Authentication success detected in URL')
-      
+
       // Clear URL parameters
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete('auth_success')
-      newUrl.searchParams.delete('line_user_id')  
+      newUrl.searchParams.delete('line_user_id')
       newUrl.searchParams.delete('line_name')
       window.history.replaceState({}, '', newUrl.pathname + newUrl.search)
-      
+
       // Update state and trigger success callback
       setAuthState('authenticated')
       setError(null)
-      
+
       if (onAuthSuccess) {
         onAuthSuccess({
           success: true,
@@ -419,9 +431,9 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
           line_name: lineName ? decodeURIComponent(lineName) : undefined,
         })
       }
-      
+
       toast.success('LINEログインが完了しました')
-      
+
       // Re-check auth status to get token expiration info
       setTimeout(checkAuthStatus, 1000)
     }
@@ -434,12 +446,12 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
     expiresAt,
     error,
     isRefreshing,
-    
+
     // Computed values
     isAuthenticated: authState === 'authenticated',
     isLoading: authState === 'loading',
     needsRefresh: tokenState === 'near_expiry' || tokenState === 'expired',
-    
+
     // Actions
     login,
     logout,

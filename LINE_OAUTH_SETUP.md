@@ -20,6 +20,7 @@ LINE認証で「Invalid redirect_uri value」エラーが発生しています�
 「コールバックURL」セクションで以下のURLを**すべて**追加してください：
 
 ```
+https://bocker.jp/ja/reservation/auth/callback
 https://bocker-project.vercel.app/ja/reservation/auth/callback
 https://barely-prague-cargo-charger.trycloudflare.com/ja/reservation/auth/callback  
 http://localhost:3000/ja/reservation/auth/callback
@@ -41,10 +42,12 @@ http://localhost:3000/ja/reservation/auth/callback
 - その場合は新しいドメインもLINE開発者コンソールに追加する必要があります
 
 ### 現在のリダイレクトURI生成ロジック
-コード修正により、以下の優先順位でリダイレクトURIを決定します：
-1. `customRedirectUri`が指定されている場合はそれを使用
-2. `NEXT_PUBLIC_DEVELOP_URL`環境変数が設定されている場合はそのオリジンを使用
-3. 上記がない場合は`window.location.origin`を使用
+以下の優先順位でリダイレクトURIを決定します：
+1. `customRedirectUri` が指定されている場合はそれを使用
+2. `localhost` で動作中かつ `NEXT_PUBLIC_DEVELOP_URL` が設定されている場合、そのオリジンを使用
+3. それ以外は常に `window.location.origin` を使用（Preview/Production 環境でドメイン不一致を防止）
+
+注: Production 環境では `NEXT_PUBLIC_DEVELOP_URL` は使用されません（設定されていても無視されます）。
 
 ### 環境変数の設定
 `.env.local`ファイルに以下が追加されました：
