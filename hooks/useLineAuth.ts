@@ -231,10 +231,16 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       setAuthState('loading')
       setError(null)
 
-      // Determine redirect URI
+      // Determine redirect URI - use environment URL for consistency
       const redirectUri = customRedirectUri || (() => {
         const locale = window.location.pathname.split('/')[1] || 'ja'
-        return `${window.location.origin}/${locale}/reservation/auth/callback`
+        
+        // Use environment-configured URL to avoid issues with dynamic domains (tunnels, etc.)
+        const baseUrl = process.env.NEXT_PUBLIC_DEVELOP_URL 
+          ? new URL(process.env.NEXT_PUBLIC_DEVELOP_URL).origin
+          : window.location.origin
+          
+        return `${baseUrl}/${locale}/reservation/auth/callback`
       })()
 
       console.log('[useLineAuth] Starting authentication flow:', {
