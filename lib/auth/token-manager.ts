@@ -3,6 +3,7 @@ import { seal, open, constantTimeEqual } from '@/lib/crypto-server'
 import { cookies } from 'next/headers'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
 
 /**
  * LINE Token Management System
@@ -257,8 +258,8 @@ export async function refreshLineToken(): Promise<LineTokens | null> {
       throw new Error('LINE context not found (tenant/org). Please re-authenticate.')
     }
     const apiConfig = await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
-      tenant_id: tenantId as any,
-      org_id: orgId as any,
+      tenant_id: tenantId as Id<'tenant'>,
+      org_id: orgId as Id<'organization'>,
     })
     const clientId = apiConfig?.line_channel_id
     const clientSecret = apiConfig?.line_channel_secret

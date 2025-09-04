@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -103,6 +103,18 @@ export function UTMPresets({ onSelectPreset, selectedPreset }: UTMPresetsProps) 
     utm_parameters: {},
   })
 
+  // デフォルトプリセットの初期化
+  const initializeDefaultPresets = useCallback(() => {
+    const defaultPresetsWithIds: Preset[] = DEFAULT_PRESETS.map((preset) => ({
+      ...preset,
+      id: `default-${preset.name.toLowerCase().replace(/\s+/g, '-')}`,
+      created_at: new Date(),
+      is_saved: true,
+    }))
+    setPresets(defaultPresetsWithIds)
+    savePresets(defaultPresetsWithIds)
+  }, [])
+
   // ローカルストレージからプリセットを読み込み
   useEffect(() => {
     const savedPresets = localStorage.getItem('utm-presets')
@@ -117,19 +129,7 @@ export function UTMPresets({ onSelectPreset, selectedPreset }: UTMPresetsProps) 
     } else {
       initializeDefaultPresets()
     }
-  }, [])
-
-  // デフォルトプリセットの初期化
-  const initializeDefaultPresets = () => {
-    const defaultPresetsWithIds: Preset[] = DEFAULT_PRESETS.map((preset) => ({
-      ...preset,
-      id: `default-${preset.name.toLowerCase().replace(/\s+/g, '-')}`,
-      created_at: new Date(),
-      is_saved: true,
-    }))
-    setPresets(defaultPresetsWithIds)
-    savePresets(defaultPresetsWithIds)
-  }
+  }, [initializeDefaultPresets])
 
   // プリセットをローカルストレージに保存
   const savePresets = (presetsToSave: Preset[]) => {

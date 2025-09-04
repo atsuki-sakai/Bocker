@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createPreAuth, ccFromVerifier, OAUTH_COOKIE_PREFIX, OAUTH_TTL_MS } from '@/lib/line-oauth'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
 import { seal } from '@/lib/crypto-server'
 import { z } from 'zod'
 
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     // Fetch LINE channel configuration from Convex (DB) by tenant/org
     const apiConfig = await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
-      tenant_id: tenantId as any,
-      org_id: orgId as any,
+      tenant_id: tenantId as Id<'tenant'>,
+      org_id: orgId as Id<'organization'>,
     })
     const channelId = apiConfig?.line_channel_id
     if (!channelId) {

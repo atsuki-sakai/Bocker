@@ -7,6 +7,7 @@ import { verifyLineIdToken, type LineIdTokenPayload } from '@/lib/verify-line-id
 import { storeTokens, type LineTokens } from '@/lib/auth/token-manager'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
 import { z } from 'zod'
 
 /**
@@ -145,8 +146,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Fetch LINE channel config from Convex using tenant/org stored in PreAuth
     const apiConfig = (preAuth.tenantId && preAuth.orgId)
       ? await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
-          tenant_id: preAuth.tenantId as any,
-          org_id: preAuth.orgId as any,
+          tenant_id: preAuth.tenantId as Id<'tenant'>,
+          org_id: preAuth.orgId as Id<'organization'>,
         })
       : null
 
