@@ -5,7 +5,7 @@ import { ReservationRepository } from '@/services/supabase/repositories/reservat
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { reservation_id: string } }
+  context: { params: Promise<{ reservation_id: string }> }
 ) {
   try {
     const session = await getCustomerSession()
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { reservation_id } = params
+    const { reservation_id } = await context.params
     if (!reservation_id) {
       return NextResponse.json({ error: 'reservation_id is required' }, { status: 400 })
     }

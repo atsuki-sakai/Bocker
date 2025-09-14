@@ -365,7 +365,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
         setTenantId(res.tenant_id)
       }
     })
-  }, [router, orgId, locale, isProcessingLineCallback, isEmailLogin])
+  }, [router, orgId, locale, isProcessingLineCallback, isEmailLogin, tenantId])
 
   // Show loading state for initial data or LINE callback processing
   if (!organization || !tenantId || !orgId || isProcessingLineCallback) {
