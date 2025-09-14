@@ -13,9 +13,6 @@ import { useRouter } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { getSupabaseAdminService } from '@/services/supabase/SupabaseService'
-import { ReservationRepository } from '@/services/supabase/repositories/reservation/ReservationRepository'
-import type { RowType } from '@/services/supabase/SupabaseService'
 import type { IntegratedReservation } from '@/hooks/useIntegratedReservations'
 import { toast } from 'sonner'
 import { cancelableDeadline } from '@/convex/reservation/reservation.helpers'
@@ -147,38 +144,25 @@ export function ReservationDetailPageClient({
         return
       }
 
-      // SupabaseのUUID形式の場合
+      // SupabaseのUUID形式の場合（クライアントからはAPI経由で取得）
       if (!isConvexId) {
         try {
-          const supabaseAdmin = getSupabaseAdminService()
-          const reservationRepo = new ReservationRepository(supabaseAdmin)
-
-          // UIDで予約を取得
-          const reservation = await reservationRepo.findByUid(reservationId)
-
-          if (!reservation) {
-            toast.error('予約が見つかりません')
+          const res = await fetch(`/api/customer/reservations/${reservationId}`)
+          if (!res.ok) {
+            if (res.status === 404) {
+              toast.error('予約が見つかりません')
+            } else if (res.status === 403) {
+              toast.error('この予約にアクセスする権限がありません')
+            } else if (res.status === 401) {
+              toast.error('認証が必要です')
+            } else {
+              toast.error('予約の取得に失敗しました')
+            }
             router.push(`/customer/${orgId}/${customerUid}/reservation`)
             return
           }
 
-          // 顧客IDの確認
-          if (reservation.customer_uid !== customerUid) {
-            toast.error('この予約にアクセスする権限がありません')
-            router.push(`/customer/${orgId}/${customerUid}/reservation`)
-            return
-          }
-
-          // 予約詳細を取得
-          const supabaseService = getSupabaseAdminService()
-          const { data: details } = await supabaseService.listRecords('reservation_detail', {
-            filters: {
-              _convex_reservation_id: reservation._convex_id,
-            } as Partial<RowType<'reservation_detail'>>,
-            pageSize: 1,
-          })
-
-          const detail = details?.[0] || null
+          const { reservation, detail } = await res.json()
 
           setReservationData({
             id: reservation.uid,

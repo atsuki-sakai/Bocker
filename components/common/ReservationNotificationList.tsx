@@ -1,11 +1,16 @@
 'use client'
 
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useTenantAndOrganization } from "@/hooks/useTenantAndOrganization";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckCircle2, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { CheckCircle2, Trash2 } from 'lucide-react'
+import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Button } from '../ui/button'
 import { Id } from '@/convex/_generated/dataModel'
@@ -88,12 +93,7 @@ export default function ReservationNotificationList() {
                   )}
                 </div>
               </AccordionTrigger>
-              <Button
-                className="mr-5"
-                variant="destructive"
-                size="sm"
-                onClick={() => handleKillAllNotifications()}
-              >
+              <Button className="mr-5" size="sm" onClick={() => handleKillAllNotifications()}>
                 <span className="text-xs hidden md:block">全て確認済みにする</span>
                 <span className="text-xs md:hidden">全て確認</span>
                 <Trash2 className="w-3 h-3" />

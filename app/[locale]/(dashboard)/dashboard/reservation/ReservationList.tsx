@@ -45,7 +45,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 // 予約ステータスの表示設定
 const statusConfig = {
-  confirmed: { label: '予約受付済み', color: 'bg-info-foreground' },
+  confirmed: { label: '予約受付済み', color: 'bg-accent-foreground' },
   pending: { label: '保留中', color: 'bg-warning-foreground' },
   completed: { label: '完了', color: 'bg-success' },
   cancelled: { label: 'キャンセル', color: 'bg-destructive' },
@@ -533,7 +533,7 @@ export default function ReservationList() {
                   {/* ステータス */}
                   <TableCell className="px-4">
                     <Badge
-                      className={`${statusConfig[reservation.status as keyof typeof statusConfig]?.color || 'bg-muted'} text-white text-nowrap`}
+                      className={`${statusConfig[reservation.status as keyof typeof statusConfig]?.color || 'bg-muted'} text-nowrap`}
                     >
                       {statusConfig[reservation.status as keyof typeof statusConfig]?.label ||
                         reservation.status}
