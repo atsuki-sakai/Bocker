@@ -131,10 +131,34 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API /api/auth/session] Processing session retrieval request...');
+    // URLからtenantIdとorgIdを取得
+    const { searchParams } = new URL(request.url);
+    const requestedTenantId = searchParams.get('tenantId');
+    const requestedOrgId = searchParams.get('orgId');
+    
+    console.log('[API /api/auth/session] Processing session retrieval request:', {
+      requestedTenantId,
+      requestedOrgId,
+      url: request.url,
+      host: request.headers.get('host'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+      userAgent: request.headers.get('User-Agent')?.substring(0, 50),
+      cookieHeader: request.headers.get('cookie')?.substring(0, 100),
+    });
 
     const cookieStore = await cookies();
     const token = cookieStore.get(LOGIN_SESSION_KEY)?.value;
+    
+    // Debug: List all available cookies
+    const allCookies = cookieStore.getAll();
+    console.log('[API /api/auth/session] Cookie debug:', {
+      sessionCookieName: LOGIN_SESSION_KEY,
+      sessionTokenExists: !!token,
+      sessionTokenLength: token?.length || 0,
+      allCookieNames: allCookies.map(c => c.name),
+      cookieCount: allCookies.length,
+    });
 
     if (!token) {
       console.log('[API /api/auth/session] No session token found');
@@ -144,11 +168,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // URLからtenantIdとorgIdを取得
-    const { searchParams } = new URL(request.url);
-    const requestedTenantId = searchParams.get('tenantId');
-    const requestedOrgId = searchParams.get('orgId');
-
     if (!requestedTenantId || !requestedOrgId) {
       return NextResponse.json({ error: 'Missing store information' }, { status: 400 });
     }
@@ -156,6 +175,17 @@ export async function GET(request: NextRequest) {
     let currentSession: SessionPayload;
     try {
       const decodedPayload = jwt.verify(token, APP_JWT_SECRET) as SessionPayload & { name?: string };
+      
+      console.log('[API /api/auth/session] Successfully decoded JWT token:', {
+        customerUid: decodedPayload.customerUid,
+        email: decodedPayload.email,
+        tenantId: decodedPayload.tenantId,
+        orgId: decodedPayload.orgId,
+        customerName: decodedPayload.customerName,
+        name: decodedPayload.name,
+        lineUserId: decodedPayload.lineUserId,
+        target_type: decodedPayload.target_type,
+      });
       
       // Handle backward compatibility: if 'name' exists but 'customerName' doesn't, use 'name'
       if (decodedPayload.name && !decodedPayload.customerName) {
@@ -169,8 +199,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
+    console.log('[API /api/auth/session] Session comparison:', {
+      currentTenantId: currentSession.tenantId,
+      requestedTenantId: requestedTenantId,
+      currentOrgId: currentSession.orgId, 
+      requestedOrgId: requestedOrgId,
+      tenantMatches: currentSession.tenantId === requestedTenantId,
+      orgMatches: currentSession.orgId === requestedOrgId,
+      bothMatch: currentSession.tenantId === requestedTenantId && currentSession.orgId === requestedOrgId,
+    });
+
     // 同じ店舗の場合は現在のセッションを返す
     if (currentSession.tenantId === requestedTenantId && currentSession.orgId === requestedOrgId) {
+      console.log('[API /api/auth/session] Session matches requested tenant/org, returning existing session');
       return NextResponse.json({ session: currentSession }, { status: 200 });
     }
 

@@ -23,6 +23,7 @@ import { useAnalytics } from '@/hooks/useAnalytics'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { ZodTextField } from '@/components/common'
 import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
+import { performCompleteLogout } from '@/lib/auth/logout'
 
 const emailLoginSchema = z.object({
   email: z
@@ -216,29 +217,47 @@ export default function ReservePage() {
         setTenantId(res.tenant_id)
       }
     })
+    // デモログイン用の自動入力（本番ドメインのみ）
     setDemoLogin()
-    // サーバーAPI経由でセッション有無を判定
-    fetch('/api/auth/session', { credentials: 'include' })
+  }, [orgId, setDemoLogin])
+
+  // セッションがある場合は自動リダイレクト（サーバー確認ベース）
+  useEffect(() => {
+    if (!tenantId) return
+
+    // サーバーAPIでセッションの妥当性を確認（テナント/組織一致もチェック）
+    const url = `/api/auth/session?tenantId=${encodeURIComponent(tenantId)}&orgId=${encodeURIComponent(orgId)}`
+    fetch(url, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) {
-          console.log('[useEffect] Session check failed:', res)
-          // セッションが見つからない場合は正常な動作なので、エラーとして扱わない
+          console.log('[session-check] Session check failed', { status: res.status })
+          if (res.status === 401) {
+            // 無効なセッションはクリーンアップ
+            performCompleteLogout()
+          }
           return null
         }
-        console.log('[useEffect] Session check successful:', res)
         return res.json()
       })
       .then((data) => {
-        console.log('[useEffect] Session check data:', data)
         if (data && data.session) {
+          // ログイン済み → カレンダーへ自動遷移
           router.push(`/reservation/${orgId}/calendar`)
         }
       })
       .catch((error) => {
-        // ネットワークエラーなど、本当のエラーのみログ出力
-        console.error('Session check failed:', error)
+        console.error('[session-check] Error:', error)
       })
-  }, [router, orgId, tenantId, setDemoLogin])
+  }, [tenantId, orgId, router])
+
+  // セッション削除の無限ループを防ぐため、適切な条件でのみチェック実行
+  const shouldCheckSession = tenantId && orgId
+
+  console.log('[Page] Session check decision:', {
+    shouldCheckSession,
+    tenantId: !!tenantId,
+    orgId: !!orgId,
+  })
 
   if (!organization || !tenantId || apiConfig === undefined) {
     return <Loading />
@@ -368,8 +387,12 @@ export default function ReservePage() {
                     tenantId={tenantId}
                     orgId={orgId}
                     isCustomerLogin={false}
-                    onSuccess={() => {
-                      router.push(`/reservation/${orgId}/calendar`)
+                    onSuccess={(data) => {
+                      console.log('[LINE Login Success]', data)
+                      // セッション作成成功時に十分な時間を待ってからリダイレクト
+                      setTimeout(() => {
+                        router.push(`/reservation/${orgId}/calendar`)
+                      }, 1000)
                     }}
                   />
                 </div>

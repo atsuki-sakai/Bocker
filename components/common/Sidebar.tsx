@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import { ModeToggle } from './'
 import { useTranslations } from 'next-intl'
@@ -35,15 +35,15 @@ function classNames(...classes: string[]) {
 // プラン名を正規化する関数（データベースの値をTypeScript型に合わせる）
 function normalizePlanName(planName: string | undefined | null): SubscriptionPlanName {
   console.log('[normalizePlanName] Input:', planName, 'Type:', typeof planName)
-  
+
   if (!planName) {
     console.log('[normalizePlanName] planName is falsy, returning UNKNOWN')
     return 'UNKNOWN'
   }
-  
+
   const normalizedName = planName.toUpperCase().trim()
   console.log('[normalizePlanName] Normalized:', normalizedName)
-  
+
   switch (normalizedName) {
     case 'MICRO':
       console.log('[normalizePlanName] Matched MICRO')
@@ -155,15 +155,6 @@ const SidebarNavigation = memo(
       setOpenGroups(newOpenGroups)
     }, [getOpenGroups])
 
-    // グループがアクティブかどうかを判定
-    const isGroupActive = useCallback(
-      (groupId: string) => {
-        const activeGroup = getActiveGroup()
-        return activeGroup?.id === groupId
-      },
-      [getActiveGroup]
-    )
-
     return (
       <nav className="flex flex-1 flex-col">
         {!isSubscriptionActive ? (
@@ -192,7 +183,7 @@ const SidebarNavigation = memo(
                   className={classNames(
                     pathname === `/dashboard/staff/${staffId}/my-page`
                       ? 'text-accent-foreground bg-accent'
-                      : 'text-neon bg-neon-foreground border border-neon  font-light',
+                      : 'text-primary bg-background border border-border font-light',
                     'w-full group flex gap-x-3 rounded-md p-2 text-sm/6 items-center'
                   )}
                 >
@@ -201,14 +192,14 @@ const SidebarNavigation = memo(
                     className={classNames(
                       pathname === `/dashboard/staff/${staffId}/my-page`
                         ? 'text-accent-foreground bg-accent'
-                        : 'text-neon',
+                        : 'text-primary',
                       'size-4 shrink-0'
                     )}
                   />
                   <p className="w-full text-nowrap">{tNav('myPage')}</p>
                   {pathname === `/dashboard/staff/${staffId}/my-page` && (
                     <div className="w-full flex justify-end items-center pr-2">
-                      <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                      <div className="h-3 w-3 bg-accent border-ring border rounded-full" />
                     </div>
                   )}
                 </Link>
@@ -244,7 +235,7 @@ const SidebarNavigation = memo(
                   <p className="w-full text-nowrap">{tNav(DASHBOARD_ITEM.name)}</p>
                   {pathname === DASHBOARD_ITEM.href && (
                     <div className="w-full flex justify-end items-center pr-2">
-                      <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
+                      <div className="h-3 w-3 bg-accent border-ring border rounded-full" />
                     </div>
                   )}
                 </Link>
@@ -259,24 +250,15 @@ const SidebarNavigation = memo(
               className="w-full space-y-2"
             >
               {filteredGroups.map((group) => {
-                const isActive = isGroupActive(group.id)
                 return (
                   <AccordionItem key={group.id} value={group.id} className="border-b-0">
                     <AccordionTrigger
                       className={classNames(
                         'hover:no-underline py-2 px-2 text-sm font-medium rounded-md transition-colors',
-                        isActive
-                          ? 'text-accent-foreground bg-accent'
-                          : 'text-primary hover:bg-primary-foreground',
                         isMobile ? 'text-base' : ''
                       )}
                     >
-                      <div className="flex items-center gap-2">
-                        {tGroups(group.name)}
-                        {isActive && (
-                          <div className="h-2 w-2 bg-accent-2 ring-border ring-1 rounded-full" />
-                        )}
-                      </div>
+                      <div className="flex items-center gap-2">{tGroups(group.name)}</div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <ul className="space-y-2">
@@ -301,11 +283,6 @@ const SidebarNavigation = memo(
                                   )}
                                 />
                                 <p className="w-full text-nowrap">{tNav(item.name)}</p>
-                                {isCurrent && (
-                                  <div className="w-full flex justify-end items-center pr-2">
-                                    <div className="h-3 w-3 bg-accent-2 border-ring border rounded-full" />
-                                  </div>
-                                )}
                               </Link>
                             </li>
                           )

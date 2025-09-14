@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
-import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
+import { useLineAuth } from '@/hooks/useLineAuth'
 import { api } from '@/convex/_generated/api'
 import { fetchQuery } from 'convex/nextjs'
 import { Card, CardContent } from '@/components/ui/card'
@@ -20,56 +20,26 @@ export default function ReserveRedirectPage() {
   const [tenantId, setTenantId] = useState<Id<'tenant'> | null>(null)
 
   const {
-    handleLineAuth,
-    isProcessing: isProcessingLineCallback,
+    isLoading: isProcessingLineCallback,
     error: lineCallbackError,
-  } = useLineAuthHandler({
-    onSuccess: async () => {
+  } = useLineAuth({
+    tenantId: tenantId || undefined,
+    orgId: orgId || undefined,
+    isCustomerLogin: false,
+    onAuthSuccess: async () => {
       if (orgId) {
         router.push(`/${locale}/reservation/${orgId}/calendar`)
       }
     },
   })
 
-  // Handle LINE callback detection (similar to customer login page)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const hasLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
+  // LINE authentication is now handled automatically by useLineAuth hook
 
-    if (hasLineCallback && orgId && tenantId && !isProcessingLineCallback) {
-      handleLineAuth(tenantId, orgId, false) // false for reservation login
-    }
-  }, [orgId, tenantId, handleLineAuth, isProcessingLineCallback])
-
-  // Get organization info from state or URL
+  // Get organization info from URL path (removed dependency on deleted /api/auth/line-state)
   useEffect(() => {
     async function getOrgInfo() {
       try {
-        const urlParams = new URLSearchParams(window.location.search)
-        const state = urlParams.get('state')
-
-        // Get state information
-        const stateEndpoint = state
-          ? `/api/auth/line-state?stateId=${state}`
-          : '/api/auth/line-state?skipValidation=true'
-
-        const stateResponse = await fetch(stateEndpoint, {
-          method: 'GET',
-          credentials: 'include',
-        })
-
-        if (stateResponse.ok) {
-          const stateData = await stateResponse.json()
-          if (stateData?.orgId && stateData?.tenantId) {
-            setOrgId(stateData.orgId)
-            setTenantId(stateData.tenantId)
-            // 組織IDが取得できた場合、直接calendarページに遷移
-            router.push(`/${locale}/reservation/${stateData.orgId}/calendar`)
-            return
-          }
-        }
-
-        // Fallback: try to get from URL path
+        // Get org_id from URL path directly (no longer using deleted line-state API)
         const pathParts = window.location.pathname.split('/').filter(Boolean)
         const reservationIndex = pathParts.indexOf('reservation')
         const pathOrgId =
@@ -77,7 +47,8 @@ export default function ReserveRedirectPage() {
             ? pathParts[reservationIndex + 1]
             : undefined
 
-        if (pathOrgId) {
+        if (pathOrgId && pathOrgId !== 'auth') {
+          // Validate that this is a real organization ID
           const existOrg = await fetchQuery(api.organization.query.findByOrgId, {
             org_id: pathOrgId as Id<'organization'>,
           })
@@ -86,6 +57,20 @@ export default function ReserveRedirectPage() {
             setTenantId(existOrg.tenant_id)
             // 組織IDが取得できた場合、直接calendarページに遷移
             router.push(`/${locale}/reservation/${pathOrgId}/calendar`)
+          } else {
+            console.warn('[ReserveRedirectPage] Organization not found:', pathOrgId)
+            showErrorToast('組織が見つかりません')
+          }
+        } else {
+          // If no org_id in URL, redirect to a default org (the one with LINE config)
+          const defaultOrgId = 'v5799kb53q14k5tyf4y0kj636d7jhz8p'
+          const existOrg = await fetchQuery(api.organization.query.findByOrgId, {
+            org_id: defaultOrgId as Id<'organization'>,
+          })
+          if (existOrg) {
+            setOrgId(defaultOrgId as Id<'organization'>)
+            setTenantId(existOrg.tenant_id)
+            router.push(`/${locale}/reservation/${defaultOrgId}/calendar`)
           }
         }
       } catch (error) {

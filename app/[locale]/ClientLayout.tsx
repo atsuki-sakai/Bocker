@@ -36,7 +36,7 @@ export default function RootLayout({
           <ConvexQueryCacheProvider>
             <GoogleAnalytics />
             <AnalyticsTracker />
-            <div className="pb-12 md:pb-20">{children}</div>
+            {children}
             <Toaster position="bottom-right" richColors />
           </ConvexQueryCacheProvider>
         </ConvexClientProvider>

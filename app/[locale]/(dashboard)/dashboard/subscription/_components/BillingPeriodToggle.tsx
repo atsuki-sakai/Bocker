@@ -33,7 +33,7 @@ export default function BillingPeriodToggle({
       cn(
         'px-4 py-2 rounded-full text-sm font-bold',
         billingPeriod === 'month'
-          ? 'bg-accent-2 shadow-sm text-accent-2-foreground'
+          ? 'bg-primary shadow-sm text-primary-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
     [billingPeriod]
@@ -44,7 +44,7 @@ export default function BillingPeriodToggle({
       cn(
         'px-4 py-2 rounded-full text-sm font-bold',
         billingPeriod === 'year'
-          ? 'bg-accent-2 shadow-sm text-accent-2-foreground'
+          ? 'bg-primary shadow-sm text-primary-foreground'
           : 'text-secondary-foreground hover:text-secondary-foreground'
       ),
     [billingPeriod]

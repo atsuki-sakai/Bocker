@@ -91,14 +91,14 @@ export default function SignInForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted">
+    <div className="flex items-center justify-center  h-screen">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="w-full max-w-md p-2"
+        className="w-full max-w-md p-2 "
       >
-        <Card className="border-0 shadow-lg ">
+        <Card>
           <div className="flex justify-end p-2">
             <LanguageSwitcher />
           </div>

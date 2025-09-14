@@ -112,7 +112,7 @@ const PlanCard = memo(function PlanCard({
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
             <CardTitle
-              className={`text-xl font-bold bg-gradient-to-r ${highlightColor} bg-clip-text text-transparent`}
+              className={`text-xl font-bold bg-gradient-to-r ${highlightColor} bg-clip-text`}
             >
               {title}
             </CardTitle>

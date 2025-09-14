@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { useLiff } from '@/hooks/useLiff'
 import { toast } from 'sonner'
 import { Loading } from '@/components/common'
 
@@ -12,12 +11,11 @@ export default function CustomerRedirectPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const locale = useLocale()
-  const { liff, isLoading: liffIsLoading } = useLiff()
   const [isProcessingCallback, setIsProcessingCallback] = useState(false)
 
   useEffect(() => {
     async function handleLineCallback() {
-      if (isProcessingCallback || liffIsLoading) return
+      if (isProcessingCallback) return
 
       // URLパラメータから情報を取得
       const liffRedirectUri = searchParams.get('liffRedirectUri')
@@ -94,7 +92,7 @@ export default function CustomerRedirectPage() {
     }
 
     handleLineCallback()
-  }, [router, locale, searchParams, liff, liffIsLoading, isProcessingCallback])
+  }, [router, locale, searchParams, isProcessingCallback])
 
   return <Loading />
 }

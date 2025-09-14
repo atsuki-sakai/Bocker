@@ -22,7 +22,7 @@ import Image from 'next/image'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { ZodTextField } from '@/components/common'
 import { OptimizedLineLoginButton } from '@/components/auth/OptimizedLineLoginButton'
-import { useLineAuthHandler } from '@/hooks/useLineAuthHandler'
+import { useLineAuth } from '@/hooks/useLineAuth'
 
 const emailLoginSchema = z.object({
   email: z
@@ -53,23 +53,60 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   const [isEmailLogin, setIsEmailLogin] = useState(false)
   const customerRepository = useMemo(() => new CustomerRepository(), [])
 
-  const {
-    handleLineAuth,
-    isProcessing: isProcessingLineCallback,
-    error: lineCallbackError,
-  } = useLineAuthHandler({
-    onSuccess: async () => {
-      // セッションからcustomerUidを取得
-      const sessionResponse = await fetch('/api/auth/session', {
-        method: 'GET',
-        credentials: 'include',
-      })
-
-      if (sessionResponse.ok) {
-        const sessionData = await sessionResponse.json()
-        if (sessionData.session && sessionData.session.customerUid) {
-          router.push(`/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`)
+  const { isLoading: isProcessingLineCallback, error: lineCallbackError } = useLineAuth({
+    tenantId: tenantId || undefined,
+    orgId: orgId || undefined,
+    isCustomerLogin: true,
+    onAuthSuccess: async () => {
+      try {
+        // orgId/tenantId を確実に解決
+        let ensuredTenantId = tenantId
+        if (!ensuredTenantId && orgId) {
+          const orgRes = await fetchQuery(api.organization.query.findByOrgId, { org_id: orgId })
+          if (orgRes?.tenant_id) ensuredTenantId = orgRes.tenant_id as Id<'tenant'>
         }
+        // orgId を URL パスからも解決（/ja/customer/{orgId}/auth/login）
+        let ensuredOrgId = orgId
+        if (!ensuredOrgId) {
+          const parts = window.location.pathname.split('/')
+          ensuredOrgId = (parts[3] as Id<'organization'>) || null
+        }
+        if (!ensuredOrgId) return
+
+        if (!ensuredTenantId && ensuredOrgId) {
+          const orgRes2 = await fetchQuery(api.organization.query.findByOrgId, { org_id: ensuredOrgId })
+          if (orgRes2?.tenant_id) ensuredTenantId = orgRes2.tenant_id as Id<'tenant'>
+        }
+        if (!ensuredTenantId) return
+
+        // まずLINEセッションからアプリセッションを作成（冪等）
+        await fetch('/api/auth/line-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ tenantId: ensuredTenantId || undefined, orgId: ensuredOrgId }),
+        }).catch(() => {})
+
+        // 反映待機（Cookie伝播）
+        await new Promise((r) => setTimeout(r, 500))
+
+        // セッションから customerUid を取得（テナント/組織指定）
+        if (ensuredTenantId && ensuredOrgId) {
+          const sessionResponse = await fetch(
+            `/api/auth/session?tenantId=${encodeURIComponent(ensuredTenantId)}&orgId=${encodeURIComponent(ensuredOrgId)}`,
+            { method: 'GET', credentials: 'include' }
+          )
+
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json()
+            if (sessionData.session && sessionData.session.customerUid) {
+              router.push(`/${locale}/customer/${ensuredOrgId}/${sessionData.session.customerUid}/profile`)
+              return
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[CustomerLogin:onAuthSuccess] Failed to resolve session:', e)
       }
     },
   })
@@ -81,18 +118,59 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
     })
   }, [params])
 
-  // Handle LINE callback（最適化版）
+  // auth_success が付いている場合に安全に最終遷移まで完了させるフォールバック
   useEffect(() => {
-    // メールログイン処理中はLINE認証をスキップ
-    if (isEmailLogin) return
+    const finalizeLogin = async () => {
+      try {
+        const url = new URL(window.location.href)
+        if (url.searchParams.get('auth_success') !== 'true') return
 
-    const urlParams = new URLSearchParams(window.location.search)
-    const hasLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
+        // URLからorgIdを解決
+        let ensuredOrgId = orgId
+        if (!ensuredOrgId) {
+          const parts = window.location.pathname.split('/')
+          ensuredOrgId = (parts[3] as Id<'organization'>) || null
+        }
+        if (!ensuredOrgId) return
 
-    if (hasLineCallback && orgId && tenantId && !isProcessingLineCallback) {
-      handleLineAuth(tenantId, orgId, true)
+        // tenantIdが未解決ならorgから取得
+        let ensuredTenantId = tenantId
+        if (!ensuredTenantId) {
+          const orgRes = await fetchQuery(api.organization.query.findByOrgId, { org_id: ensuredOrgId })
+          if (orgRes?.tenant_id) ensuredTenantId = orgRes.tenant_id as Id<'tenant'>
+        }
+        if (!ensuredTenantId) return
+
+        // 冪等にアプリセッション作成
+        await fetch('/api/auth/line-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ tenantId: ensuredTenantId, orgId: ensuredOrgId }),
+        }).catch(() => {})
+
+        await new Promise((r) => setTimeout(r, 500))
+
+        // セッション確認 → プロフィールへ
+        const res = await fetch(
+          `/api/auth/session?tenantId=${encodeURIComponent(ensuredTenantId)}&orgId=${encodeURIComponent(ensuredOrgId)}`,
+          { method: 'GET', credentials: 'include' }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.session?.customerUid) {
+            router.push(`/${locale}/customer/${ensuredOrgId}/${data.session.customerUid}/profile`)
+          }
+        }
+      } catch (e) {
+        console.warn('[CustomerLogin:finalizeLogin] Error:', e)
+      }
     }
-  }, [orgId, tenantId, handleLineAuth, isProcessingLineCallback, isEmailLogin])
+
+    finalizeLogin()
+  }, [orgId, tenantId, router, locale])
+
+  // LINE authentication is now handled automatically by useLineAuth hook
 
   const organization = useQuery(
     api.organization.config.query.findByTenantAndOrg,
@@ -115,28 +193,32 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
   const watchedEmail = watch('email')
 
   // セッション取得のリトライ関数
-  const retryGetSession = async (maxRetries = 3, delay = 100): Promise<{ session: { customerUid: string } } | null> => {
+  const retryGetSession = async (
+    maxRetries = 3,
+    delay = 100
+  ): Promise<{ session: { customerUid: string } } | null> => {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const sessionResponse = await fetch('/api/auth/session', {
-          method: 'GET',
-          credentials: 'include',
-        })
-        
+        if (!tenantId || !orgId) throw new Error('Missing tenant/org')
+        const sessionResponse = await fetch(
+          `/api/auth/session?tenantId=${encodeURIComponent(tenantId)}&orgId=${encodeURIComponent(orgId)}`,
+          { method: 'GET', credentials: 'include' }
+        )
+
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json()
           if (sessionData.session && sessionData.session.customerUid) {
             return sessionData
           }
         }
-        
+
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay))
+          await new Promise((resolve) => setTimeout(resolve, delay))
         }
       } catch (error) {
         console.error(`[retryGetSession] Attempt ${i + 1} failed:`, error)
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay))
+          await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
     }
@@ -185,23 +267,23 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
         }
 
         toast.success('ログインに成功しました')
-        
+
         // セッション取得のリトライ処理
         const sessionData = await retryGetSession()
-        
+
         if (sessionData && sessionData.session && sessionData.session.customerUid) {
           // セッション取得成功時
           const redirectUrl = `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
           console.log('[onSubmit] Redirecting to:', redirectUrl)
-          
+
           // router.pushを試行
           router.push(redirectUrl)
-          
+
           // 200ms後にローディング状態をリセット（リダイレクトが開始されてから）
           setTimeout(() => {
             setIsEmailLogin(false)
           }, 200)
-          
+
           // フォールバック: 800ms後にwindow.locationでリダイレクト
           setTimeout(() => {
             if (window.location.pathname.includes('/auth/login')) {
@@ -213,14 +295,14 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
           // セッション取得失敗時はexistingCustomer.uidを使用
           console.log('[onSubmit] Session retry failed, using existingCustomer.uid')
           const fallbackUrl = `/${locale}/customer/${orgId}/${existingCustomer.uid}/profile`
-          
+
           router.push(fallbackUrl)
-          
+
           // 200ms後にローディング状態をリセット
           setTimeout(() => {
             setIsEmailLogin(false)
           }, 200)
-          
+
           setTimeout(() => {
             if (window.location.pathname.includes('/auth/login')) {
               window.location.href = fallbackUrl
@@ -251,19 +333,20 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
     const isLineCallback = urlParams.get('liffRedirectUri') || urlParams.get('state')
 
     // Skip session check if processing LINE callback or email login
-    if (!isLineCallback && !isProcessingLineCallback) {
-      // サーバーAPI経由でセッション有無を判定
-      fetch('/api/auth/session', { method: 'GET', credentials: 'include' })
+    if (!isLineCallback && !isProcessingLineCallback && tenantId && orgId) {
+      // サーバーAPI経由でセッション有無を判定（テナント/組織指定）
+      fetch(
+        `/api/auth/session?tenantId=${encodeURIComponent(tenantId)}&orgId=${encodeURIComponent(orgId)}`,
+        { method: 'GET', credentials: 'include' }
+      )
         .then((res) => {
           if (!res.ok) {
             console.log('[useEffect] Session check failed:', res)
             return null
           }
-          console.log('[useEffect] Session check successful:', res)
           return res.json()
         })
         .then((data) => {
-          console.log('[useEffect] Session check data:', data)
           if (data && data.session && data.session.customerUid) {
             // ログイン済みの場合は顧客プロフィールページにリダイレクト
             router.push(`/${locale}/customer/${orgId}/${data.session.customerUid}/profile`)
@@ -323,7 +406,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-md shadow-lg border-none mt-4 bg-background overflow-hidden">
+        <Card className="w-full max-w-md shadow-lg border-none mt-4 overflow-hidden">
           <CardHeader className="relative w-full h-[220px] mb-2 overflow-hidden">
             <div className="absolute inset-0">
               {organization.config?.images && organization.config.images.length > 0 ? (
@@ -336,8 +419,8 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-palette-1 to-palette-2 opacity-30"></div>
-                  <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-background text-center">
-                    <h1 className="text-xl font-bold text-foreground">
+                  <div className="absolute bottom-0 left-0 right-0 py-1 text-center">
+                    <h1 className="text-xl font-bold text-primary-foreground text-shadow py-1 bg-black">
                       {organization.org.org_name}
                     </h1>
                     <p className="text-sm text-foreground mt-1">{organization.config.address}</p>
@@ -396,7 +479,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                 className="w-full text-base font-bold mt-6"
                 disabled={isSubmitting || isEmailLogin}
               >
-                {(isSubmitting || isEmailLogin) ? (
+                {isSubmitting || isEmailLogin ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-5 h-5 animate-spin" />
                     <span>{isEmailLogin ? 'リダイレクト中...' : 'ログイン中...'}</span>
@@ -447,19 +530,26 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                 orgId={orgId}
                 isCustomerLogin={true}
                 onSuccess={async () => {
-                  // セッションからcustomerUidを取得
-                  const sessionResponse = await fetch('/api/auth/session', {
-                    method: 'GET',
-                    credentials: 'include',
-                  })
+                  try {
+                    if (!tenantId || !orgId) return
+                    const sessionResponse = await fetch(
+                      `/api/auth/session?tenantId=${encodeURIComponent(tenantId)}&orgId=${encodeURIComponent(orgId)}`,
+                      { method: 'GET', credentials: 'include' }
+                    )
 
-                  if (sessionResponse.ok) {
-                    const sessionData = await sessionResponse.json()
-                    if (sessionData.session && sessionData.session.customerUid) {
-                      router.push(
-                        `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
-                      )
+                    if (sessionResponse.ok) {
+                      const sessionData = await sessionResponse.json()
+                      if (sessionData.session && sessionData.session.customerUid) {
+                        router.push(
+                          `/${locale}/customer/${orgId}/${sessionData.session.customerUid}/profile`
+                        )
+                      }
                     }
+                  } catch (e) {
+                    console.warn(
+                      '[OptimizedLineLoginButton:onSuccess] Failed to resolve session:',
+                      e
+                    )
                   }
                 }}
               />

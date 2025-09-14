@@ -1,21 +1,19 @@
-// /hooks/useLineAuth.ts
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 
 /**
- * Modern LINE OAuth Authentication Hook
+ * LINE OAuth 2.1 認証用フック（簡潔版）
  *
- * Provides comprehensive LINE authentication management with:
- * - Automatic token refresh monitoring
- * - Secure authentication flow initiation
- * - Token state monitoring with server-side validation
- * - Error handling with user-friendly messages
- * - TypeScript support for better DX
+ * LINE公式のベストプラクティスに準拠した実装：
+ * - サーバー管理の PKCE（OAuth 2.1）フロー
+ * - トークンの自動リフレッシュ監視
+ * - HttpOnly クッキーによる安全なトークン保存
+ * - ユーザーに配慮したエラーハンドリング
  */
 
-// Authentication states
+// 認証状態
 export type LineAuthState =
   | 'loading' // Initial loading or checking auth state
   | 'authenticated' // User is authenticated with valid tokens
@@ -23,24 +21,23 @@ export type LineAuthState =
   | 'refreshing' // Token is being refreshed
   | 'error' // Authentication error occurred
 
-// Token states from server
+// サーバーからのトークン状態
 export type ServerTokenState = 'valid' | 'near_expiry' | 'expired' | 'missing' | 'invalid'
 
-// Hook configuration options
+// フックの設定オプション
 export interface UseLineAuthOptions {
   tenantId?: string
   orgId?: string
   isCustomerLogin?: boolean
-  redirectUri?: string
   scope?: string
-  autoRefresh?: boolean // Enable automatic token refresh (default: true)
-  refreshCheckInterval?: number // Interval for checking token status in ms (default: 60000)
+  autoRefresh?: boolean
+  refreshCheckInterval?: number
   onAuthSuccess?: (data: AuthSuccessData) => void
   onAuthError?: (error: Error) => void
   onTokenRefreshed?: () => void
 }
 
-// Authentication success response
+// 認証成功時のレスポンス
 export interface AuthSuccessData {
   success: boolean
   customerUid?: string
@@ -49,7 +46,7 @@ export interface AuthSuccessData {
   message?: string
 }
 
-// Token status from server API
+// サーバーAPIからのトークン状態レスポンス
 interface TokenStatusResponse {
   tokenState: ServerTokenState
   isAuthenticated: boolean
@@ -59,19 +56,17 @@ interface TokenStatusResponse {
   isValid: boolean
 }
 
-// Refresh response from server API
+// サーバーAPIからのリフレッシュ結果レスポンス
 interface RefreshResponse {
   success: boolean
   message: string
   tokenState?: ServerTokenState
   expiresAt?: string
-  expiresInMs?: number
   refreshed?: boolean
   error?: string
 }
 
 export function useLineAuth(options: UseLineAuthOptions = {}) {
-  // Configuration with defaults
   const {
     tenantId,
     orgId,
@@ -84,20 +79,18 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
     onTokenRefreshed,
   } = options
 
-  // State management
+  // 状態管理
   const [authState, setAuthState] = useState<LineAuthState>('loading')
   const [tokenState, setTokenState] = useState<ServerTokenState | null>(null)
   const [expiresAt, setExpiresAt] = useState<Date | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Refs for cleanup and abort control
+  // クリーンアップ／中断制御用の参照
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  /**
-   * Check current authentication status from server
-   */
+  /** サーバーに現在の認証状態を確認 */
   const checkAuthStatus = useCallback(async (): Promise<boolean> => {
     try {
       const controller = new AbortController()
@@ -110,15 +103,12 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       })
 
       if (!response.ok) {
-        console.warn('[useLineAuth] Auth status check failed:', response.status)
         setAuthState('unauthenticated')
         setTokenState('missing')
         return false
       }
 
       const data: TokenStatusResponse = await response.json()
-
-      console.log('[useLineAuth] Auth status:', data)
 
       setTokenState(data.tokenState)
       setExpiresAt(data.expiresAt ? new Date(data.expiresAt) : null)
@@ -145,6 +135,17 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
     }
   }, [])
 
+  // Type guard for window.liff.logout
+  const hasLiffLogout = (): boolean => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w: any = typeof window !== 'undefined' ? window : undefined
+      return !!(w && w.liff && typeof w.liff.logout === 'function')
+    } catch {
+      return false
+    }
+  }
+
   /**
    * Refresh authentication token
    */
@@ -155,23 +156,15 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
     setAuthState('refreshing')
 
     try {
-      const controller = new AbortController()
-      abortControllerRef.current = controller
-
-      console.log('[useLineAuth] Refreshing token...')
-
       const response = await fetch('/api/auth/line/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
         credentials: 'include',
       })
 
       const data: RefreshResponse = await response.json()
 
       if (!response.ok || !data.success) {
-        console.warn('[useLineAuth] Token refresh failed:', data)
-
         if (data.error === 'refresh_failed' || data.error === 'no_tokens') {
           setAuthState('unauthenticated')
           setTokenState('missing')
@@ -181,8 +174,6 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
         }
         return false
       }
-
-      console.log('[useLineAuth] Token refreshed successfully')
 
       setTokenState(data.tokenState || 'valid')
       setExpiresAt(data.expiresAt ? new Date(data.expiresAt) : null)
@@ -212,107 +203,87 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   /**
    * Start LINE OAuth authentication flow
    */
-  const login = useCallback(
-    async (customRedirectUri?: string): Promise<void> => {
-      if (!tenantId || !orgId) {
-        const error = new Error('Tenant ID and Organization ID are required for authentication')
-        setError(error)
-        if (onAuthError) onAuthError(error)
-        return
-      }
+  const login = useCallback(async (): Promise<void> => {
+    if (!tenantId || !orgId) {
+      const error = new Error('Tenant ID and Organization ID are required for authentication')
+      setError(error)
+      if (onAuthError) onAuthError(error)
+      return
+    }
 
-      try {
-        setAuthState('loading')
-        setError(null)
+    try {
+      setAuthState('loading')
+      setError(null)
 
-        // Determine redirect URI
-        // - Prefer provided customRedirectUri
-        // - On localhost, allow overriding with NEXT_PUBLIC_DEVELOP_URL (if set)
-        // - Otherwise, use the current origin to avoid mismatches in production
-        const redirectUri =
-          customRedirectUri ||
-          (() => {
-            const locale = window.location.pathname.split('/')[1] || 'ja'
+      // Compute redirect URI with NEXT_PUBLIC_DEVELOP_URL support
+      const { redirectUri, next } = (() => {
+        const locale = window.location.pathname.split('/')[1] || 'ja'
 
-            const getBaseUrl = () => {
-              const host = window.location.hostname
-              const origin = window.location.origin
-
-              // When running on localhost, allow explicit dev URL override
-              if (
-                (host === 'localhost' || host === '127.0.0.1') &&
-                process.env.NEXT_PUBLIC_DEVELOP_URL
-              ) {
-                try {
-                  return new URL(process.env.NEXT_PUBLIC_DEVELOP_URL).origin
-                } catch {
-                  return origin
-                }
-              }
-
-              // Default: rely on current origin (works for preview/prod)
-              return origin
+        const getBaseUrl = () => {
+          // Prioritize NEXT_PUBLIC_DEVELOP_URL for tunnels
+          if (process.env.NEXT_PUBLIC_DEVELOP_URL) {
+            try {
+              return new URL(process.env.NEXT_PUBLIC_DEVELOP_URL).origin
+            } catch {
+              return window.location.origin
             }
+          }
+          return window.location.origin
+        }
 
-            const baseUrl = getBaseUrl()
-            return `${baseUrl}/${locale}/reservation/auth/callback`
-          })()
+        const baseUrl = getBaseUrl()
+        const redirectUri = `${baseUrl}/api/auth/line/callback`
+        // 次のリダイレクト先はログインコンテキストで切り替える
+        const next = isCustomerLogin
+          ? `/${locale}/customer/${orgId}/auth/login`
+          : `/${locale}/reservation/${orgId}/calendar`
+        return { redirectUri, next }
+      })()
 
-        console.log('[useLineAuth] Starting authentication flow:', {
+      // Request authorization start from server
+      const response = await fetch('/api/auth/line/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
           tenantId,
           orgId,
           isCustomerLogin,
           redirectUri,
+          next,
           scope,
-        })
+        }),
+      })
 
-        // Request authorization start from server
-        const response = await fetch('/api/auth/line/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            tenantId,
-            orgId,
-            isCustomerLogin,
-            redirectUri,
-            scope,
-          }),
-        })
-
-        if (!response.ok) {
-          let errorMessage = `Failed to start authentication (HTTP ${response.status})`
-          try {
-            const errorData = await response.json()
-            errorMessage = errorData?.message || errorData?.error || errorMessage
-          } catch {
-            // ignore JSON parse error and use default message
-          }
-          throw new Error(errorMessage)
+      if (!response.ok) {
+        let errorMessage = `Failed to start authentication (HTTP ${response.status})`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData?.message || errorData?.error || errorMessage
+        } catch {
+          // ignore JSON parse error
         }
-
-        const { authorizationUrl } = await response.json()
-
-        console.log('[useLineAuth] Redirecting to LINE authorization...')
-
-        // Redirect to LINE OAuth authorization
-        window.location.href = authorizationUrl
-      } catch (error) {
-        console.error('[useLineAuth] Login initiation failed:', error)
-        const authError = error instanceof Error ? error : new Error('Authentication failed')
-
-        setAuthState('error')
-        setError(authError)
-
-        if (onAuthError) {
-          onAuthError(authError)
-        }
-
-        toast.error(authError.message)
+        throw new Error(errorMessage)
       }
-    },
-    [tenantId, orgId, isCustomerLogin, scope, onAuthError]
-  )
+
+      const { authorizationUrl } = await response.json()
+
+      // Redirect to LINE OAuth authorization
+      window.location.href = authorizationUrl
+    } catch (error) {
+      console.error('[useLineAuth] Login initiation failed:', error)
+      const authError = error instanceof Error ? error : new Error('Authentication failed')
+
+      setAuthState('error')
+      setError(authError)
+
+      if (onAuthError) {
+        onAuthError(authError)
+      }
+
+      toast.error(authError.message)
+    }
+  }, [tenantId, orgId, isCustomerLogin, scope, onAuthError])
 
   /**
    * Logout and clear authentication tokens
@@ -321,9 +292,20 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
     try {
       setAuthState('loading')
 
-      console.log('[useLineAuth] Logging out...')
+      // If LIFF SDK is available in the browser, also instruct it to logout
+      try {
+        if (hasLiffLogout()) {
+          // LIFF側のアクセストークン／状態をクリア
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const w: any = window
+          w.liff.logout()
+        }
+      } catch (e) {
+        // Non-fatal: even if liff.logout fails, continue to clear server state
+        console.warn('[useLineAuth] liff.logout() failed:', e)
+      }
 
-      // Clear tokens on server
+      // Clear tokens on server (this will also attempt server-side revoke/cleanup)
       await fetch('/api/auth/line/refresh', {
         method: 'DELETE',
         credentials: 'include',
@@ -334,8 +316,6 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       setTokenState('missing')
       setExpiresAt(null)
       setError(null)
-
-      console.log('[useLineAuth] Logout successful')
     } catch (error) {
       console.error('[useLineAuth] Logout failed:', error)
       // Even if server logout fails, clear local state
@@ -352,14 +332,11 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
     if (!autoRefresh) return
 
     const monitorTokens = () => {
-      // Check if token needs refresh
       if (tokenState === 'near_expiry' || tokenState === 'expired') {
-        console.log('[useLineAuth] Auto-refresh triggered for state:', tokenState)
         refreshToken()
       }
     }
 
-    // Set up periodic token monitoring
     refreshIntervalRef.current = setInterval(monitorTokens, refreshCheckInterval)
 
     return () => {
@@ -378,40 +355,15 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
   }, [checkAuthStatus])
 
   /**
-   * Monitor response headers for server-side token state changes
+   * Handle URL parameters for auth callbacks and errors
    */
-  useEffect(() => {
-    const handleResponseHeaders = () => {
-      // This could be enhanced to listen for server-sent events or WebSocket
-      // For now, we rely on periodic checks and middleware headers
-    }
-
-    handleResponseHeaders()
-  }, [])
-
-  /**
-   * Cleanup on unmount
-   */
-  useEffect(() => {
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-    }
-  }, [])
-
-  // URL parameter handling for auth callbacks
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
 
+    // Handle authentication success
     if (urlParams.get('auth_success') === 'true') {
       const lineUserId = urlParams.get('line_user_id')
       const lineName = urlParams.get('line_name')
-
-      console.log('[useLineAuth] Authentication success detected in URL')
 
       // Clear URL parameters
       const newUrl = new URL(window.location.href)
@@ -433,11 +385,54 @@ export function useLineAuth(options: UseLineAuthOptions = {}) {
       }
 
       toast.success('LINEログインが完了しました')
-
-      // Re-check auth status to get token expiration info
       setTimeout(checkAuthStatus, 1000)
+      return
     }
-  }, [checkAuthStatus, onAuthSuccess])
+
+    // Handle authentication errors
+    const errorParam = urlParams.get('error')
+    const errorMessage = urlParams.get('message')
+
+    if (errorParam && errorMessage) {
+      // Clear error parameters from URL
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('error')
+      newUrl.searchParams.delete('message')
+      window.history.replaceState({}, '', newUrl.pathname + newUrl.search)
+
+      // Handle specific error types
+      if (errorParam === 'oauth_access_denied') {
+        setAuthState('unauthenticated') // User cancelled, not an error
+        return
+      }
+
+      // Create error object and show message
+      const errorObj = new Error(decodeURIComponent(errorMessage))
+      setAuthState('error')
+      setError(errorObj)
+      setTokenState('missing')
+
+      toast.error('ログインでエラーが発生しました。もう一度お試しください。')
+
+      if (onAuthError) {
+        onAuthError(errorObj)
+      }
+    }
+  }, [checkAuthStatus, onAuthSuccess, onAuthError])
+
+  /**
+   * Cleanup on unmount
+   */
+  useEffect(() => {
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   return {
     // State

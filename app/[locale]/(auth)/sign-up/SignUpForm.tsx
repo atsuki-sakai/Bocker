@@ -466,14 +466,14 @@ export default function SignUpPage() {
   }, [paramsReferralCode, setValue])
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted">
+    <div className="flex items-center justify-center h-screen">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
         className="w-full max-w-md p-2"
       >
-        <Card className="border-0 shadow-lg shadow-secondary backdrop-blur-sm bg-background">
+        <Card>
           <div className="flex justify-end p-2">
             <LanguageSwitcher />
           </div>
@@ -484,9 +484,7 @@ export default function SignUpPage() {
               </CardTitle>
             </motion.div>
             <motion.div>
-              <CardDescription className="text-center text-muted-foreground">
-                {t('subtitle')}
-              </CardDescription>
+              <CardDescription className="text-center">{t('subtitle')}</CardDescription>
             </motion.div>
           </CardHeader>
 

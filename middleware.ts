@@ -6,7 +6,7 @@ import { routing } from './i18n/routing'
 // Remove direct import of token-manager to avoid Edge Runtime crypto issues
 // We'll use API calls instead for token validation
 
-// In-memory store for rate limiting
+// レート制限用のメモリ内ストア
 const ipRequestCounts = new Map<string, number[]>()
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 20 // Max requests per window
@@ -14,10 +14,10 @@ const RATE_LIMIT_MAX_REQUESTS = 20 // Max requests per window
 // メンテナンスモードが有効かどうか
 const isMaintenance = false
 
-// next-intlミドルウェアの設定
+// next-intl のミドルウェア設定
 const intlMiddleware = createMiddleware(routing)
 
-// 認証不要なパス
+// 認証不要のパス
 const publicPaths = [
   '/',
   '/?source=pwa',
@@ -25,19 +25,19 @@ const publicPaths = [
   '/api/stripe/checkout/webhook',
   '/api/webhook/stripe/connect',
   '/api/webhook/stripe/checkout',
-  '/api/line/verify-token',
+  // '/api/line/verify-token', // removed in PKCE-only flow
   '/api/auth/session',
   '/api/auth/line-state',
   '/reservation',
   '/reservation/:path*', // Keep this for clarity, though handled separately below
-  '/api/line',
+  // '/api/line', // removed in PKCE-only flow
   '/staff/invite-accept', // hash-basedルーティングを使用するため、:path*は不要
 ]
 
 // 認証ページのパス
 const authPaths = ['/sign-in', '/sign-up', '/staff/login', '/staff/invite-accept']
 
-// 認証が必要なAPIエンドポイント
+// 認証が必要な API エンドポイント
 const protectedApiPaths = ['/api/verify-password', '/dashboard/:path*']
 
 const isPublicPath = (pathname: string): boolean => {
@@ -73,16 +73,16 @@ const isProtectedApiPath = (pathname: string): boolean =>
   protectedApiPaths.some((apiPath) => pathname === apiPath || pathname.startsWith(`${apiPath}/`))
 
 /**
- * Check and handle LINE OAuth token state for automatic refresh
- * Uses API calls to avoid Edge Runtime crypto dependency issues
- * Returns enhanced response with token status headers for client-side awareness
+ * LINE OAuth のトークン状態を確認して自動リフレッシュを補助
+ * Edge Runtime の制約を避けるため API 呼び出しを利用
+ * クライアント側が把握できるようレスポンスヘッダで状態を返す
  */
 const handleLineTokenCheck = async (
   request: NextRequest, 
   response: NextResponse
 ): Promise<NextResponse> => {
   try {
-    // Only check LINE tokens on authenticated routes
+    // 認証が必要なルートでのみチェック
     const pathnameWithoutLocale = getPathnameWithoutLocale(request.nextUrl.pathname)
     
     // Skip token check for public paths, auth paths, and API routes (except protected ones)
@@ -94,21 +94,19 @@ const handleLineTokenCheck = async (
       return response
     }
     
-    // Check if LINE auth cookies exist (simple presence check)
+    // LINE 認証クッキーの存在チェック（簡易）
     const hasLineTokenCookies = request.cookies.has('line_at_enc') || request.cookies.has('line_rt_enc')
     
     if (!hasLineTokenCookies) {
-      // No LINE tokens detected
+      // LINE トークンが未検出
       response.headers.set('X-Token-State', 'missing')
       return response
     }
     
-    // For Edge Runtime compatibility, we add headers for client-side token management
-    // instead of doing server-side validation that requires Node.js crypto
+    // Edge Runtime 互換のため、サーバー側検証の代わりにヘッダで通知
     response.headers.set('X-LINE-Token-Check', 'enabled')
     
-    // Let client-side code handle token refresh based on these headers
-    // The useLineAuth hook will handle automatic token validation and refresh
+    // クライアント側（useLineAuth フック）が自動検証・リフレッシュを実施
     
     console.log('[MIDDLEWARE] LINE token cookies detected:', {
       pathname: pathnameWithoutLocale,

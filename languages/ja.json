@@ -1748,9 +1748,9 @@
       "lineIntegrationNote": "BockerとLINEを連携して予約をLINEで受け付けることができます。",
       "lineIntegrationNote2": "API設定は画面下部の「LINEチャネル解説ガイド」を参考にして設定をお願い致します。",
       "fields": {
-        "lineAccessToken": "LINEアクセストークン",
-        "lineChannelSecret": "LINEチャンネルシークレット",
-        "lineChannelId": "LINEチャンネルID"
+        "lineAccessToken": "LINEアクセストークン(MessagingAPIチャンネル)",
+        "lineChannelSecret": "LINEチャンネルシークレット(LINEログインチャンネル)",
+        "lineChannelId": "LINEチャンネルID(LINEログインチャンネル)"
       },
       "messages": {
         "settingsSaved": "API設定を保存しました",

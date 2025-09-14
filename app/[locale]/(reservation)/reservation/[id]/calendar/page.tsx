@@ -28,6 +28,7 @@ import Image from 'next/image'
 import { ReservationPaymentStatus, ActiveCustomerType } from '@/convex/types'
 import { CustomerRepository } from '@/services/supabase/repositories/customer/CustomerRepository'
 import { formatDateToYYYYMMDD } from '@/lib/schedules'
+import { performCompleteLogout } from '@/lib/auth/logout'
 import { BASE_URL } from '@/lib/constants'
 
 import {
@@ -60,7 +61,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { useLiff } from '@/hooks/useLiff'
 import { ModeToggle } from '@/components/common'
 import { PaymentMethod, ReservationStatus } from '@/convex/types'
 import type { TimeRange } from '@/lib/types'
@@ -150,7 +150,6 @@ export default function CalendarPage() {
   const router = useRouter()
   const params = useParams()
   const orgId = params.id as Id<'organization'>
-  const { liff } = useLiff()
   const { showErrorToast } = useErrorHandler()
   const { trackConversion } = useAnalytics()
 
@@ -483,12 +482,35 @@ export default function CalendarPage() {
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     setIsLogout(true)
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-    if (liff?.isLoggedIn()) {
-      liff.logout()
+    
+    try {
+      // 1) LINEトークン（HttpOnly）をサーバー側でクリア
+      try {
+        await fetch('/api/auth/line/refresh', { method: 'DELETE', credentials: 'include' })
+      } catch (lineClearError) {
+        console.warn('Failed to clear LINE tokens (non-fatal):', lineClearError)
+      }
+
+      // 2) アプリのセッション（bocker_login_session）をサーバー側で削除
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+      
+      // 3) クライアントサイドの完全ログアウト（LIFF等）
+      performCompleteLogout()
+      
+      toast.success('ログアウトしました。')
+      
+      // 少し待ってからリダイレクト
+      setTimeout(() => {
+        router.push(`/reservation/${orgId}`)
+      }, 100)
+      
+    } catch (error) {
+      console.error('Logout error:', error)
+      // エラーでも完全ログアウトは実行
+      performCompleteLogout()
+      router.push(`/reservation/${orgId}`)
     }
-    toast.success('ログアウトしました。')
-    router.push(`/reservation/${orgId}`)
+    
     setIsLogout(false)
   }
 
@@ -1152,19 +1174,35 @@ export default function CalendarPage() {
 
         if (!orgData) {
           console.error('組織情報が見つかりません')
-          router.push('/reservation')
+          setTimeout(() => {
+            router.push('/reservation')
+          }, 100)
           return
         }
 
-        // セッションチェック（tenant_idとorg_idを含める）
+        // セッションチェック（tenant_idとorg_idを含める）+ credentials修正
         const response = await fetch(
           `/api/auth/session?tenantId=${encodeURIComponent(orgData.tenant_id)}&orgId=${encodeURIComponent(orgId)}`,
-          { credentials: 'include' }
+          { 
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Cache-Control': 'no-cache'
+            }
+          }
         )
 
         if (!response.ok) {
-          console.error('認証セッションが見つかりません。予約画面に戻ります。')
-          router.push(`/reservation/${orgId}`)
+          console.error('認証セッションが見つかりません。完全ログアウト後、予約画面に戻ります。')
+          
+          // 完全ログアウト実行
+          performCompleteLogout()
+          
+          // setTimeoutでナビゲーションを遅延実行（React setState during renderエラーを防ぐ）
+          setTimeout(() => {
+            router.push(`/reservation/${orgId}`)
+          }, 100)
+          
           return
         }
 
@@ -1206,35 +1244,45 @@ export default function CalendarPage() {
           } catch (error) {
             console.error('サロン情報の取得に失敗しました:', error)
             await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-            if (liff?.isLoggedIn()) {
-              liff.logout()
-            }
             toast.error('サロン情報の取得に失敗しました。サロンが削除されている可能性があります。')
             setOrganizationComplete(null)
           }
         } else {
-          router.push('/reservation')
+          setTimeout(() => {
+            router.push('/reservation')
+          }, 100)
         }
       } catch (error) {
         console.error('セッション取得中にエラーが発生しました:', error)
-        router.push(`/reservation/${orgId}`)
+        setTimeout(() => {
+          router.push(`/reservation/${orgId}`)
+        }, 100)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchSession()
-  }, [router, liff, orgId, customerRepository, sessionCustomer?.orgId])
+  }, [router, orgId, customerRepository]) // Remove dynamic sessionCustomer?.orgId dependency
 
   console.log('#### sessionCustomer: ', sessionCustomer)
+
+  // 組織情報が読み込まれていない場合のリダイレクト処理を useEffect で行う
+  useEffect(() => {
+    if (!organizationComplete && !isLoading && sessionCustomer) {
+      // Use a stable reference to avoid conditional navigation
+      const redirectPath = sessionCustomer.orgId ? `/reservation/${sessionCustomer.orgId}` : '/reservation'
+      
+      setTimeout(() => {
+        router.push(redirectPath)
+      }, 100)
+    }
+  }, [organizationComplete, isLoading, sessionCustomer, router]) // Use sessionCustomer object, not property
+
   if (isLoading) return <Loading />
 
   if (!organizationComplete) {
-    if (sessionCustomer?.orgId) {
-      return router.push(`/reservation/${sessionCustomer.orgId}`)
-    } else {
-      return router.push('/reservation')
-    }
+    return <Loading />
   }
 
   // 合計金額の計算

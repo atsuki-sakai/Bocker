@@ -82,41 +82,13 @@ export function ClientLayout({ children, fontVariables }: ClientLayoutProps) {
             return
           }
 
-          // URLパラメータが不足している場合のみstateから取得
-          const stateEndpoint = stateId
-            ? `/api/auth/line-state?stateId=${stateId}`
-            : '/api/auth/line-state?skipValidation=true'
-
-          try {
-            console.log('[ClientLayout] Fetching state data from:', stateEndpoint)
-            const stateResponse = await fetch(stateEndpoint, {
-              method: 'GET',
-              credentials: 'include',
-            })
-
-            if (stateResponse.ok) {
-              const stateData = await stateResponse.json()
-              console.log('[ClientLayout] State data received:', stateData)
-
-              if (stateData?.orgId && stateData?.tenantId) {
-                setOrgId(stateData.orgId)
-                setTenantId(stateData.tenantId)
-                setIsLoading(false)
-                return
-              }
-              setErrors((prev) => [...prev, '認証情報が不完全です'])
-            } else {
-              const errorData = await stateResponse.json()
-              console.error('[ClientLayout] State validation failed:', errorData)
-              setErrors((prev) => [
-                ...prev,
-                `認証状態の確認に失敗しました: ${errorData.error || 'Unknown error'}`,
-              ])
-            }
-          } catch (error) {
-            console.error('[ClientLayout] Error fetching state data:', error)
-            setErrors((prev) => [...prev, '認証状態の確認中にエラーが発生しました'])
-          }
+          // /api/auth/line-state エンドポイントは削除されました
+          // 代替案: URLパラメータから直接テナント/組織IDを取得、または404エラーを表示
+          console.warn('[ClientLayout] line-state API was removed, falling back to error handling')
+          setErrors((prev) => [
+            ...prev, 
+            'URLパラメータが不足しています。テナントID（tid）と組織ID（oid）が必要です。'
+          ])
 
           setIsLoading(false)
           return

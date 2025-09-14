@@ -118,7 +118,6 @@ const ApiSettingsCard = () => {
     return <Loading />
   }
 
-  const endpointUrl = `${window.location.origin}/${locale}/reservation`
 
   return (
     <div className="">
@@ -288,7 +287,7 @@ const ApiSettingsCard = () => {
 
               <div className="flex items-center w-full relative">
                 <ZodTextField
-                  label="LIFF ID"
+                  label="LIFF ID(LINEログインチャンネル)"
                   icon={<Key className="h-4 w-4 text-primary" />}
                   errors={errors}
                   register={register}
@@ -470,9 +469,7 @@ const ApiSettingsCard = () => {
                   <p className="text-xs text-accent">
                     • 用途：予約確認メッセージ、リマインダー等の送信
                   </p>
-                  <p className="text-xs text-accent">
-                    • 必要な設定：アクセストークン、チャンネルシークレット
-                  </p>
+                  <p className="text-xs text-accent">• 必要な設定：アクセストークン</p>
                 </div>
                 <div className="bg-card border border-border p-3 rounded-md">
                   <p className="font-semibold text-palette-3-foreground text-sm mb-1">
@@ -481,7 +478,9 @@ const ApiSettingsCard = () => {
                   <p className="text-xs text-accent-2">
                     • 用途：顧客のLINEログイン、LIFF（LINE内ブラウザ）
                   </p>
-                  <p className="text-xs text-accent-2">• 必要な設定：チャンネルID、LIFF ID</p>
+                  <p className="text-xs text-accent-2">
+                    • 必要な設定：チャンネルID、チャンネルシークレット、LIFF ID
+                  </p>
                 </div>
               </div>
             </div>
@@ -612,7 +611,6 @@ const ApiSettingsCard = () => {
                   <li>
                     作成完了後、チャンネルページで以下を確認：
                     <div className="ml-4 mt-1 text-xs space-y-1">
-                      <div>• 「基本設定」タブ：チャンネルシークレット</div>
                       <div>• 「Messaging API」タブ：チャンネルアクセストークン</div>
                     </div>
                   </li>
@@ -692,9 +690,11 @@ const ApiSettingsCard = () => {
                   </li>
                   <li>利用規約に同意して「作成」</li>
                   <li>
-                    作成完了後、「基本設定」タブでチャンネルIDを確認
+                    作成完了後、「基本設定」タブでチャンネルIDとチャンネルシークレットを確認
                     <br />
-                    <span className="text-xs text-muted-foreground">数字のみの10桁程度のID</span>
+                    <span className="text-xs text-muted-foreground">
+                      （チャンネルIDは数字のみの10桁程度のIDです）
+                    </span>
                   </li>
                 </ol>
               </div>
@@ -751,8 +751,13 @@ const ApiSettingsCard = () => {
                   <li>
                     「コールバックURL」に以下を追加：
                     <div className="ml-4 mt-1 space-y-1 font-mono text-xs">
-                      <Link href={endpointUrl} className="text-accent underline">
-                        {endpointUrl}
+                      <Link
+                        href="https://bocker.jp/ja/reservation/auth/callback"
+                        className="text-accent underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        https://bocker.jp/ja/reservation/auth/callback
                       </Link>
                     </div>
                   </li>
@@ -924,18 +929,18 @@ const ApiSettingsCard = () => {
         {/* LINE Channel Secret */}
         <AccordionItem value="line-channel-secret">
           <AccordionTrigger>
-            LINE チャンネルシークレットの取得方法（Messaging API専用）
+            LINE チャンネルシークレットの取得方法（LINEログインチャンネル専用）
           </AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             {/* 重要な注意 */}
             <div className="bg-background border border-border p-3 rounded-md mb-4">
               <p className="font-semibold text-palette-2-foreground text-sm mb-1">📌 重要</p>
               <p className="text-xs text-accent">
-                このシークレットは<strong>Messaging APIチャンネル</strong>
-                から取得します。LINEログインチャンネルとは別物です。
+                このシークレットは<strong>LINEログインチャンネル</strong>
+                から取得します。Messaging APIチャンネルとは別物です。
               </p>
               <p className="text-xs text-pop mt-1">
-                ⚠️ Webhook署名の検証に使用されるため、セキュリティ上非常に重要な値です
+                ⚠️ 認証の検証に使用されるため、セキュリティ上非常に重要な値です
               </p>
             </div>
 
@@ -964,9 +969,9 @@ const ApiSettingsCard = () => {
                 >
                   LINE Developers コンソール
                 </Link>
-                にログインし、<strong>Messaging APIチャンネル</strong>を開きます。
+                にログインし、<strong>LINEログインチャンネル</strong>を開きます。
                 <br />
-                <span className="text-pop text-xs">⚠️ LINEログインチャンネルではありません</span>
+                <span className="text-pop text-xs">⚠️ Messaging APIチャンネルではありません</span>
               </li>
               <li>
                 画面上部のタブメニューから<strong>基本設定</strong>タブを選択します。
@@ -1007,7 +1012,7 @@ const ApiSettingsCard = () => {
               <p className="font-semibold text-sm mb-2">🎯 チャンネルシークレットの用途</p>
               <div className="text-xs space-y-1">
                 <p>
-                  • <strong>Webhook署名の検証</strong>：LINEからのリクエストが正当かどうかを確認
+                  • <strong>IDトークンの検証</strong>：ログイン時のトークンが正当か確認
                 </p>
                 <p>
                   • <strong>セキュリティ確保</strong>：不正なリクエストを防止

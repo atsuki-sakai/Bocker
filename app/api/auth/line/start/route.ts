@@ -1,7 +1,16 @@
 // /app/api/auth/line/start/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createPreAuth, ccFromVerifier, OAUTH_COOKIE_PREFIX, OAUTH_TTL_MS } from '@/lib/line-oauth'
+import {
+  createPreAuth,
+  ccFromVerifier,
+  OAUTH_COOKIE_PREFIX,
+  OAUTH_TTL_MS,
+  OAUTH_DEBUG_MODE,
+  getOptimalCookieConfig,
+  getOAuthConfigSummary,
+  debugLogger,
+} from '@/lib/line-oauth'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
@@ -9,17 +18,16 @@ import { seal } from '@/lib/crypto-server'
 import { z } from 'zod'
 
 /**
- * LINE OAuth 2.1 Authorization Start Endpoint
- * 
- * Implements secure authorization initiation with:
- * - PKCE (Proof Key for Code Exchange) with S256 method
- * - State parameter for CSRF protection  
- * - Nonce for replay protection
- * - Short-term HttpOnly cookie storage (5 minutes TTL)
- * - Support for both Web Login and LIFF flows
+ * LINE OAuth 2.1 認可開始エンドポイント
+ *
+ * セキュアな認可開始を以下で実現：
+ * - PKCE（S256）によるコード検証
+ * - CSRF対策のための state パラメータ
+ * - リプレイ攻撃対策の nonce
+ * - 短期の HttpOnly クッキー保存
  */
 
-// Request validation schema
+// リクエストのバリデーションスキーマ
 const StartAuthSchema = z.object({
   tenantId: z.string().min(1, 'Tenant ID is required'),
   orgId: z.string().min(1, 'Organization ID is required'),
@@ -29,126 +37,235 @@ const StartAuthSchema = z.object({
   next: z.string().optional(), // Safe redirect path after successful auth
 })
 
-
 /**
  * POST /api/auth/line/start
- * Initialize LINE OAuth authorization flow
+ * LINE OAuth 認可フローの初期化
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Parse and validate request body
+    debugLogger.info('Start', 'LINE OAuth authorization flow initiated', {
+      userAgent: request.headers.get('User-Agent')?.substring(0, 100),
+      referer: request.headers.get('Referer'),
+      timestamp: new Date().toISOString(),
+    })
+
+    // リクエストボディを解析・検証
     const body = await request.json().catch(() => ({}))
     const validation = StartAuthSchema.safeParse(body)
-    
+
     if (!validation.success) {
-      console.error('[LineAuth:Start] Validation failed:', validation.error.flatten())
+      debugLogger.error('Start', 'Request validation failed', {
+        body,
+        errors: validation.error.flatten(),
+      })
+
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request parameters',
           message: 'Invalid request parameters',
-          details: validation.error.flatten().fieldErrors 
+          details: validation.error.flatten().fieldErrors,
         },
         { status: 400 }
       )
     }
-    
-    const { tenantId, orgId, isCustomerLogin, redirectUri, scope, next } = validation.data
-    
-    // Fetch LINE channel configuration from Convex (DB) by tenant/org
+
+    const { tenantId, orgId, redirectUri: clientRedirectUri, scope, next } = validation.data
+
+    // Convex(DB) からテナント/組織の LINE チャンネル設定を取得
     const apiConfig = await fetchQuery(api.organization.api_config.query.findByTenantAndOrg, {
       tenant_id: tenantId as Id<'tenant'>,
       org_id: orgId as Id<'organization'>,
     })
     const channelId = apiConfig?.line_channel_id
     if (!channelId) {
-      console.error('[LineAuth:Start] line_channel_id not configured in DB', { tenantId, orgId })
+      debugLogger.error('Start', 'LINE channel configuration not found', {
+        tenantId,
+        orgId,
+        hasApiConfig: !!apiConfig,
+        apiConfigKeys: apiConfig ? Object.keys(apiConfig) : [],
+      })
+
+      // 実際に使用されている組織IDをコンソールに表示
+      console.error('🔍 [DEBUG] LINE authentication failed - org_id/tenant_id mismatch:', {
+        requestedTenantId: tenantId,
+        requestedOrgId: orgId,
+        foundApiConfig: !!apiConfig,
+        configuredOrgId: 'v5799kb53q14k5tyf4y0kj636d7jhz8p',
+        configuredTenantId: 'vn77xjxw2gn456tc2a1dnrh0rd7jggc4',
+        message: 'URLで指定された組織IDがLINE設定を持たない組織を参照しています'
+      })
+
       return NextResponse.json(
-        { error: 'LINE authentication not configured', message: 'LINEログイン設定が見つかりません（line_channel_id未設定）' },
+        {
+          error: 'LINE authentication not configured',
+          message: `LINEログイン設定が見つかりません（org_id: ${orgId}）`,
+          debug: {
+            requestedOrgId: orgId,
+            configuredOrgId: 'v5799kb53q14k5tyf4y0kj636d7jhz8p'
+          }
+        },
         { status: 500 }
       )
     }
-    
-    // Generate secure authentication parameters
+
+    debugLogger.info('Start', 'LINE channel configuration retrieved', {
+      tenantId,
+      orgId,
+      hasChannelId: !!channelId,
+      hasChannelSecret: !!apiConfig?.line_channel_secret,
+    })
+
+    // Compute effective redirect URI (frontend callback page)
+    const computeBaseOrigin = (): string => {
+      // 1) 開発用の公開設定（NEXT_PUBLIC_DEVELOP_URL）を最優先
+      try {
+        if (process.env.NEXT_PUBLIC_DEVELOP_URL) {
+          return new URL(process.env.NEXT_PUBLIC_DEVELOP_URL).origin
+        }
+      } catch {}
+      // 2) 代理ヘッダ（トンネルが Host を保持している場合）
+      const xfProto = request.headers.get('x-forwarded-proto')
+      const xfHost = request.headers.get('x-forwarded-host')
+      if (xfProto && xfHost) {
+        return `${xfProto}://${xfHost}`
+      }
+      // 3) フォールバック: 現在のオリジン
+      return request.nextUrl.origin
+    }
+
+    const baseOrigin = computeBaseOrigin()
+    // Use frontend callback page instead of API endpoint
+    const locale = 'ja' // Default locale for LINE auth
+    const effectiveRedirectUri = new URL(
+      `/${locale}/reservation/auth/callback`,
+      baseOrigin
+    ).toString()
+    // 影響のないトレースログ（redirect_uri 決定経路の可視化）
+    try {
+      console.log('[LineAuth:Start][TRACE] redirect base resolution', {
+        env_NEXT_PUBLIC_DEVELOP_URL: process.env.NEXT_PUBLIC_DEVELOP_URL,
+        headers: {
+          host: request.headers.get('host'),
+          x_forwarded_host: request.headers.get('x-forwarded-host'),
+          x_forwarded_proto: request.headers.get('x-forwarded-proto'),
+          referer: request.headers.get('referer'),
+        },
+        computed: { baseOrigin, effectiveRedirectUri, redirectType: 'frontend-page' },
+      })
+    } catch {}
+
+    // セキュアな認証パラメータを生成
     const { stateId, preAuth } = createPreAuth({
       tenantId,
       orgId,
       next,
     })
-    
-    // Calculate code challenge from verifier (PKCE S256)
-    const codeChallenge = ccFromVerifier(preAuth.cv)
-    
-    console.log('[LineAuth:Start] Generated auth parameters:', {
+
+    debugLogger.info('Start', 'Authentication state created', {
       stateId: stateId.substring(0, 8) + '...',
-      tenantId,
-      orgId,
-      isCustomerLogin,
-      nonce: preAuth.nonce.substring(0, 8) + '...',
-      redirectUri,
+      hasCodeVerifier: !!preAuth.cv,
+      hasNonce: !!preAuth.nonce,
+      codeVerifierLength: preAuth.cv?.length,
+      nonceLength: preAuth.nonce?.length,
+      timestamp: preAuth.ts,
+      ttlMs: OAUTH_TTL_MS,
     })
-    
-    // Store PreAuth data in encrypted HttpOnly cookie
+
+    // PKCE S256 で code_challenge を算出
+    const codeChallenge = ccFromVerifier(preAuth.cv)
+
+    // PreAuth を暗号化して HttpOnly クッキーに保存
     const cookieStore = await cookies()
     const cookieName = `${OAUTH_COOKIE_PREFIX}${stateId}`
     const encryptedPreAuth = seal(JSON.stringify(preAuth))
-    
-    // Secure cookie options (5 minutes TTL, HttpOnly, Secure in production)
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const, // Lax for OAuth redirect compatibility
-      path: '/',
-      maxAge: Math.floor(OAUTH_TTL_MS / 1000), // 5 minutes in seconds
-    }
-    
+
+    // 環境に応じた最適なクッキー設定を取得
+    const cookieOptions = getOptimalCookieConfig()
+
+    debugLogger.info('Start', 'State cookie created', {
+      cookieName,
+      cookieOptions: {
+        ...cookieOptions,
+        maxAgeMinutes: Math.round(cookieOptions.maxAge / 60),
+      },
+      encryptedLength: encryptedPreAuth.length,
+      expiresAt: new Date(Date.now() + OAUTH_TTL_MS).toISOString(),
+    })
+
     cookieStore.set(cookieName, encryptedPreAuth, cookieOptions)
-    
-    // Build LINE authorization URL per OAuth 2.1 specification
+
+    // OAuth 2.1 仕様に沿って LINE 認可URLを作成
     const authUrl = new URL('https://access.line.me/oauth2/v2.1/authorize')
-    
+
     const authParams = {
       response_type: 'code',
       client_id: channelId,
-      redirect_uri: redirectUri,
+      // Use server-computed redirect_uri to avoid client-origin mismatches
+      redirect_uri: effectiveRedirectUri,
       state: stateId,
       scope: scope,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       nonce: preAuth.nonce,
     }
-    
-    // Add parameters to URL
+
+    // URL にパラメータを付与
     Object.entries(authParams).forEach(([key, value]) => {
       if (value) {
         authUrl.searchParams.set(key, value)
       }
     })
-    
+
     const finalAuthUrl = authUrl.toString()
-    
-    console.log('[LineAuth:Start] Authorization URL generated:', {
-      url: finalAuthUrl.replace(/[?&](state|nonce|code_challenge)=[^&]+/g, (match) => 
-        match.replace(/=([^&]+)/, `=${match.split('=')[1].substring(0, 8)}...`)
-      ),
-      cookieSet: cookieName,
-      expiresIn: `${OAUTH_TTL_MS / 1000}s`,
-    })
-    
-    // Return authorization URL for client-side redirect
+    // 認可URLに含まれる redirect_uri を明示ログ
+    try {
+      const parsedAuthUrl = new URL(finalAuthUrl)
+      const ru = parsedAuthUrl.searchParams.get('redirect_uri')
+      console.log('[LineAuth:Start][AUTH_URL]', {
+        redirect_uri: ru,
+        url: finalAuthUrl,
+      })
+    } catch {}
+
+    if (OAUTH_DEBUG_MODE) {
+      console.log('[LineAuth:Start] Authorization URL generated:', {
+        url: finalAuthUrl.replace(/[?&](state|nonce|code_challenge)=[^&]+/g, (match) =>
+          match.replace(/=([^&]+)/, `=${match.split('=')[1].substring(0, 8)}...`)
+        ),
+        effectiveRedirectUri,
+        clientRedirectUri,
+        baseOrigin,
+        headers: {
+          host: request.headers.get('host'),
+          xfHost: request.headers.get('x-forwarded-host'),
+          xfProto: request.headers.get('x-forwarded-proto'),
+          referer: request.headers.get('referer'),
+          userAgent: request.headers.get('user-agent'),
+        },
+        cookieSet: cookieName,
+        cookieOptions: {
+          ...cookieOptions,
+          maxAgeMinutes: Math.round(cookieOptions.maxAge / 60),
+        },
+        expiresIn: `${Math.round(OAUTH_TTL_MS / (60 * 1000))}min`,
+        expiresAt: new Date(Date.now() + OAUTH_TTL_MS).toISOString(),
+      })
+    }
+
+    // 認可URLを返却（クライアントでリダイレクト）
     return NextResponse.json({
       success: true,
       authorizationUrl: finalAuthUrl,
       stateId, // Client may need this for debugging
       expiresAt: Date.now() + OAUTH_TTL_MS,
     })
-    
   } catch (error) {
     console.error('[LineAuth:Start] Unexpected error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )
@@ -163,7 +280,7 @@ export async function GET(): Promise<NextResponse> {
   try {
     const channelId = process.env.LINE_CHANNEL_ID
     const channelSecret = process.env.LINE_CHANNEL_SECRET
-    
+
     return NextResponse.json({
       configured: {
         channelId: !!channelId,
@@ -177,17 +294,13 @@ export async function GET(): Promise<NextResponse> {
       },
       cookieConfig: {
         prefix: OAUTH_COOKIE_PREFIX,
-        ttlMs: OAUTH_TTL_MS,
+        ...getOAuthConfigSummary(),
       },
     })
-    
   } catch (error) {
     console.error('[LineAuth:Start] Health check failed:', error)
-    
-    return NextResponse.json(
-      { error: 'Health check failed' },
-      { status: 500 }
-    )
+
+    return NextResponse.json({ error: 'Health check failed' }, { status: 500 })
   }
 }
 

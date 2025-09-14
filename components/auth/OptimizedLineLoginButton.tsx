@@ -3,9 +3,20 @@
 import React, { memo, useCallback, useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Loader2, RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useLineAuth } from '@/hooks/useLineAuth'
 import { toast } from 'sonner'
 import { Id } from '@/convex/_generated/dataModel'
+
+// LIFF SDK types extension for window object
+declare global {
+  interface Window {
+    liff?: {
+      isLoggedIn?: () => boolean
+      logout?: () => void
+    }
+  }
+}
 
 // LINEログイン成功時のレスポンス型 (updated for new auth system)
 interface LineLoginSuccessData {
@@ -42,8 +53,9 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
   const [isClicked, setIsClicked] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const router = useRouter()
 
-  // LINE OAuth 2.1 authentication hook
+  // LINE OAuth 2.1 認証フック
   const {
     authState,
     tokenState,
@@ -52,14 +64,15 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     isRefreshing,
     needsRefresh,
     login,
-    error: authError
+    logout: lineLogout,
+    error: authError,
   } = useLineAuth({
     tenantId,
     orgId,
     isCustomerLogin,
     scope,
     autoRefresh,
-    onAuthSuccess: (data) => {
+    onAuthSuccess: async (data) => {
       console.log('[OptimizedLineLoginButton] Authentication successful:', data)
       setIsClicked(false)
       setRetryCount(0)
@@ -67,14 +80,98 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
       }
-      if (onSuccess) {
-        onSuccess({
-          success: true,
-          customerUid: data.customerUid,
-          message: data.message,
-          line_user_id: data.line_user_id,
-          line_name: data.line_name,
+
+      try {
+        // Create customer session from LINE authentication
+        console.log('[OptimizedLineLoginButton] Creating LINE session...')
+
+        const sessionResponse = await fetch('/api/auth/line-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            tenantId,
+            orgId,
+          }),
         })
+
+        if (!sessionResponse.ok) {
+          const errorData = await sessionResponse.json().catch(() => ({}))
+          console.error('[OptimizedLineLoginButton] Session creation failed:', errorData)
+          toast.error(errorData.details || 'セッション作成に失敗しました。')
+          return
+        }
+
+        const sessionData = await sessionResponse.json()
+        console.log('[OptimizedLineLoginButton] Session created successfully:', {
+          ...sessionData,
+          sessionResponse: {
+            status: sessionResponse.status,
+            ok: sessionResponse.ok,
+            headers: Object.fromEntries(sessionResponse.headers.entries()),
+          },
+        })
+
+        // Wait for cookie propagation and browser sync (increased wait time)
+        console.log('[OptimizedLineLoginButton] Waiting for cookie propagation...')
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        // Verify session was actually created by checking the session endpoint
+        console.log('[OptimizedLineLoginButton] Verifying session creation...')
+        const verifyResponse = await fetch(
+          `/api/auth/session?tenantId=${tenantId}&orgId=${orgId}`,
+          {
+            credentials: 'include',
+          }
+        )
+
+        let verificationData = null
+        if (verifyResponse.ok) {
+          try {
+            verificationData = await verifyResponse.json()
+          } catch (e) {
+            console.warn('[OptimizedLineLoginButton] Failed to parse verification response:', e)
+          }
+        }
+
+        console.log('[OptimizedLineLoginButton] Session verification:', {
+          status: verifyResponse.status,
+          ok: verifyResponse.ok,
+          hasSession: verifyResponse.ok,
+          sessionData: verificationData
+            ? {
+                hasCustomerUid: !!verificationData.session?.customerUid,
+                tenantMatches: verificationData.session?.tenantId === tenantId,
+                orgMatches: verificationData.session?.orgId === orgId,
+              }
+            : null,
+        })
+
+        // Don't fail if verification fails - the session might still work
+        if (!verifyResponse.ok) {
+          console.warn(
+            '[OptimizedLineLoginButton] Session verification failed, but continuing with login...'
+          )
+        }
+
+        // Show success message
+        toast.success('LINEログインが完了しました')
+
+        // Call original success callback with session data
+        if (onSuccess) {
+          onSuccess({
+            success: true,
+            customerUid: sessionData.customerUid,
+            message: sessionData.message,
+            line_user_id: data.line_user_id,
+            line_name: data.line_name,
+          })
+        }
+      } catch (error) {
+        console.error('[OptimizedLineLoginButton] Session creation error:', error)
+        toast.error('セッション作成中にエラーが発生しました。')
       }
     },
     onAuthError: (error) => {
@@ -84,12 +181,126 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
       }
-      // Error is handled by useLineAuth hook, but we can add custom handling here if needed
+      // エラーは useLineAuth 側で処理済み。必要ならここで独自ハンドリングを追加
     },
     onTokenRefreshed: () => {
       console.log('[OptimizedLineLoginButton] Token refreshed successfully')
     },
   })
+
+  // セッション作成処理を関数として分離
+  const handleSessionCreation = useCallback(async () => {
+    if (!tenantId || !orgId) {
+      console.warn('[OptimizedLineLoginButton] Missing tenantId or orgId for session creation')
+      return
+    }
+
+    try {
+      console.log('[OptimizedLineLoginButton] Creating LINE session...')
+      
+      const sessionResponse = await fetch('/api/auth/line-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          tenantId,
+          orgId,
+        }),
+      })
+
+      if (!sessionResponse.ok) {
+        const errorData = await sessionResponse.json().catch(() => ({}))
+        console.error('[OptimizedLineLoginButton] Session creation failed:', errorData)
+        toast.error(errorData.details || 'セッション作成に失敗しました。')
+        return
+      }
+
+      const sessionData = await sessionResponse.json()
+      console.log('[OptimizedLineLoginButton] Session created successfully:', {
+        ...sessionData,
+        sessionResponse: {
+          status: sessionResponse.status,
+          ok: sessionResponse.ok,
+        }
+      })
+
+      // Wait for cookie propagation (increased wait time)
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Show success message
+      toast.success('LINEログインが完了しました')
+
+      // Call success callback
+      if (onSuccess) {
+        onSuccess({
+          success: true,
+          customerUid: sessionData.customerUid,
+          message: sessionData.message,
+        })
+      }
+    } catch (error) {
+      console.error('[OptimizedLineLoginButton] Session creation error:', error)
+      toast.error('セッション作成中にエラーが発生しました。')
+    }
+  }, [tenantId, orgId, onSuccess])
+
+  // LIFFログアウト状態の確認と同期
+  useEffect(() => {
+    const checkLiffLogoutState = () => {
+      // LIFF環境でのログアウト状態確認
+      if (typeof window !== 'undefined' && window.liff) {
+        try {
+          const isLiffLoggedIn = window.liff.isLoggedIn && window.liff.isLoggedIn()
+          
+          // LIFFからログアウトされているが、コンポーネントはまだ認証済みの場合
+          if (!isLiffLoggedIn && isAuthenticated && authState === 'authenticated') {
+            console.log('[OptimizedLineLoginButton] LIFF logout detected, clearing authentication state...')
+            
+            // useLineAuthのlogout methodで状態をクリア
+            lineLogout().then(() => {
+              console.log('[OptimizedLineLoginButton] Authentication state cleared after LIFF logout')
+              
+              // コンポーネントの状態をリセット
+              setIsClicked(false)
+              setRetryCount(0)
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current)
+                timeoutRef.current = null
+              }
+            }).catch((error) => {
+              console.error('[OptimizedLineLoginButton] Failed to clear auth state:', error)
+            })
+            
+            // LIFFログアウトが検出された場合は、自動セッション作成をしない
+            return
+          }
+          
+          // LIFFログイン状態とコンポーネント認証状態が一致している場合のみ自動セッション作成
+          if (isLiffLoggedIn && isAuthenticated && !isLoading && !isClicked && authState === 'authenticated' && tokenState === 'valid') {
+            // セッションクッキーが既に存在するかチェック
+            const hasSession = document.cookie.includes('bocker_login_session=')
+            
+            if (!hasSession) {
+              console.log('[OptimizedLineLoginButton] Auto-detecting successful LINE authentication, creating session...')
+              // 自動セッション作成を実行
+              handleSessionCreation()
+            }
+          }
+        } catch (error) {
+          console.warn('[OptimizedLineLoginButton] LIFF state check failed:', error)
+        }
+      }
+    }
+    
+    checkLiffLogoutState()
+    
+    // 定期的にLIFFログアウト状態をチェック（1秒間隔）
+    const interval = setInterval(checkLiffLogoutState, 1000)
+    
+    return () => clearInterval(interval)
+  }, [isAuthenticated, isLoading, isClicked, authState, tokenState, lineLogout, handleSessionCreation])
 
   // コンポーネントマウント時の設定とクリーンアップ
   useEffect(() => {
@@ -119,7 +330,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       return
     }
 
-    // 認証システムが読み込み中の場合
+    // 認証システムが読み込み中またはエラー状態の場合
     if (authState === 'loading') {
       const remainingTime = Math.max(10 - retryCount * 2, 3) // 最低3秒待機
       toast.info(`認証システムを読み込み中です。${remainingTime}秒後にもう一度お試しください。`)
@@ -134,6 +345,31 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       return
     }
 
+    // エラー状態の場合、エラータイプに応じた処理
+    if (authState === 'error' && authError) {
+      console.log('[OptimizedLineLoginButton] Handling error state:', {
+        errorMessage: authError.message,
+        retryCount,
+      })
+
+      // 特定のエラーに対する自動リトライ
+      if (authError.message.includes('expired') && retryCount < 2) {
+        toast.info('認証がタイムアウトしました。自動的にリトライします...')
+        setTimeout(() => {
+          setRetryCount((prev) => prev + 1)
+          // Simply retry - the hook will handle state management
+          handleClick()
+        }, 2000)
+        return
+      }
+
+      // その他のエラーの場合は手動リトライを促す
+      if (retryCount === 0) {
+        setRetryCount(1) // Mark as attempted
+        toast.error('認証でエラーが発生しました。もう一度お試しください。')
+      }
+    }
+
     // テナントIDと組織IDのバリデーション
     if (!tenantId || !orgId) {
       toast.error('システムエラー：組織情報が不正です')
@@ -141,9 +377,10 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     }
 
     // 既に認証済みの場合
+    console.log('[OptimizedLineLoginButton] isAuthenticated:', isAuthenticated)
     if (isAuthenticated) {
       toast.info('既にログイン済みです')
-      console.log('[OptimizedLineLoginButton] Already authenticated')
+      router.push(`/reservation/${orgId}/calendar`) // Redirect to home or dashboard
       return
     }
 
@@ -179,10 +416,13 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
     isRefreshing,
     isAuthenticated,
     retryCount,
+    router,
+    authError,
   ])
 
-  const isDisabled = isLoading || isRefreshing || isClicked || !tenantId || !orgId || authState === 'error'
-  
+  const isDisabled =
+    isLoading || isRefreshing || isClicked || !tenantId || !orgId || authState === 'error'
+
   // デバッグ情報を表示（開発環境のみ）
   if (process.env.NODE_ENV === 'development') {
     console.log('[OptimizedLineLoginButton] Render state:', {
@@ -199,6 +439,8 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       retryCount,
       error: authError?.message,
     })
+
+    console.log(isAuthenticated ? 'User is authenticated' : 'User is not authenticated')
   }
 
   return (
@@ -227,14 +469,17 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
           </>
         ) : authState === 'error' ? (
           <>
-            <span className="font-bold text-base text-red-600">認証エラー</span>
+            <span className="font-bold text-base text-red-600">
+              {process.env.NODE_ENV === 'development' && authError
+                ? `認証エラー: ${authError.message.substring(0, 30)}...`
+                : '認証エラー'}
+            </span>
+            {retryCount > 0 && <span className="text-xs text-red-500">({retryCount}回目)</span>}
           </>
         ) : isAuthenticated ? (
           <>
             <span className="font-bold text-base text-green-600">ログイン済み</span>
-            {needsRefresh && (
-              <RefreshCw className="h-4 w-4 text-orange-500" aria-hidden="true" />
-            )}
+            {needsRefresh && <RefreshCw className="h-4 w-4 text-orange-500" aria-hidden="true" />}
           </>
         ) : (
           <>
