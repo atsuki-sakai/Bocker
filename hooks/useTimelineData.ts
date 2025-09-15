@@ -107,17 +107,17 @@ interface UseTimelineDataReturn {
 const TIME_SLOT_MINUTES = 10
 const TOTAL_MINUTES_PER_DAY = 24 * 60
 const RESERVATION_COLORS = {
-  confirmed: 'bg-link text-link-foreground',
-  pending: 'bg-warning text-warning-foreground',
+  confirmed: 'bg-success text-success-foreground',
+  pending: 'bg-secondary text-secondary-foreground',
   cancelled: 'bg-destructive text-destructive-foreground',
   completed: 'bg-success text-success-foreground',
 } as const
 
 const FREE_NOMINATION_COLORS = {
-  confirmed: 'bg-palette-5 text-palette-5-foreground',
-  pending: 'bg-warning text-warning-foreground',
+  confirmed: 'bg-link text-link-foreground',
+  pending: 'bg-palette-4 text-palette-4-foreground',
   cancelled: 'bg-destructive text-destructive-foreground',
-  completed: 'bg-success text-success-foreground',
+  completed: 'bg-palette-2 text-palette-2-foreground',
 } as const
 
 const SCHEDULE_COLORS = {
@@ -415,12 +415,8 @@ export function useTimelineData({
  * @returns タイムライン表示用の予約バー配列
  */
 export function useReservationBars(reservations: ReservationWithDetails[]): ReservationBar[] {
-  return useMemo(() => 
-    reservations.map(calculateReservationBar),
-    [reservations]
-  )
+  return useMemo(() => reservations.map(calculateReservationBar), [reservations])
 }
-
 
 // ■ スケジュールバー計算用フック
 /**
@@ -429,10 +425,7 @@ export function useReservationBars(reservations: ReservationWithDetails[]): Rese
  * @returns タイムライン表示用の予約バー配列
  */
 export function useScheduleBars(schedules: TimelineSchedule[]): ScheduleBar[] {
-  return useMemo(() => 
-    calculateScheduleBar(schedules),
-    [schedules]
-  )
+  return useMemo(() => calculateScheduleBar(schedules), [schedules])
 }
 
 // ■ エクスポート用の型と定数
@@ -443,7 +436,7 @@ export type {
   OrganizationSchedule,
   TimeSlot,
   ReservationBar,
-  ScheduleBar
+  ScheduleBar,
 }
 
 export {
@@ -453,5 +446,5 @@ export {
   SCHEDULE_COLORS,
   ORGANIZATION_SCHEDULE_COLORS,
   calculateReservationBar,
-  calculateScheduleBar
-} 
+  calculateScheduleBar,
+}
