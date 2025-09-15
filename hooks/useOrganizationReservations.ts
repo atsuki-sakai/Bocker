@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePaginatedQuery, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Doc, Id } from '@/convex/_generated/dataModel'
@@ -449,7 +449,7 @@ export function useOrganizationReservations({
     }
   }, [tenantId, orgId, startDate, endDate, reservationRepo])
 
-  // Supabaseから履歴データを取得
+  // Supabaseからデータを取得（常に取得してConvexと統合）
   const fetchSupabaseReservations = useCallback(
     async (page: number, reset: boolean = false) => {
       console.log('[useOrganizationReservations] fetchSupabaseReservations called:', {
@@ -467,15 +467,6 @@ export function useOrganizationReservations({
         return
       }
 
-      // 純粋にConvexでのみ管理するステータスの場合はSupabaseからのデータ取得をスキップ
-      if (status === 'confirmed' || status === 'pending') {
-        console.log(
-          '[useOrganizationReservations] Status is handled primarily by Convex, skipping Supabase data fetch'
-        )
-        setSupabaseLoading(false)
-        return
-      }
-
       console.log('[useOrganizationReservations] Setting supabaseLoading to true')
       setSupabaseLoading(true)
 
@@ -487,6 +478,8 @@ export function useOrganizationReservations({
           {
             page,
             pageSize,
+            // ステータスはUIの選択に合わせてSupabase側でもフィルタする
+            // ただし統合後にもフィルタを適用するため、allのときはundefined
             status: status === 'all' ? undefined : status,
             startDate,
             endDate,
@@ -584,6 +577,37 @@ export function useOrganizationReservations({
     }
   }, [tenantId, orgId, status, startDate, endDate, fetchSupabaseReservations])
 
+  // Convexの一覧から予約が消えた（＝Supabaseへ移行された可能性）場合にSupabase側をリフレッシュ
+  // これにより、完了処理直後でも新しい履歴が一覧に反映される
+  const prevConvexIdsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (!tenantId || !orgId) return
+
+    // Supabaseデータを表示しないステータスではリフレッシュ不要
+    if (status === 'confirmed' || status === 'pending') {
+      prevConvexIdsRef.current = new Set(convexReservations.map((r) => r.id))
+      return
+    }
+
+    const prevIds = prevConvexIdsRef.current
+    const currentIds = new Set(convexReservations.map((r) => r.id))
+
+    // 前回存在していたIDが今回なくなっている＝Convexから削除（=移行）とみなす
+    let removed = 0
+    prevIds.forEach((id) => {
+      if (!currentIds.has(id)) removed++
+    })
+
+    // 移行らしき変化があればSupabase側をリフレッシュ（ページを先頭に戻す）
+    if (removed > 0) {
+      setSupabasePage(1)
+      fetchSupabaseReservations(1, true)
+    }
+
+    // 参照を更新
+    prevConvexIdsRef.current = currentIds
+  }, [tenantId, orgId, status, convexReservations, fetchSupabaseReservations])
+
   // Convex予約詳細の取得と統合（現在は無効化）
   // TODO: 必要に応じて詳細情報取得ロジックを実装
   // 現在は組織レベルの一覧表示では詳細情報は不要なため、パフォーマンスのために無効化
@@ -602,24 +626,11 @@ export function useOrganizationReservations({
         .map((r) => ({ id: r.id, date: r.date, status: r.status, source: r.source })),
     })
 
-    // ステータスごとのデータソース選択
-    // - confirmed, pending: アクティブな予約 → Convexのみ
-    // - completed: 最近の完了データも含む → 両方から取得して統合
-    // - cancelled: 最近のキャンセルも含む → 両方から取得
-    // - refunded: 履歴データ → Supabaseのみ（Convexはスキップ）
-    // - all/未指定: 両方から取得
-    let allReservations: IntegratedReservation[] = []
-
-    if (status === 'confirmed' || status === 'pending') {
-      // アクティブな予約はConvexのみ
-      allReservations = [...convexReservations]
-    } else if (status === 'refunded') {
-      // 返金データはSupabaseのみ（Convexはスキップ）
-      allReservations = [...supabaseReservations]
-    } else {
-      // completed, cancelled, allまたは未指定の場合は両方から取得
-      allReservations = [...convexReservations, ...supabaseReservations]
-    }
+    // データは常に両方から取得して統合（ステータスフィルタは統合後に適用）
+    let allReservations: IntegratedReservation[] = [
+      ...convexReservations,
+      ...supabaseReservations,
+    ]
 
     console.log('[useOrganizationReservations] Before deduplication:', {
       allReservationsCount: allReservations.length,
@@ -645,6 +656,11 @@ export function useOrganizationReservations({
 
       return acc
     }, [] as IntegratedReservation[])
+
+    // 統合後にステータスフィルタ（UIの選択）を適用
+    if (status && status !== 'all') {
+      allReservations = allReservations.filter((r) => r.status === status)
+    }
 
     // 日時でソート（早い順）
     return uniqueReservations.sort((a, b) => {
@@ -696,16 +712,9 @@ export function useOrganizationReservations({
       skipConvexForHistoricalData,
     })
 
-    // confirmed, pendingの場合はConvexのみチェック
-    if (status === 'confirmed' || status === 'pending') {
-      return currentConvexStatus === 'LoadingFirstPage'
-    }
-    // refundedの場合はSupabaseのみチェック（Convexはスキップ）
-    if (status === 'refunded') {
-      return supabaseLoading
-    }
-    // completed, cancelled, allまたは未指定の場合は両方チェック
-    return (canFetchConvex && currentConvexStatus === 'LoadingFirstPage') || supabaseLoading
+    // 常に両方のロード状況を考慮（Convexは条件によりskipされることあり）
+    const convexLoading = canFetchConvex && currentConvexStatus === 'LoadingFirstPage'
+    return convexLoading || supabaseLoading
   }, [
     convexStatus,
     convexDateRangeStatus,
@@ -723,16 +732,9 @@ export function useOrganizationReservations({
   const hasMore = useMemo(() => {
     const currentConvexStatus = useDataRangeQuery ? convexDateRangeStatus : convexStatus
 
-    // confirmed, pendingの場合はConvexのみチェック
-    if (status === 'confirmed' || status === 'pending') {
-      return currentConvexStatus === 'CanLoadMore'
-    }
-    // refundedの場合はSupabaseのみチェック（Convexはスキップ）
-    if (status === 'refunded') {
-      return supabaseHasMore
-    }
-    // completed, cancelled, allまたは未指定の場合は両方チェック
-    return (canFetchConvex && currentConvexStatus === 'CanLoadMore') || supabaseHasMore
+    // 常に両方のページネーション状況を考慮
+    const convexCanMore = canFetchConvex && currentConvexStatus === 'CanLoadMore'
+    return convexCanMore || supabaseHasMore
   }, [
     convexStatus,
     convexDateRangeStatus,
