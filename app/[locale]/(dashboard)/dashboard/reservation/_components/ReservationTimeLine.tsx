@@ -609,7 +609,7 @@ const ReservationCreateDialog = memo(
     const totalTimeMinutes = useMemo(() => {
       const menuTime = selectedMenus.reduce((sum, item) => {
         const menu = menus.find((m) => m._id === item.id)
-        return sum + (menu?.duration_min ?? 0)
+        return sum + (menu?.duration_min ?? 0) * (item.quantity || 1)
       }, 0)
       const optionTime = selectedOptions.reduce((sum, item) => {
         const opt = options.find((o) => o._id === item.id)
