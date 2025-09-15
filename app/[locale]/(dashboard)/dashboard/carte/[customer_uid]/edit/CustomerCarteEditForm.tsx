@@ -971,7 +971,7 @@ function CustomerCarteEditForm() {
             <div className="p-3 md:p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-destructive">
-                  <FileText className="w-5 h-5 text-destructive-foreground" />
+                  <FileText className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <h2 className="text-base md:text-xl font-bold text-primary">
                   {tCarte('edit.medicalInfo.title')}

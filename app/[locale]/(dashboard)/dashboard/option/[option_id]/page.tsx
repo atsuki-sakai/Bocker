@@ -179,7 +179,11 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
 
   if (!option) {
     return (
-      <DashboardSection title={t('title')} backLink="/dashboard/option" backLinkTitle={t('list.title')}>
+      <DashboardSection
+        title={t('title')}
+        backLink="/dashboard/option"
+        backLinkTitle={t('list.title')}
+      >
         <div className="space-y-6">
           <Card className="w-full">
             <CardContent className="p-8">
@@ -196,9 +200,9 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
   }
 
   return (
-    <DashboardSection 
-      title={option?.name || t('title')} 
-      backLink="/dashboard/option" 
+    <DashboardSection
+      title={option?.name || t('title')}
+      backLink="/dashboard/option"
       backLinkTitle={t('list.title')}
     >
       <div className="min-h-screen pb-8">
@@ -214,7 +218,9 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                   <div className="w-full">
                     <h1 className="text-xl font-bold">{option.name}</h1>
                     <p className="text-sm">
-                      在庫: {option.in_stock}{t('fields.pieces')} • 最大注文数: {option.order_limit}{t('fields.pieces')}
+                      在庫: {option.in_stock}
+                      {t('fields.pieces')} • 最大注文数: {option.order_limit}
+                      {t('fields.pieces')}
                     </p>
                   </div>
                 </div>
@@ -228,7 +234,6 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                     variant="destructive"
                     size="sm"
                     onClick={() => setIsDeleteDialogOpen(true)}
-                    className="text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground"
                   >
                     <Trash className="w-4 h-4 mr-2" /> {t('delete')}
                   </Button>
@@ -277,32 +282,34 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                       </CarouselContent>
                     </Carousel>
 
-                    {option.images && option.images[0].thumbnail_url && option.images.length > 1 && (
-                      <div className="flex space-x-2 justify-center overflow-x-auto py-2">
-                        {option.images.map((image, index) => (
-                          <button
-                            key={`thumb-${index}`}
-                            onClick={() => handleThumbnailClick(index)}
-                            className={`flex-shrink-0 w-16 h-16 relative rounded-lg border-2 overflow-hidden transition-all duration-200
+                    {option.images &&
+                      option.images[0].thumbnail_url &&
+                      option.images.length > 1 && (
+                        <div className="flex space-x-2 justify-center overflow-x-auto py-2">
+                          {option.images.map((image, index) => (
+                            <button
+                              key={`thumb-${index}`}
+                              onClick={() => handleThumbnailClick(index)}
+                              className={`flex-shrink-0 w-16 h-16 relative rounded-lg border-2 overflow-hidden transition-all duration-200
                                         ${
                                           currentMainImageIndex === index
                                             ? 'border-primary ring-primary ring-2 ring-offset-2 shadow-lg'
                                             : 'border-border opacity-70 hover:opacity-100 hover:border-primary/50'
                                         }`}
-                            aria-label={t('image.show', { index: index + 1 })}
-                          >
-                            <Image
-                              src={image.thumbnail_url || ''}
-                              alt={`${t('image.thumbnail')} ${index + 1}`}
-                              className="w-full h-full object-cover"
-                              fill
-                              sizes="64px"
-                              loading="lazy"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                              aria-label={t('image.show', { index: index + 1 })}
+                            >
+                              <Image
+                                src={image.thumbnail_url || ''}
+                                alt={`${t('image.thumbnail')} ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                fill
+                                sizes="64px"
+                                loading="lazy"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center w-full aspect-[4/3] bg-muted text-muted-foreground rounded-xl border border-border">
@@ -341,19 +348,19 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                           <div className="relative p-4 rounded-xl border border-palette-1 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-1/40">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="p-2 rounded-lg bg-palette-1">
-                                <PiggyBank className="w-4 h-4 text-palette-1-foreground" />
+                                <PiggyBank className="w-4 h-4 text-primary-foreground" />
                               </div>
-                              <p className="text-xs text-palette-1-foreground uppercase tracking-wide font-medium">
+                              <p className="text-xs text-primary uppercase tracking-wide font-medium">
                                 {t('fields.price')}
                               </p>
                             </div>
                             <div className="flex items-baseline">
                               {formattedSalePrice ? (
                                 <div className="flex flex-col">
-                                  <span className="text-xl font-bold text-palette-1-foreground">
+                                  <span className="text-xl font-bold text-primary">
                                     {formattedSalePrice}
                                   </span>
-                                  <span className="text-sm text-palette-1-foreground/70 line-through">
+                                  <span className="text-sm text-primary/70 line-through">
                                     {formattedPrice}
                                   </span>
                                 </div>
@@ -367,19 +374,21 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                         </div>
 
                         {/* 所要時間 */}
-                        {option.duration_min && option.duration_min > 0 && option.duration_min !== 0 ? (
+                        {option.duration_min &&
+                        option.duration_min > 0 &&
+                        option.duration_min !== 0 ? (
                           <div className="group relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-r from-palette-2 to-palette-2 rounded-xl" />
                             <div className="relative p-4 rounded-xl border border-palette-2 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-2/40">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="p-2 rounded-lg bg-palette-2">
-                                  <Clock className="w-4 h-4 text-palette-2-foreground" />
+                                  <Clock className="w-4 h-4 text-primary-foreground" />
                                 </div>
-                                <p className="text-xs text-palette-2-foreground uppercase tracking-wide font-medium">
+                                <p className="text-xs text-primary uppercase tracking-wide font-medium">
                                   {t('fields.totalDuration')}
                                 </p>
                               </div>
-                              <p className="text-lg font-bold text-palette-2-foreground">
+                              <p className="text-lg font-bold text-primary">
                                 {option.duration_min}
                                 {t('fields.minutes')}
                               </p>
@@ -394,14 +403,15 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                             <div className="relative p-4 rounded-xl border border-palette-3 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="p-2 rounded-lg bg-palette-3">
-                                  <Package className="w-4 h-4 text-palette-3-foreground" />
+                                  <Package className="w-4 h-4 text-primary-foreground" />
                                 </div>
-                                <p className="text-xs text-palette-3-foreground uppercase tracking-wide font-medium">
+                                <p className="text-xs text-primary uppercase tracking-wide font-medium">
                                   {t('fields.stock')}
                                 </p>
                               </div>
-                              <p className="text-sm font-semibold text-palette-3-foreground">
-                                {option.in_stock}{t('fields.pieces')}
+                              <p className="text-sm font-semibold text-primary">
+                                {option.in_stock}
+                                {t('fields.pieces')}
                               </p>
                             </div>
                           </div>
@@ -411,14 +421,15 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                             <div className="relative p-4 rounded-xl border border-palette-4 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-4/40">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="p-2 rounded-lg bg-palette-4">
-                                  <Hash className="w-4 h-4 text-palette-4-foreground" />
+                                  <Hash className="w-4 h-4 text-primary-foreground" />
                                 </div>
-                                <p className="text-xs text-palette-4-foreground uppercase tracking-wide font-medium">
+                                <p className="text-xs text-primary uppercase tracking-wide font-medium">
                                   {t('fields.orderLimit')}
                                 </p>
                               </div>
-                              <p className="text-sm font-semibold text-palette-4-foreground">
-                                {option.order_limit}{t('fields.pieces')}
+                              <p className="text-sm font-semibold text-primary">
+                                {option.order_limit}
+                                {t('fields.pieces')}
                               </p>
                             </div>
                           </div>
@@ -481,9 +492,9 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                         <div className="relative p-6 rounded-xl border border-palette-3/20 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
                           <div className="flex items-center gap-3 mb-4">
                             <div className="p-2 rounded-lg bg-palette-3">
-                              <Tag className="w-4 h-4 text-palette-3-foreground" />
+                              <Tag className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <h3 className="text-sm font-medium text-palette-3-foreground uppercase tracking-wide">
+                            <h3 className="text-sm font-medium text-primary uppercase tracking-wide">
                               {t('fields.tags')}
                             </h3>
                           </div>
@@ -493,7 +504,7 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                                 <Badge
                                   key={index}
                                   variant="outline"
-                                  className="px-3 py-1 text-xs font-medium bg-palette-3 text-palette-3-foreground border-palette-3"
+                                  className="px-3 py-1 text-xs font-medium bg-palette-3 text-primary border-palette-3"
                                 >
                                   {tag}
                                 </Badge>
@@ -562,7 +573,11 @@ function OptionDetailPage({ params }: OptionDetailPageProps) {
                 >
                   {t('confirmDeleteDialog.cancel')}
                 </Button>
-                <Button variant="destructive" onClick={() => handleDeleteOption()} className="flex-1">
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteOption()}
+                  className="flex-1"
+                >
                   <Trash className="w-4 h-4 mr-2" />
                   {t('confirmDeleteDialog.delete')}
                 </Button>

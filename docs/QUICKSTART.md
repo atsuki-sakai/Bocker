@@ -6,11 +6,13 @@
 ## Development Setup
 
 ### Prerequisites
+
 - Node.js 18+ and pnpm
 - Git and terminal access
 - Accounts: Vercel, Convex, Supabase, Clerk, Stripe
 
 ### 1. Clone & Install (2 minutes)
+
 ```bash
 git clone https://github.com/your-org/bocker.git
 cd bocker
@@ -18,6 +20,7 @@ pnpm install
 ```
 
 ### 2. Environment Configuration (5 minutes)
+
 ```bash
 # Copy environment template
 cp .env.example .env.local
@@ -32,6 +35,7 @@ STRIPE_SECRET_KEY=sk_test_...
 ```
 
 ### 3. Database Setup (3 minutes)
+
 ```bash
 # Initialize Convex
 npx convex dev
@@ -41,6 +45,7 @@ pnpm migrate:supabase
 ```
 
 ### 4. Start Development (1 minute)
+
 ```bash
 # Start all services
 pnpm dev
@@ -55,11 +60,13 @@ pnpm dev:backend   # Convex dashboard
 ### For Salon Owners
 
 #### 1. Account Setup (5 minutes)
+
 1. **Sign up**: Visit app.bocker.jp and create account
 2. **Organization**: Create your salon organization
 3. **Verification**: Verify email and phone number
 
 #### 2. Basic Configuration (10 minutes)
+
 ```
 Store Settings:
 ├── Basic Info (name, address, phone)
@@ -69,6 +76,7 @@ Store Settings:
 ```
 
 #### 3. Start Taking Reservations (Immediate)
+
 - **Reservation URL**: Shareable booking link generated automatically
 - **Calendar View**: Drag-and-drop appointment management
 - **Customer Portal**: Self-service booking for repeat customers
@@ -76,6 +84,7 @@ Store Settings:
 ### For Developers
 
 #### Core Architecture
+
 ```
 Frontend (Next.js)
     ↓
@@ -87,27 +96,30 @@ External Services (Stripe, GCS, LINE)
 ```
 
 #### Key Concepts
+
 - **Multi-tenancy**: All data isolated by `tenant_id` + `org_id`
 - **Optimistic inventory**: Immediate slot reservation prevents double-booking
 - **Hybrid database**: Hot data in Convex, cold data migrated to Supabase
 - **Event-driven**: Convex actions handle async operations
 
 #### First API Call
+
 ```typescript
-import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { useQuery } from 'convex/react'
+import { api } from '../convex/_generated/api'
 
 // Get reservations for current tenant
 const reservations = useQuery(api.reservations.list, {
-  tenant_id: "current_tenant",
-  org_id: "current_org",
-  date_range: { start: Date.now(), end: Date.now() + 86400000 }
-});
+  tenant_id: 'current_tenant',
+  org_id: 'current_org',
+  date_range: { start: Date.now(), end: Date.now() + 86400000 },
+})
 ```
 
 ## Testing
 
 ### Unit Tests
+
 ```bash
 # Run all tests
 pnpm test
@@ -120,6 +132,7 @@ pnpm test:coverage
 ```
 
 ### E2E Tests
+
 ```bash
 # Run Playwright tests
 pnpm test:e2e
@@ -132,6 +145,7 @@ pnpm test:e2e -- tests/reservation-flow.spec.ts
 ```
 
 ### Test Data Setup
+
 ```bash
 # Generate test data (development only)
 npx convex run testing:seedData --tenantId "test-tenant"
@@ -140,6 +154,7 @@ npx convex run testing:seedData --tenantId "test-tenant"
 ## Deployment
 
 ### Vercel Deployment (5 minutes)
+
 ```bash
 # Deploy to staging
 vercel --env=staging
@@ -155,6 +170,7 @@ CLERK_SECRET_KEY=sk_live_...
 ```
 
 ### Convex Deployment
+
 ```bash
 # Deploy database functions
 npx convex deploy --prod
@@ -164,6 +180,7 @@ npx convex run migrations:initialSetup --prod
 ```
 
 ### Supabase Setup
+
 ```bash
 # Apply database migrations
 supabase db push --linked
@@ -177,6 +194,7 @@ supabase db reset --linked
 ### Creating New Features
 
 #### 1. Database Schema (Convex)
+
 ```typescript
 // convex/schema.ts
 export default defineSchema({
@@ -187,50 +205,52 @@ export default defineSchema({
     is_archive: v.boolean(),
     // ... feature-specific fields
   })
-  .index("by_tenant_org", ["tenant_id", "org_id"])
-  .index("by_tenant_name", ["tenant_id", "name"])
-});
+    .index('by_tenant_org', ['tenant_id', 'org_id'])
+    .index('by_tenant_name', ['tenant_id', 'name']),
+})
 ```
 
 #### 2. API Functions (Convex)
+
 ```typescript
 // convex/new_feature.ts
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from './_generated/server'
+import { v } from 'convex/values'
 
 export const create = mutation({
   args: {
     tenant_id: v.string(),
     org_id: v.string(),
-    name: v.string()
+    name: v.string(),
   },
   handler: async (ctx, args) => {
     // Validate tenant access
-    await validateTenantAccess(ctx, args.tenant_id);
-    
-    return await ctx.db.insert("new_feature", {
+    await validateTenantAccess(ctx, args.tenant_id)
+
+    return await ctx.db.insert('new_feature', {
       ...args,
       is_archive: false,
-      created_at: Date.now()
-    });
-  }
-});
+      created_at: Date.now(),
+    })
+  },
+})
 
 export const list = query({
   args: { tenant_id: v.string(), org_id: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("new_feature")
-      .withIndex("by_tenant_org", q => 
-        q.eq("tenant_id", args.tenant_id).eq("org_id", args.org_id)
+      .query('new_feature')
+      .withIndex('by_tenant_org', (q) =>
+        q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id)
       )
-      .filter(q => q.eq(q.field("is_archive"), false))
-      .collect();
-  }
-});
+      .filter((q) => q.eq(q.field('is_archive'), false))
+      .collect()
+  },
+})
 ```
 
 #### 3. Frontend Component
+
 ```typescript
 // components/feature/NewFeatureList.tsx
 import { useQuery, useMutation } from "convex/react";
@@ -239,14 +259,14 @@ import { useTenant } from "@/hooks/useTenant";
 
 export function NewFeatureList() {
   const { tenantId, orgId } = useTenant();
-  
+
   const features = useQuery(api.new_feature.list, {
     tenant_id: tenantId,
     org_id: orgId
   });
-  
+
   const createFeature = useMutation(api.new_feature.create);
-  
+
   const handleCreate = async (name: string) => {
     await createFeature({
       tenant_id: tenantId,
@@ -254,7 +274,7 @@ export function NewFeatureList() {
       name
     });
   };
-  
+
   return (
     <div className="space-y-4">
       {features?.map(feature => (
@@ -268,38 +288,39 @@ export function NewFeatureList() {
 ### Multi-tenant Data Access
 
 #### Required Pattern (Every Query)
+
 ```typescript
 // ✅ Correct - Always include tenant filters
 const data = await ctx.db
-  .query("table_name")
-  .withIndex("by_tenant_org", q => 
-    q.eq("tenant_id", args.tenant_id).eq("org_id", args.org_id)
-  )
-  .filter(q => q.eq(q.field("is_archive"), false))
-  .collect();
+  .query('table_name')
+  .withIndex('by_tenant_org', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
+  .filter((q) => q.eq(q.field('is_archive'), false))
+  .collect()
 
 // ❌ Incorrect - Missing tenant isolation
-const data = await ctx.db.query("table_name").collect();
+const data = await ctx.db.query('table_name').collect()
 ```
 
 #### Soft Deletes
+
 ```typescript
 // Mark as archived instead of deleting
 export const softDelete = mutation({
   handler: async (ctx, { id, tenant_id }) => {
-    await validateTenantAccess(ctx, tenant_id);
-    
-    await ctx.db.patch(id, { 
+    await validateTenantAccess(ctx, tenant_id)
+
+    await ctx.db.patch(id, {
       is_archive: true,
-      archived_at: Date.now()
-    });
-  }
-});
+      archived_at: Date.now(),
+    })
+  },
+})
 ```
 
 ## Performance Best Practices
 
 ### Database Optimization
+
 ```typescript
 // Use compound indexes for common query patterns
 .index("by_tenant_status_date", ["tenant_id", "status", "scheduled_at"])
@@ -318,6 +339,7 @@ const results = await ctx.db
 ```
 
 ### Frontend Optimization
+
 ```typescript
 // Use React.memo for expensive components
 const ExpensiveComponent = React.memo(({ data }) => {
@@ -337,18 +359,22 @@ const debouncedSearch = useMemo(
 ### Common Issues
 
 #### 1. "Unauthorized" Errors
+
 - **Cause**: Missing tenant validation or incorrect auth setup
 - **Solution**: Ensure all Convex functions call `validateTenantAccess()`
 
 #### 2. Slow Queries
+
 - **Cause**: Missing database indexes or inefficient query patterns
 - **Solution**: Add appropriate compound indexes, check query plans
 
 #### 3. Memory Issues (Development)
+
 - **Cause**: Large datasets in Convex during development
 - **Solution**: Run data migration to Supabase: `npx convex run migrations:migrateOldData`
 
 #### 4. Build Failures
+
 - **Cause**: TypeScript errors or missing environment variables
 - **Solution**: Run `pnpm lint` and `pnpm type-check`, verify `.env.local`
 
@@ -357,16 +383,18 @@ const debouncedSearch = useMemo(
 - **Documentation**: Check `/docs` folder for detailed guides
 - **GitHub Issues**: Report bugs and feature requests
 - **Development Team**: Internal Slack #bocker-dev channel
-- **User Support**: support@bocker.jp for user-facing issues
+- **User Support**: bocker.help@gmail.com for user-facing issues
 
 ## Next Steps
 
 ### For Development
+
 1. Read [System Design](./architecture/system-design.md) for architecture details
 2. Review [Core Features](./implementation/core-features.md) for implementation patterns
 3. Set up [Monitoring](./operations/monitoring.md) for production deployments
 
 ### For Business Use
+
 1. Complete [Setup Guide](./operations/setup.md) for production deployment
 2. Review [User Guide](./business/user-guide.md) for feature documentation
 3. Configure [Admin Manual](./guides/admin-manual.md) for staff training

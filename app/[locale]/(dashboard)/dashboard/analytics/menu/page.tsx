@@ -991,22 +991,33 @@ function MenuAnalyticsPage() {
                                   // 予約数が0の場合はこのメニューはランキングに含まれるべきではない
                                   // （サーバー側で既にフィルタリングされているはず）
                                   if (bookings === 0) {
-                                    console.warn('[Menu Analytics] Menu with 0 bookings found in ranking:', menu.name)
+                                    console.warn(
+                                      '[Menu Analytics] Menu with 0 bookings found in ranking:',
+                                      menu.name
+                                    )
                                     return `取引実績なし（データ要確認）`
                                   }
 
                                   // データ整合性チェック
                                   if (amount <= 0) {
-                                    console.warn('[Menu Analytics] Menu with invalid amount found:', menu.name, amount)
+                                    console.warn(
+                                      '[Menu Analytics] Menu with invalid amount found:',
+                                      menu.name,
+                                      amount
+                                    )
                                     return `データエラー`
                                   }
 
                                   // 平均単価を計算
                                   const avgAmount = Math.round(amount / bookings)
-                                  
+
                                   // 異常に低い単価の場合は警告
                                   if (avgAmount < 100) {
-                                    console.warn('[Menu Analytics] Unusually low average amount:', menu.name, avgAmount)
+                                    console.warn(
+                                      '[Menu Analytics] Unusually low average amount:',
+                                      menu.name,
+                                      avgAmount
+                                    )
                                   }
 
                                   return `${bookings}件の予約 | 平均単価 ¥${avgAmount.toLocaleString()}`
@@ -1068,7 +1079,7 @@ function MenuAnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="p-4 bg-link border border-link-foreground rounded-lg">
+                      <div className="p-4 bg-success border border-success-foreground rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <Award className="w-6 h-6 text-link-foreground" />{' '}
                           <span className="text-sm font-medium">売上No.1価格帯</span>

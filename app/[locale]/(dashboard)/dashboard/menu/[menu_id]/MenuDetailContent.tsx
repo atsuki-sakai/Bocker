@@ -275,12 +275,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                     <Edit className="w-4 h-4 mr-2" /> {t('edit')}
                   </Button>
                 </Link>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground"
-                >
+                <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
                   <Trash className="w-4 h-4 mr-2" /> {t('delete')}
                 </Button>
               </div>
@@ -407,24 +402,24 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                         <div className="relative p-4 rounded-xl border border-palette-1 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-1/40">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 rounded-lg bg-palette-1">
-                              <PiggyBank className="w-4 h-4 text-palette-1-foreground" />
+                              <PiggyBank className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <p className="text-xs text-palette-1-foreground uppercase tracking-wide font-medium">
+                            <p className="text-xs text-primary uppercase tracking-wide font-medium">
                               {t('fields.price')}
                             </p>
                           </div>
                           <div className="flex items-baseline">
                             {formattedSalePrice ? (
                               <div className="flex flex-col">
-                                <span className="text-xl font-bold text-palette-1-foreground">
+                                <span className="text-xl font-bold text-primary">
                                   {formattedSalePrice}
                                 </span>
-                                <span className="text-sm text-palette-1-foreground/70 line-through">
+                                <span className="text-sm text-primary/70 line-through">
                                   {formattedPrice}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-xl font-bold text-palette-1-foreground">
+                              <span className="text-xl font-bold text-primary">
                                 {formattedPrice}
                               </span>
                             )}
@@ -438,13 +433,13 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                         <div className="relative p-4 rounded-xl border border-palette-2 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-2/40">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 rounded-lg bg-palette-2">
-                              <Clock className="w-4 h-4 text-palette-2-foreground" />
+                              <Clock className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <p className="text-xs text-palette-2-foreground uppercase tracking-wide font-medium">
+                            <p className="text-xs text-primary uppercase tracking-wide font-medium">
                               {t('fields.totalDuration')}
                             </p>
                           </div>
-                          <p className="text-lg font-bold text-palette-2-foreground">
+                          <p className="text-lg font-bold text-primary">
                             {menu.duration_min || 0}
                             {t('fields.minutes')}
                           </p>
@@ -458,13 +453,13 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                           <div className="relative p-4 rounded-xl border border-palette-3 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="p-2 rounded-lg bg-palette-3">
-                                <Users className="w-4 h-4 text-palette-3-foreground" />
+                                <Users className="w-4 h-4 text-primary-foreground" />
                               </div>
-                              <p className="text-xs text-palette-3-foreground uppercase tracking-wide font-medium">
+                              <p className="text-xs text-primary uppercase tracking-wide font-medium">
                                 {t('fields.target')}
                               </p>
                             </div>
-                            <p className="text-sm font-semibold text-palette-3-foreground">
+                            <p className="text-sm font-semibold text-primary">
                               {menu.target_gender && menu.target_gender !== 'unselected'
                                 ? convertGender(
                                     menu.target_gender as 'unselected' | 'male' | 'female'
@@ -479,13 +474,13 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                           <div className="relative p-4 rounded-xl border border-palette-4 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-4/40">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="p-2 rounded-lg bg-palette-4">
-                                <Crosshair className="w-4 h-4 text-palette-4-foreground" />
+                                <Crosshair className="w-4 h-4 text-primary-foreground" />
                               </div>
-                              <p className="text-xs text-palette-4-foreground uppercase tracking-wide font-medium">
+                              <p className="text-xs text-primary uppercase tracking-wide font-medium">
                                 {t('fields.targetType')}
                               </p>
                             </div>
-                            <p className="text-sm font-semibold text-palette-4-foreground">
+                            <p className="text-sm font-semibold text-primary">
                               {getTargetTypeLabel(menu.target_type || '')}
                             </p>
                           </div>
@@ -498,13 +493,13 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                         <div className="relative p-4 rounded-xl border border-palette-5 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-5/40">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 rounded-lg bg-palette-5">
-                              <CreditCard className="w-4 h-4 text-palette-5-foreground" />
+                              <CreditCard className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <p className="text-xs text-palette-5-foreground uppercase tracking-wide font-medium">
+                            <p className="text-xs text-primary uppercase tracking-wide font-medium">
                               {t('fields.paymentMethod')}
                             </p>
                           </div>
-                          <p className="text-sm font-semibold text-palette-5-foreground">
+                          <p className="text-sm font-semibold text-primary">
                             {getPaymentMethodLabel(menu.payment_method || '')}
                           </p>
                         </div>
@@ -615,9 +610,9 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                       <div className="relative p-6 rounded-xl border border-palette-3/20 bg-card backdrop-blur-sm transition-all duration-300 hover:shadow-md group-hover:border-palette-3/40">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="p-2 rounded-lg bg-palette-3">
-                            <Tag className="w-4 h-4 text-palette-3-foreground" />
+                            <Tag className="w-4 h-4 text-primary-foreground" />
                           </div>
-                          <h3 className="text-sm font-medium text-palette-3-foreground uppercase tracking-wide">
+                          <h3 className="text-sm font-medium text-primary uppercase tracking-wide">
                             {t('fields.tags')}
                           </h3>
                         </div>
@@ -627,7 +622,7 @@ export function MenuDetailContent({ menu }: MenuDetailContentProps) {
                               <Badge
                                 key={index}
                                 variant="outline"
-                                className="px-3 py-1 text-xs font-medium bg-palette-3 text-palette-3-foreground border-palette-3"
+                                className="px-3 py-1 text-xs font-medium bg-palette-3 text-primary border-palette-3"
                               >
                                 {tag}
                               </Badge>

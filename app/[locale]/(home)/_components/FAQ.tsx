@@ -52,7 +52,7 @@ export function FAQ() {
             <Link
               role="link"
               href="/contact"
-              className="mx-3 font-semibold text-link-foreground hover:text-link-foreground/80"
+              className="mx-3 font-semibold text-link-foreground hover:text-link-foreground/80 underline underline-offset-4"
             >
               {t('cta')}
             </Link>

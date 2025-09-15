@@ -368,7 +368,7 @@ function DailyAnalyticsPage() {
   // Safe date parsing function for mobile compatibility
   const safeParseDate = useCallback((dateStr: string): Date | null => {
     if (!dateStr) return null
-    
+
     // Try different parsing methods for cross-browser compatibility
     try {
       // First try: assume ISO format (YYYY-MM-DD)
@@ -376,19 +376,19 @@ function DailyAnalyticsPage() {
         const [year, month, day] = dateStr.split('-').map(Number)
         return new Date(year, month - 1, day) // month is 0-indexed
       }
-      
+
       // Second try: parse as-is
       const parsed = new Date(dateStr)
       if (!isNaN(parsed.getTime())) {
         return parsed
       }
-      
+
       // Third try: add time component for Safari compatibility
       const withTime = new Date(dateStr + 'T00:00:00')
       if (!isNaN(withTime.getTime())) {
         return withTime
       }
-      
+
       return null
     } catch (error) {
       console.warn('Date parsing failed for:', dateStr, error)
@@ -596,7 +596,9 @@ function DailyAnalyticsPage() {
         const dayData = dailySalesData.find((d) => d.sale_date === dateStr)
         const bookingCount = dayData?.booking_count || 0
         const avgAmount = bookingCount > 0 ? Math.round(item.value / bookingCount) : 0
-        const weekdayName = parsedDate ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' }) : '不明'
+        const weekdayName = parsedDate
+          ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' })
+          : '不明'
 
         csvData.push([
           `${index + 1}位`,
@@ -624,7 +626,9 @@ function DailyAnalyticsPage() {
           const dayData = dailySalesData.find((d) => d.sale_date === dateStr)
           const bookingCount = dayData?.booking_count || 0
           const avgAmount = bookingCount > 0 ? Math.round(item.value / bookingCount) : 0
-          const weekdayName = parsedDate ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' }) : '不明'
+          const weekdayName = parsedDate
+            ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' })
+            : '不明'
 
           csvData.push([
             `下位${index + 1}`,
@@ -818,7 +822,9 @@ function DailyAnalyticsPage() {
         const rank = trendData.filter((t) => t.value > item.value).length + 1
         const diff = item.value - salesSummary.dailyAverage
         const parsedDate = safeParseDate(item.date)
-        const weekday = parsedDate ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' }) : '不明'
+        const weekday = parsedDate
+          ? parsedDate.toLocaleDateString('ja-JP', { weekday: 'short' })
+          : '不明'
         const expectedSales = salesSummary.dailyAverage
         const achievementRate = ((item.value / expectedSales) * 100).toFixed(1)
 
@@ -1304,7 +1310,7 @@ function DailyAnalyticsPage() {
 
             {/* 曜日別パフォーマンスサマリー */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="border border-border rounded-lg p-3 bg-link text-link-foreground">
+              <div className="border border-border rounded-lg p-3 bg-success text-success-foreground">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
                   <h3 className="text-lg  font-semibold">最高パフォーマンス</h3>
@@ -1313,7 +1319,7 @@ function DailyAnalyticsPage() {
                   {weekdayAnalysis.bestItem ? (
                     <div className="space-y-2">
                       <p className="text-2xl font-bold">{weekdayAnalysis.bestItem.dayName}</p>
-                      <p className="text-lg font-semibold text-link-foreground">
+                      <p className="text-lg font-semibold text-success-foreground">
                         ¥{weekdayAnalysis.bestItem.totalAmount.toLocaleString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
@@ -1403,15 +1409,15 @@ function DailyAnalyticsPage() {
                       {weekdayPerformance.map((item, index) => (
                         <tr
                           key={index}
-                          className={`border-b text-nowrap ${item.isHighest ? 'bg-link' : item.isLowest ? 'bg-destructive-foreground' : ''}`}
+                          className={`border-b text-nowrap ${item.isHighest ? 'bg-success' : item.isLowest ? 'bg-destructive-foreground' : ''}`}
                         >
                           <td className="p-2 w-10 text-center">
                             <span
                               className={`px-2 py-1 rounded text-xs ${
                                 item.rank === 1
-                                  ? 'bg-link text-link-foreground font-bold'
+                                  ? 'bg-success text-success-foreground font-bold'
                                   : item.rank === 2
-                                    ? 'bg-neon-foreground text-neon font-bold'
+                                    ? 'bg-link-foreground text-link font-bold'
                                     : item.rank === 3
                                       ? 'bg-warning text-warning-foreground font-bold'
                                       : item.isLowest
@@ -1423,7 +1429,7 @@ function DailyAnalyticsPage() {
                             </span>
                           </td>
                           <td
-                            className={`p-2 font-medium ${item.isHighest ? 'text-link-foreground' : item.isLowest ? 'text-destructive' : ''}`}
+                            className={`p-2 font-medium ${item.isHighest ? 'text-success-foreground' : item.isLowest ? 'text-destructive' : ''}`}
                           >
                             {item.dayName}
                           </td>
@@ -1594,7 +1600,7 @@ function DailyAnalyticsPage() {
 
             {/* 月別パフォーマンスサマリー */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="border border-border rounded-lg p-3 bg-link text-link-foreground">
+              <div className="border border-border rounded-lg p-3 bg-success text-success-foreground">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
                   <h3 className="text-lg font-semibold">最高パフォーマンス</h3>
@@ -1603,7 +1609,7 @@ function DailyAnalyticsPage() {
                   {monthlyAnalysis.bestItem ? (
                     <div className="space-y-2">
                       <p className="text-2xl font-bold">{monthlyAnalysis.bestItem.monthName}</p>
-                      <p className="text-lg font-semibold text-link-foreground">
+                      <p className="text-lg font-semibold text-success-foreground">
                         ¥{monthlyAnalysis.bestItem.totalAmount.toLocaleString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
@@ -1682,7 +1688,7 @@ function DailyAnalyticsPage() {
                       {monthlyData.map((item, index) => (
                         <tr
                           key={index}
-                          className={`border-b text-nowrap ${item.isHighest ? 'bg-link text-link-foreground' : item.isLowest ? 'bg-destructive-foreground text-destructives' : ''}`}
+                          className={`border-b text-nowrap ${item.isHighest ? 'bg-success text-success-foreground' : item.isLowest ? 'bg-destructive-foreground text-destructives' : ''}`}
                         >
                           <td className="p-2 font-medium">{item.monthName}</td>
                           <td className="p-2 text-right">¥{item.totalAmount.toLocaleString()}</td>
@@ -1694,7 +1700,7 @@ function DailyAnalyticsPage() {
                           <td className="p-2 text-right">
                             {item.growthRate !== undefined ? (
                               <span
-                                className={`${item.growthRate >= 0 ? 'text-link-foreground' : 'text-destructive'}`}
+                                className={`${item.growthRate >= 0 ? 'text-success-foreground' : 'text-destructive'}`}
                               >
                                 {item.growthRate >= 0 ? '+' : ''}
                                 {item.growthRate.toFixed(1)}%

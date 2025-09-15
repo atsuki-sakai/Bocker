@@ -76,7 +76,7 @@ const TagInput = ({ tags, setTagsAction, errors, title }: TagInputProps) => {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addTag(e)}
           placeholder={t('placeholder')}
-          className="flex-1 py-2 px-1 bg-input border border-ring rounded-md text-base focus:outline-none focus:border-primary transition-colors min-w-0"
+          className="flex-1 py-2 px-1  border border-ring rounded-md text-base focus:outline-none focus:border-primary transition-colors min-w-0"
           disabled={tags.length >= 5}
         />
         <Button

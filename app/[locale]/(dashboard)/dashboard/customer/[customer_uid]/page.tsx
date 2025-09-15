@@ -316,7 +316,7 @@ function CustomerDetailPage() {
             <div className="p-4 md:p-8">
               <div className="flex items-center gap-3 mb-4 md:mb-6">
                 <div className="p-2 rounded-lg bg-palette-1">
-                  <NotebookPen className="h-5 w-5 text-palette-1-foreground" />
+                  <NotebookPen className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <h2 className="text-xl font-bold text-primary">{t('additionalInfo')}</h2>
               </div>
@@ -395,7 +395,7 @@ function CustomerDetailPage() {
             <div className="p-4 md:p-8">
               <div className="flex items-center gap-3 mb-4 md:mb-6">
                 <div className="p-2 rounded-lg bg-palette-2">
-                  <History className="h-5 w-5 text-palette-2-foreground" />
+                  <History className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <h2 className="text-xl font-bold text-primary">{t('usageInfo')}</h2>
               </div>
@@ -436,7 +436,7 @@ function CustomerDetailPage() {
             <div className="p-4 md:p-8">
               <div className="flex items-center gap-3 mb-4 md:mb-6">
                 <div className="p-2 rounded-lg bg-palette-4">
-                  <Tag className="h-5 w-5 text-palette-4-foreground" />
+                  <Tag className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <h2 className="text-xl font-bold text-primary">{t('tags')}</h2>
               </div>
@@ -468,7 +468,7 @@ function CustomerDetailPage() {
                 <div className="flex flex-col items-center gap-3">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-palette-5">
-                      <Coins className="h-5 w-5 text-palette-5-foreground" />
+                      <Coins className="h-5 w-5 text-primary-foreground" />
                     </div>
                     <h2 className="text-xl font-bold text-primary">{t('pointHistory')}</h2>
                   </div>

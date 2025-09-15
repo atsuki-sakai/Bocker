@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ChannelTalkLoader } from '@/components/common/ChannelTalkLoader'
 import {
   HeroSection,
   FeatureSection,
@@ -87,8 +88,10 @@ export function LandingPageClient() {
           <FAQ />
           <HeaderSection />
         </main>
+
         <Footer />
       </div>
+      <ChannelTalkLoader />
     </div>
   )
 }

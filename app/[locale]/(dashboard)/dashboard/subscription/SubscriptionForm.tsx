@@ -127,7 +127,7 @@ function SubscriptionForm({
     async (subscriptionId: string, newPriceId: string) => {
       try {
         setIsSubmitting(true)
-        
+
         const result = await confirmSubscriptionUpdate({
           tenant_id: tenantId,
           org_id: orgId,
@@ -142,18 +142,18 @@ function SubscriptionForm({
           const newPlanName = getPlanNameFromPriceId(newPriceId)
           let attempts = 0
           const maxAttempts = 10
-          
+
           while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await new Promise((resolve) => setTimeout(resolve, 500))
             attempts++
-            
+
             // 最新のサブスクリプションデータを確認
             const currentSubscription = subscription
             if (currentSubscription?.plan_name === newPlanName) {
               break
             }
           }
-          
+
           toast.success(t('success.planUpdated'))
 
           // ダイアログを閉じる
@@ -281,12 +281,9 @@ function SubscriptionForm({
   }, [handleSubscribe, billingPeriod])
 
   // Dialog の open 変更時の処理
-  const handlePreviewOpenChange = useCallback(
-    (open: boolean) => {
-      setShowConfirmDialog(open)
-    },
-    []
-  )
+  const handlePreviewOpenChange = useCallback((open: boolean) => {
+    setShowConfirmDialog(open)
+  }, [])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-20vh)]">
@@ -353,7 +350,7 @@ function SubscriptionForm({
           onSubscribeAction={handleMicroSubscribe}
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
-          highlightColor="from-palette-2-foreground to-palette-2-foreground"
+          highlightColor="from-palette-1 to-palette-1"
         />
 
         {/* Lite プラン */}
@@ -379,7 +376,7 @@ function SubscriptionForm({
           onSubscribeAction={handleLiteSubscribe}
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
-          highlightColor="from-palette-2-foreground to-palette-2-foreground"
+          highlightColor="bg-gradient-to-br from-palette-2 to-palette-2"
         />
 
         {/* Pro プラン */}
@@ -406,7 +403,7 @@ function SubscriptionForm({
           onPortalAction={handleBillingPortal}
           isSubmitting={isSubmitting}
           isPopular={false}
-          highlightColor="from-palette-3-foreground to-palette-3-foreground"
+          highlightColor="bg-gradient-to-br from-palette-4 to-palette-4"
         />
       </div>
 

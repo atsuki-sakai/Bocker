@@ -338,12 +338,12 @@ export function ContactPageClient({ translations }: { translations: TranslationT
                 {/* FAQ CTA */}
                 <motion.div variants={fadeIn}>
                   <Card className="bg-muted/50">
-                    <CardContent>
+                    <CardContent className="py-5">
                       <h4 className="text-xl font-semibold mb-2">{translations.faq.title}</h4>
                       <CardDescription className="mb-4">{translations.faq.cta}</CardDescription>
                       <Link href="/faq">
                         <Button size="sm" className="text-sm">
-                          よくある質問へ
+                          {translations.faq.title}
                         </Button>
                       </Link>
                     </CardContent>

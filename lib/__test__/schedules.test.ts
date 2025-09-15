@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   getCurrentUnixTime,
   convertDayOfWeek,
-  convertTimestampToDateString,
   getDayOfWeek,
   formatTimestamp,
   getMinuteMultiples,
@@ -14,7 +13,7 @@ import {
   formatDateToYYYYMMDD,
   formatDateDistance,
   formatDateDistanceToNow,
-  formatDateRelative
+  formatDateRelative,
 } from '../schedules'
 import type { DayOfWeek, DayOfWeekJA } from '../../convex/types'
 
@@ -29,12 +28,20 @@ vi.mock('../dateLocale', () => ({
       ko: { code: 'ko' },
     }
     return Promise.resolve(mockLocales[locale as keyof typeof mockLocales] || mockLocales.en)
-  })
+  }),
 }))
 
 vi.mock('../../convex/types', () => ({
-  DAY_OF_WEEK_VALUES: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
-  DAY_OF_WEEK_VALUES_JA: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日']
+  DAY_OF_WEEK_VALUES: [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  ],
+  DAY_OF_WEEK_VALUES_JA: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
 }))
 
 // Mock date-fns functions
@@ -46,7 +53,7 @@ vi.mock('date-fns', () => ({
   }),
   formatDistance: vi.fn(() => '2 hours'),
   formatDistanceToNow: vi.fn(() => '2 hours ago'),
-  formatRelative: vi.fn(() => 'today at 2:30 PM')
+  formatRelative: vi.fn(() => 'today at 2:30 PM'),
 }))
 
 describe('schedules ライブラリ', () => {
@@ -123,37 +130,20 @@ describe('schedules ライブラリ', () => {
 
     it('美容サロンの営業日確認', () => {
       // 一般的な美容サロンの営業日
-      const businessDays: DayOfWeek[] = ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+      const businessDays: DayOfWeek[] = [
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+      ]
       const closedDay: DayOfWeek = 'monday' // 定休日
 
-      businessDays.forEach(day => {
+      businessDays.forEach((day) => {
         expect(convertDayOfWeek(day)).toMatch(/(火|水|木|金|土|日)曜日/)
       })
       expect(convertDayOfWeek(closedDay)).toBe('月曜日')
-    })
-  })
-
-  describe('convertTimestampToDateString function', () => {
-    it('タイムスタンプを日付文字列に変換する', () => {
-      const timestamp = new Date('2024-06-15T09:30:00Z').getTime()
-      const dateString = convertTimestampToDateString(timestamp)
-      expect(dateString).toMatch(/\d{4}-\d{2}-\d{2}/)
-    })
-
-    it('タイムゾーン指定で正しく変換する', () => {
-      const timestamp = new Date('2024-06-15T00:00:00Z').getTime()
-      const jstDate = convertTimestampToDateString(timestamp, 'Asia/Tokyo')
-      const utcDate = convertTimestampToDateString(timestamp, 'UTC')
-      
-      expect(jstDate).toBeDefined()
-      expect(utcDate).toBeDefined()
-    })
-
-    it('美容サロンの予約日付変換', () => {
-      // 営業日の日付変換
-      const businessDayTimestamp = new Date('2024-06-18T10:00:00Z').getTime() // 火曜日
-      const dateString = convertTimestampToDateString(businessDayTimestamp)
-      expect(dateString).toMatch(/2024-\d{2}-\d{2}/)
     })
   })
 
@@ -173,7 +163,7 @@ describe('schedules ライブラリ', () => {
     it('週末の曜日を正しく取得する', () => {
       const saturday = new Date('2024-06-15') // 土曜日
       const sunday = new Date('2024-06-16') // 日曜日
-      
+
       expect(getDayOfWeek(saturday)).toBe('saturday')
       expect(getDayOfWeek(sunday)).toBe('sunday')
     })
@@ -203,7 +193,7 @@ describe('schedules ライブラリ', () => {
       const appointmentTime = new Date('2024-06-15T10:00:00Z').getTime()
       const timeOnly = formatTimestamp(appointmentTime)
       const withDate = formatTimestamp(appointmentTime, { includeDate: true })
-      
+
       expect(timeOnly).toMatch(/\d{2}:\d{2}/)
       expect(withDate).toMatch(/\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/)
     })
@@ -236,7 +226,7 @@ describe('schedules ライブラリ', () => {
       // カット: 30分刻み
       const cutOptions = getMinuteMultiples(30, 120)
       expect(cutOptions).toEqual([0, 30, 60, 90, 120])
-      
+
       // カラーリング: 15分刻み
       const colorOptions = getMinuteMultiples(15, 180)
       expect(colorOptions).toContain(60) // 1時間
@@ -266,7 +256,7 @@ describe('schedules ライブラリ', () => {
     it('美容サロンの営業開始時刻変換', () => {
       const openingTime = convertHourToTimestamp('09:00', '2024-06-15')
       const closingTime = convertHourToTimestamp('19:00', '2024-06-15')
-      
+
       expect(openingTime).toBeLessThan(closingTime!)
       expect(openingTime).toBeTypeOf('number')
       expect(closingTime).toBeTypeOf('number')
@@ -284,7 +274,7 @@ describe('schedules ライブラリ', () => {
       const timestamp = new Date('2024-06-15T09:30:00Z').getTime()
       const jstHour = convertTimestampToHour(timestamp, 'Asia/Tokyo')
       const utcHour = convertTimestampToHour(timestamp, 'UTC')
-      
+
       expect(jstHour).toMatch(/^\d{2}:\d{2}$/)
       expect(utcHour).toMatch(/^\d{2}:\d{2}$/)
     })
@@ -302,7 +292,7 @@ describe('schedules ライブラリ', () => {
       const openingTime = hourToMinutes('09:00') // 540分
       const closingTime = hourToMinutes('19:00') // 1140分
       const businessHours = closingTime - openingTime
-      
+
       expect(businessHours).toBe(600) // 10時間 = 600分
     })
   })
@@ -333,7 +323,7 @@ describe('schedules ライブラリ', () => {
       const date = new Date('2024-06-15')
       const jaFormatted = await formatDate(date, 'yyyy-MM-dd', 'ja')
       const enFormatted = await formatDate(date, 'yyyy-MM-dd', 'en')
-      
+
       expect(jaFormatted).toBeDefined()
       expect(enFormatted).toBeDefined()
     })
@@ -391,7 +381,7 @@ describe('schedules ライブラリ', () => {
       const startTime = hourToMinutes('10:00') // 600分
       const duration = 90 // 90分
       const endTime = startTime + duration // 690分
-      
+
       expect(toHourString(endTime)).toBe('11:30')
     })
 
@@ -399,10 +389,10 @@ describe('schedules ライブラリ', () => {
       const businessDays = ['tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
       const monday = new Date('2024-06-17') // 月曜日（定休日）
       const tuesday = new Date('2024-06-18') // 火曜日（営業日）
-      
+
       const mondayName = getDayOfWeek(monday) as DayOfWeek
       const tuesdayName = getDayOfWeek(tuesday) as DayOfWeek
-      
+
       expect(businessDays.includes(mondayName)).toBe(false)
       expect(businessDays.includes(tuesdayName)).toBe(true)
     })
@@ -415,7 +405,7 @@ describe('schedules ライブラリ', () => {
         { name: 'ヘッドスパ', minutes: 45 },
       ]
 
-      serviceMinutes.forEach(service => {
+      serviceMinutes.forEach((service) => {
         const hours = toHourString(service.minutes)
         expect(hours).toMatch(/^\d{2}:\d{2}$/)
       })
@@ -424,11 +414,11 @@ describe('schedules ライブラリ', () => {
     it('予約枠の時間間隔設定', () => {
       // 30分間隔の予約枠
       const timeSlots = getMinuteMultiples(30, 600) // 10時間分
-      const businessHours = timeSlots.filter(slot => {
+      const businessHours = timeSlots.filter((slot) => {
         const hours = Math.floor(slot / 60)
         return hours >= 9 && hours < 19 // 9:00-19:00
       })
-      
+
       expect(businessHours).toContain(540) // 9:00 (540分 = 9時間)
       expect(businessHours.length).toBeGreaterThan(0)
     })

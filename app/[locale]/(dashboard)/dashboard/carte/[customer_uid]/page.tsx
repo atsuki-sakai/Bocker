@@ -350,7 +350,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                 <AccordionTrigger className="px-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-palette-4">
-                      <Info className="w-5 h-5 text-palette-4-foreground" />
+                      <Info className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <h5 className="text-base md:text-xl font-bold text-primary">
                       {tCarte('detail.customerInfo')}
@@ -392,7 +392,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                       </div>
 
                       {/* 誕生日・年齢 */}
-                      {customerData.customerDetail?.birthday && (
+                      {customerData.customerDetail?.birthday ? (
                         <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-secondary border border-border">
                           <div className="p-2 rounded-lg bg-muted">
                             <CalendarDays className="w-4 h-4 text-muted-foreground" />
@@ -412,19 +412,19 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                             </p>
                           </div>
                         </div>
-                      )}
+                      ) : null}
 
                       {/* ポイント */}
                       {customerData.customerPoints && (
-                        <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-gradient-to-r from-palette-3 to-palette-3 border border-palette-3">
-                          <div className="p-2 rounded-lg bg-palette-3">
-                            <CreditCard className="w-4 h-4 text-palette-3-foreground" />
+                        <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-muted border border-border">
+                          <div className="p-2 text-muted-foreground">
+                            <CreditCard className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-palette-3-foreground uppercase tracking-wide">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                               {tCarte('detail.totalPoints')}
                             </p>
-                            <p className="text-lg font-bold text-palette-3-foreground">
+                            <p className="text-lg font-bold text-muted-foreground">
                               {customerData.customerPoints.total_points || 0}P
                             </p>
                           </div>
@@ -432,22 +432,22 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                       )}
 
                       {/* 来店回数 */}
-                      <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-gradient-to-r from-palette-2 to-palette-2 border border-palette-2">
-                        <div className="p-2 rounded-lg bg-palette-2">
-                          <CalendarDays className="w-4 h-4 text-palette-2-foreground" />
+                      <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-muted border border-border">
+                        <div className="p-2 rounded-lg text-muted-foreground">
+                          <CalendarDays className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-medium text-palette-2-foreground uppercase tracking-wide">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                             {tCarte('detail.totalReservationCount')}
                           </p>
-                          <p className="text-lg font-bold text-palette-2-foreground">
+                          <p className="text-lg font-bold text-muted-foreground">
                             {customerData?.customer?.total_reservation_count ?? 0}回
                           </p>
                         </div>
                       </div>
 
                       {/* LTV */}
-                      {customerCarteData?.ltv_price && (
+                      {customerCarteData?.ltv_price ? (
                         <div className="flex items-center gap-3 p-2 md:p-4 rounded-xl bg-gradient-to-r from-palette-1 to-palette-1 border border-palette-1">
                           <div className="p-2 rounded-lg bg-palette-1">
                             <CreditCard className="w-4 h-4 text-palette-1-foreground" />
@@ -461,7 +461,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                             </p>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     {/* タグ */}
                     {customerData.customer?.tags && customerData.customer.tags.length > 0 && (
@@ -495,7 +495,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                 <AccordionTrigger className="px-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-palette-4">
-                      <FileText className="w-5 h-5 text-palette-4-foreground" />
+                      <FileText className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <h2 className="text-base md:text-xl font-bold text-primary">
                       {tCarte('detail.carteInfo')}
@@ -887,7 +887,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                           <div className="space-y-6">
                             <div className="flex items-center gap-3">
                               <div className="p-2 rounded-lg bg-destructive">
-                                <FileText className="w-5 h-5 text-destructive-foreground" />
+                                <FileText className="w-5 h-5 text-primary-foreground" />
                               </div>
                               <h3 className="text-lg font-bold text-primary">
                                 {tCarte('edit.medicalInfo.title')}
@@ -948,7 +948,7 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
             <div className="p-3 md:p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-palette-3">
-                  <CalendarDays className="w-5 h-5 text-palette-3-foreground" />
+                  <CalendarDays className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <h2 className="text-base md:text-xl font-bold text-primary">
                   {tCarte('detail.reservationHistory')}

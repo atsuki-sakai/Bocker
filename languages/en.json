@@ -3292,7 +3292,7 @@
         }
       }
     },
-    "cta": {
+    "cta2": {
       "title": "Ready to transform",
       "titleBreak": "your salon operations?",
       "subtitle": "Free yourself from reservation management worries for just ¥8,000/month!",
@@ -3587,7 +3587,7 @@
       "items": {
         "email": {
           "label": "Email",
-          "value": "support@bocker.com"
+          "value": "bocker.help@gmail.com"
         },
         "hours": {
           "label": "Business Hours",
@@ -3676,7 +3676,7 @@
       },
       "5": {
         "title": "6. Your Rights",
-        "content": "You have the following rights regarding your personal information:\n• Request for disclosure\n• Request for correction or deletion\n• Request to stop use\nFor inquiries, please contact support@bocker.com."
+        "content": "You have the following rights regarding your personal information:\n• Request for disclosure\n• Request for correction or deletion\n• Request to stop use\nFor inquiries, please contact bocker.help@gmail.com."
       },
       "6": {
         "title": "7. Use of Cookies",

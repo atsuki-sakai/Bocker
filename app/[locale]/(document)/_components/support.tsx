@@ -12,10 +12,10 @@ export default function Support() {
           <div>
             <h4 className="font-semibold text-link-foreground">技術サポート</h4>
             <Link
-              href="mailto:support@bocker.jp"
+              href="mailto:bocker.help@gmail.com"
               className="underline text-xs md:text-sm text-link-foreground"
             >
-              support@bocker.jp
+              bocker.help@gmail.com
             </Link>
             <p className="text-xs md:text-sm text-link-foreground mt-1">
               営業時間: 平日 10:00-18:00

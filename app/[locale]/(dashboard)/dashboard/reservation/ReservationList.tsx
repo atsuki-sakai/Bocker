@@ -47,7 +47,7 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 const statusConfig = {
   confirmed: { label: '予約受付済み', color: 'bg-accent-foreground' },
   pending: { label: '保留中', color: 'bg-warning-foreground' },
-  completed: { label: '完了', color: 'bg-success' },
+  completed: { label: '完了', color: 'bg-success-foreground' },
   cancelled: { label: 'キャンセル', color: 'bg-destructive' },
   refunded: { label: '返金済み', color: 'bg-muted' },
 } as const
@@ -518,7 +518,7 @@ export default function ReservationList() {
                       {reservation.isFreeNomination ? (
                         <Shuffle
                           size={14}
-                          className="min-w-6 min-h-6 text-palette-5-foreground bg-palette-5 rounded-full p-1"
+                          className="min-w-6 min-h-6 text-link-foreground bg-link rounded-full p-1"
                         />
                       ) : (
                         <User

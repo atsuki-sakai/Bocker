@@ -48,19 +48,19 @@ import { fetchMutation } from 'convex/nextjs'
 import { Link } from '@/i18n/navigation'
 
 const statusColorMap = {
-  confirmed: 'bg-palette-2 border-2 border-palette-2-foreground text-palette-2-foreground',
-  cancelled: 'bg-palette-4 border-2 border-palette-4-foreground text-palette-4-foreground',
-  pending: 'bg-warning border-2 border-warning-foreground text-warning-foreground',
-  completed: 'bg-palette-5 border-2 border-palette-5-foreground text-palette-5-foreground',
-  refunded: 'bg-palette-3 border-2 border-palette-3-foreground text-palette-3-foreground',
+  confirmed: 'bg-success border border-success-foreground text-success-foreground',
+  cancelled: 'bg-muted border border-muted-foreground text-muted-foreground',
+  pending: 'bg-warning border border-warning-foreground text-warning-foreground',
+  completed: 'bg-primary border border-primary-foreground text-primary-foreground',
+  refunded: 'bg-destructive border border-destructive-foreground text-destructive-foreground',
 }
 
 const paymentStatusColorMap = {
-  paid: 'bg-neon-foreground !text-neon border-2 border-neon',
-  pending: 'bg-warning !text-warning-foreground border-2 border-warning-foreground',
-  refunded: 'bg-muted-foreground !text-muted-foreground border-2 border-muted-foreground',
-  cancelled: 'bg-destructive !text-destructive-foreground border-2 border-destructive',
-  completed: 'bg-neon-foreground !text-neon border-2 border-neon',
+  paid: 'bg-success-foreground !text-success border border-success',
+  pending: 'bg-warning !text-warning-foreground border border-warning-foreground',
+  refunded: 'bg-destructive !text-destructive-foreground border border-destructive',
+  cancelled: 'bg-muted !text-muted-foreground border border-muted',
+  completed: 'bg-primary !text-primary-foreground border border-primary-foreground',
 }
 
 export default function ReservationPage() {
@@ -349,8 +349,8 @@ export default function ReservationPage() {
               </div>
             </div>
             {reservationData.isFreeNomination && (
-              <div className="mb-4 px-2 py-1.5 bg-palette-5-foreground rounded-md w-fit">
-                <p className="text-xs font-medium text-palette-5">🎯 指名フリー予約</p>
+              <div className="mb-4 px-2 py-1.5 bg-link-foreground rounded-md w-fit">
+                <p className="text-xs font-medium text-primary-foreground">🎯 指名フリー予約</p>
               </div>
             )}
 
@@ -743,7 +743,7 @@ export default function ReservationPage() {
               </div>
             </div>
           </div>
-          <DialogDescription className="text-sm text-neon bg-neon-foreground p-4 rounded-lg mt-4">
+          <DialogDescription className="text-sm text-success-foreground bg-success p-4 rounded-lg mt-4">
             <strong>{convertReservationStatus(reservationData.status)}</strong>
             {'から'}
             <strong>{convertReservationStatus(status)}</strong>へ変更する。

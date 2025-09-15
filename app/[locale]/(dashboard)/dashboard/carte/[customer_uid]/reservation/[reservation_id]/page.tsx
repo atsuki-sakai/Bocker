@@ -440,10 +440,10 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-link p-3 rounded-lg">
+              <div>
                 <div className="flex items-center gap-2 mb-2">
                   <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">施術日時</span>
+                  <span className="text-base text-muted-foreground">施術日時</span>
                 </div>
                 <p className="font-bold text-link-foreground underline">
                   {formatDate(
@@ -492,13 +492,13 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                 )}
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-3 pt-1 ">
+            <AccordionContent className="space-y-3 pt-1 px-4">
               {/* 既存の画像管理 */}
-              <div className="space-y-3 md:grid md:grid-cols-2">
+              <div className="space-y-3 md:grid md:grid-cols-2 gap-6">
                 <div className="w-full mb-12 md:mb-0">
                   {existingImages.length > 0 ? (
                     <div className="w-full">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2  flex items-center gap-2">
                         <ImageIcon className="w-4 h-4" />
                         登録済みの写真 ({existingImages.length}枚)
                       </h4>
@@ -595,7 +595,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                 <span className="font-semibold">施術内容</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-3 pt-1">
+            <AccordionContent className="space-y-3 pt-1 px-4">
               {/* メニュー詳細 */}
               {carteData.carteDetail?.menu_details && (
                 <div>
@@ -666,7 +666,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                 <span className="font-semibold">顧客要望・メモ</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-1">
+            <AccordionContent className="space-y-4 pt-1 px-4">
               <div className="bg-secondary border border-secondary rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div>
@@ -688,15 +688,17 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                         PROプラン専用
                       </span>
                     )}
-                    <VoiceInputButton
-                      onResult={(transcript) => {
-                        const newText = customerRequests
-                          ? `${customerRequests}\n${transcript}`
-                          : transcript
-                        setCustomerRequests(newText)
-                      }}
-                      disabled={isSaving || isUploading}
-                    />
+                    <div className="pr-2">
+                      <VoiceInputButton
+                        onResult={(transcript) => {
+                          const newText = customerRequests
+                            ? `${customerRequests}\n${transcript}`
+                            : transcript
+                          setCustomerRequests(newText)
+                        }}
+                        disabled={isSaving || isUploading}
+                      />
+                    </div>
                   </div>
                 </div>
                 <Textarea
@@ -711,7 +713,7 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
               <div className="bg-secondary border border-secondary rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <Label htmlFor="staff-notes" className="text-sm font-semibold text-accent">
+                    <Label htmlFor="staff-notes" className="text-sm font-semibold">
                       スタッフメモ
                     </Label>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -726,13 +728,15 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
                         PROプラン専用
                       </span>
                     )}
-                    <VoiceInputButton
-                      onResult={(transcript) => {
-                        const newText = notes ? `${notes}\n${transcript}` : transcript
-                        setNotes(newText)
-                      }}
-                      disabled={isSaving || isUploading}
-                    />
+                    <div className="pr-2">
+                      <VoiceInputButton
+                        onResult={(transcript) => {
+                          const newText = notes ? `${notes}\n${transcript}` : transcript
+                          setNotes(newText)
+                        }}
+                        disabled={isSaving || isUploading}
+                      />
+                    </div>
                   </div>
                 </div>
                 <Textarea

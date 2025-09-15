@@ -91,10 +91,7 @@ export default function StaffList() {
                       >
                         <td className="py-4 pr-3 pl-4 text-xs font-medium whitespace-nowrap text-muted-foreground sm:pl-6">
                           {staff.is_active ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-accent-2-foreground text-accent-2"
-                            >
+                            <Badge variant="outline" className="bg-success-foreground text-success">
                               {t('active')}
                             </Badge>
                           ) : (
@@ -115,7 +112,7 @@ export default function StaffList() {
                                 className="object-cover rounded-md shadow-md"
                               />
                               {staff.connect_clerk ? (
-                                <div className="bg-accent-2-foreground text-accent-2 border-accent-2 p-1 rounded-full absolute -top-2 -right-2">
+                                <div className="bg-success-foreground text-success border-success p-1 rounded-full absolute -top-2 -right-2">
                                   <CheckCircleIcon className="h-3 w-3" />
                                 </div>
                               ) : null}
@@ -141,7 +138,7 @@ export default function StaffList() {
                         </td>
                         <td className="px-3 py-4 text-sm whitespace-nowrap text-muted-foreground">
                           {staff.connect_clerk && staff.clerk_user_id ? (
-                            <Badge className="bg-accent-2-foreground text-accent-2">
+                            <Badge className="bg-success-foreground text-success">
                               {t('list.clerkStatus.connect')}
                             </Badge>
                           ) : (

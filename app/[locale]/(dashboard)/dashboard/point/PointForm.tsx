@@ -184,9 +184,9 @@ export default function PointForm() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5">
           <div className="border border-border rounded-lg overflow-hidden">
-            <div className="p-3 bg-neon-foreground">
-              <h5 className="flex items-center text-xl font-bold gap-2 text-neon">
-                <Coins className="h-5 w-5 text-neon" />
+            <div className="p-3 bg-muted">
+              <h5 className="flex items-center text-xl font-bold gap-2 text-muted-foreground">
+                <Coins className="h-5 w-5 text-muted-foreground" />
                 {t('basicSettings.title')}
               </h5>
               <p className="text-sm text-muted-foreground py-2 mb-2">
@@ -201,7 +201,7 @@ export default function PointForm() {
                 <div
                   className={`px-2 py-1 rounded-md ${
                     watchedIsActive
-                      ? 'text-accent-2 bg-accent-2-foreground border border-accent-2'
+                      ? 'text-success-foreground bg-success border border-success-foreground'
                       : 'text-destructive bg-destructive-foreground border border-destructive'
                   }`}
                 >
@@ -233,8 +233,8 @@ export default function PointForm() {
                 <div
                   className={`flex items-center justify-between p-3 rounded-md ${
                     watchedIsFixedPoint
-                      ? 'bg-accent-2-foreground text-accent-2'
-                      : 'bg-neon-foreground text-neon'
+                      ? 'bg-success text-success-foreground'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   <span className="text-sm font-bold">
@@ -246,7 +246,7 @@ export default function PointForm() {
                   <Switch
                     id="point-type"
                     checked={watchedIsFixedPoint}
-                    className="data-[state=checked]:bg-neon data-[state=unchecked]:bg-link-foreground"
+                    className="data-[state=checked]:bg-muted data-[state=unchecked]:bg-link-foreground"
                     onCheckedChange={(checked) => {
                       setValue('is_fixed_point', checked, { shouldDirty: true })
                     }}
@@ -337,9 +337,9 @@ export default function PointForm() {
         <div className="lg:col-span-7">
           <div>
             <div className="h-full shadow-md hover:shadow-lg transition-shadow duration-300 border border-border rounded-lg overflow-hidden">
-              <div className="bg-neon-foreground p-3">
-                <h5 className="flex items-center text-xl font-bold gap-2 text-neon">
-                  <Gift className="h-5 w-5 text-neon" />
+              <div className="bg-muted p-3">
+                <h5 className="flex items-center text-xl font-bold gap-2 text-muted-foreground">
+                  <Gift className="h-5 w-5 text-muted-foreground" />
                   {t('summary.title')}
                 </h5>
                 <p className="text-sm text-muted-foreground mt-2">{t('summary.description')}</p>

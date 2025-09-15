@@ -90,7 +90,7 @@ const PlanCard = memo(function PlanCard({
   // カードのスタイリングをメモ化
   const cardStyle = useMemo(() => {
     return cn(
-      'h-full shadow-xl border-0 overflow-hidden bg-card relative',
+      'h-full shadow-xl border overflow-hidden bg-card relative',
       isPopular ? 'border-2 border-purple-400' : ''
     )
   }, [isPopular])

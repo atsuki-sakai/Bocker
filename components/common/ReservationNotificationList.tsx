@@ -80,7 +80,7 @@ export default function ReservationNotificationList() {
         <Accordion type="single" collapsible className="w-full overflow-x-auto">
           <AccordionItem value="notifications">
             <div className="flex justify-between items-center gap-2 w-full">
-              <AccordionTrigger className="py-1 mb-2 px-3 bg-link border border-link-foreground text-muted-foreground rounded-lg transition-colors hover:no-underline flex-1">
+              <AccordionTrigger className="">
                 <div className="flex flex-col md:flex-row items-start md:items-center md:gap-2 w-full">
                   {notifications && notifications.length > 0 && (
                     <span className="px-2 py-0.5 rounded-full text-xs">
@@ -106,7 +106,7 @@ export default function ReservationNotificationList() {
                     <div className="flex flex-col items-center mr-2">
                       <Button
                         variant="destructive"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleKillNotification(notification._id)}
                       >
                         <Trash2 className="w-4 h-4" />

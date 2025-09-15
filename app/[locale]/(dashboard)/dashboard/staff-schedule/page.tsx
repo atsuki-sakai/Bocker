@@ -234,7 +234,7 @@ function StaffSchedulePage() {
               <p className="text-xs p-2 font-bold text-center text-palette-4-foreground">
                 {schedule.is_all_day ? t('allDay') : t('schedule')}
               </p>
-              <p className="text-xs p-2 text-center text-palette-4-foreground">
+              <p className="text-xs p-2 text-center text-palette-4">
                 {schedule.notes ? `(${schedule.notes})` : ''}
               </p>
             </div>
@@ -257,7 +257,7 @@ function StaffSchedulePage() {
           }}
         >
           <div className="absolute inset-1 bg-palette-4 opacity-75 rounded-md flex items-start justify-center p-2 overflow-scroll">
-            <p className="text-xs text-start text-palette-4-foreground">
+            <p className="text-xs text-start text-palette-4">
               {schedule.is_all_day ? t('fullDay') : t('schedule')}
               {schedule.is_all_day
                 ? '00:00 - 24:00'
@@ -272,7 +272,9 @@ function StaffSchedulePage() {
   const renderReservations = () => {
     if (!currentReservations) return null
 
+    // ts-ignore next-line
     return currentReservations.map((reservation) => {
+      // FIXME: any
       // startTimeUnix, endTimeUnix はミリ秒のタイムスタンプなので、そのまま使用
       const startTime = new Date(reservation.start_time_unix!)
       const endTime = new Date(reservation.end_time_unix!)
@@ -313,17 +315,17 @@ function StaffSchedulePage() {
         >
           <Link
             href={`/dashboard/reservation/${reservation._id}`}
-            className="group absolute z-0 inset-1 flex flex-col overflow-y-auto rounded-md bg-palette-5 p-2 text-xs/5 hover:opacity-80 transition-opacity duration-200"
+            className="group absolute z-0 inset-1 flex flex-col overflow-y-auto rounded-md bg-success p-2 text-xs/5 hover:opacity-80 transition-opacity duration-200"
           >
-            <p className="order-1 font-semibold text-palette-5-foreground">
+            <p className="order-1 font-semibold text-success-foreground">
               {reservation.staff_name}
             </p>
-            <p className="text-palette-5-foreground group-hover:text-palette-5-foreground font-bold">
+            <p className="text-success-foreground group-hover:text-success-foreground font-bold">
               <time dateTime={startTime.toISOString()}>
                 {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
               </time>
             </p>
-            <p className="mt-1 text-palette-5-foreground my-4">
+            <p className="mt-1 text-success-foreground my-4">
               {convertReservationStatus(reservation.status)}
             </p>
           </Link>
@@ -491,7 +493,7 @@ function StaffSchedulePage() {
         <div className="sticky bg-background z-10 md:pt-5">
           <header className="flex flex-none items-center justify-between border-b border-border md:px-6 pb-2">
             <div className="flex flex-col">
-              <h1 className="text-sm md:text-lg font-semibold text-accent-2">
+              <h1 className="text-sm md:text-lg font-semibold text-success-foreground">
                 {viewMode === 'week' ? (
                   <time
                     className="flex flex-col md:flex-row items-center justify-center gap-1"
@@ -634,8 +636,8 @@ function StaffSchedulePage() {
                     key={schedule._id}
                     className={`flex flex-col p-3 rounded-lg border w-full text-nowrap ${
                       schedule.is_open
-                        ? 'bg-palette-3 border-palette-3-foreground'
-                        : 'bg-palette-1 border-palette-1-foreground'
+                        ? 'bg-success border-success-foreground text-success-foreground'
+                        : 'bg-muted border-muted-foreground text-muted-foreground'
                     }`}
                   >
                     <div className="flex items-center justify-center mb-2">
@@ -648,8 +650,8 @@ function StaffSchedulePage() {
                       <span
                         className={`text-xs text-nowrap px-2 py-0.5 rounded-full ${
                           schedule.is_open
-                            ? 'bg-palette-3 text-palette-3-foreground'
-                            : 'bg-palette-1 text-palette-1-foreground'
+                            ? 'bg-success text-success-foreground'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {schedule.is_open ? '出勤' : '休み'}
@@ -708,18 +710,18 @@ function StaffSchedulePage() {
                           <div className="flex items-center justify-center">
                             {weekDays[day.value - 1]}{' '}
                             {hasReservations && (
-                              <span className="ml-1 w-1.5 h-1.5 bg-accent-2 text-accent-2-foreground rounded-full" />
+                              <span className="ml-1 w-1.5 h-1.5 bg-success text-success-foreground rounded-full" />
                             )}
                           </div>
                           <span
                             className={`mt-1 flex size-8 items-center justify-center py-3 ${
                               dateIsToday
-                                ? 'rounded-full bg-accent-2 font-semibold text-accent-2-foreground'
+                                ? 'rounded-full bg-success font-semibold text-success-foreground'
                                 : isSelected
-                                  ? 'rounded-full bg-accent-2 font-semibold text-accent-2-foreground'
+                                  ? 'rounded-full bg-success font-semibold text-success-foreground'
                                   : hasReservations
-                                    ? 'font-semibold text-accent-2 ring-1 ring-accent-2 bg-accent-2-foreground rounded-full'
-                                    : 'font-semibold text-accent-2'
+                                    ? 'font-semibold text-success-foreground ring-1 ring-success-foreground bg-success rounded-full'
+                                    : 'font-semibold text-success-foreground'
                             }`}
                           >
                             {targetDate.getDate()}
@@ -736,7 +738,7 @@ function StaffSchedulePage() {
                         {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
                       </span>
                       {hasReservationsOnDate(selectedDate) && (
-                        <span className="ml-2 bg-accent-2 text-accent-2-foreground px-2 py-0.5 rounded-full text-xs font-medium">
+                        <span className="ml-2 bg-success text-success-foreground-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                           {t('hasReservations')}
                         </span>
                       )}

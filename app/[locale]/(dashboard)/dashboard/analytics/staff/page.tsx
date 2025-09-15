@@ -956,15 +956,15 @@ function StaffAnalyticsPage() {
               <CardContent>
                 <div className="space-y-4">
                   {/* トップパフォーマー分析 */}
-                  <div className="p-4 bg-link border border-link-foreground rounded-lg">
+                  <div className="p-4 bg-success border border-success-foreground rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <Award className="w-6 h-6 text-link-foreground" />{' '}
+                      <Award className="w-6 h-6 text-success-foreground" />{' '}
                       <span className="text-sm font-medium">売上No.1スタッフ</span>
                     </div>
                     <div className="text-lg font-bold mb-1 ">
                       {performanceComparison.topPerformers?.[0]?.staff_name}さん
                     </div>
-                    <p className="text-sm text-accent mb-2 font-bold">
+                    <p className="text-sm text-primary mb-2 font-bold">
                       ¥{performanceComparison.topPerformers?.[0]?.total_amount?.toLocaleString()}（
                       {performanceComparison.topPerformers?.[0]?.booking_count}件の施術）
                     </p>
@@ -974,9 +974,9 @@ function StaffAnalyticsPage() {
                   </div>
 
                   {/* チーム効率性分析 */}
-                  <div className="p-4 bg-neon-foreground border border-neon rounded-lg">
+                  <div className="p-4 bg-link border border-link-foreground rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-neon rounded-full"></div>
+                      <div className="w-2 h-2 bg-link-foreground rounded-full"></div>
                       <span className="text-sm font-medium">チーム効率性スコア</span>
                     </div>
                     <div className="text-lg font-bold mb-1">

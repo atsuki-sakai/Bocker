@@ -38,11 +38,7 @@ import {
   Minus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  formatTimestamp,
-  convertTimestampToHour,
-  convertTimestampToDateString,
-} from '@/lib/schedules'
+import { formatTimestamp, convertTimestampToHour } from '@/lib/schedules'
 import { format, addDays, subDays, isWeekend } from 'date-fns'
 import { ja, enUS } from 'date-fns/locale'
 import { useLocale } from 'next-intl'
@@ -100,7 +96,7 @@ const TimelineHeader = memo(({ timeSlots }: { timeSlots: TimeSlot[] }) => {
                 'relative h-12 text-xs flex items-center justify-center transition-colors z-10',
                 // 太い線を削除し、通常のボーダーのみ使用
                 slot.minutes % 60 === 0
-                  ? 'w-24 border-l-2 border-accent-2 font-semibold bg-neon-foreground'
+                  ? 'w-24 border-l-2 border-accent-2 font-semibold bg-muted'
                   : 'w-24 border-l border-border/50'
               )}
             >
@@ -180,9 +176,13 @@ const ReservationBarComponent = memo(
             <span className="truncate font-medium">
               {reservation.staff_name ?? t('nameNotSet')}
             </span>
-            {reservation.is_free_nomination && (
-              <div className="text-xs text-nowrap bg-palette-5-foreground text-palette-5 px-1 rounded-full font-medium">
+            {reservation.is_free_nomination ? (
+              <div className="text-xs text-nowrap bg-link-foreground text-link px-1 rounded-full font-medium">
                 <small>指名フリー</small>
+              </div>
+            ) : (
+              <div className="text-xs text-nowrap bg-success-foreground text-success px-1 rounded-full font-medium">
+                <small>指名予約</small>
               </div>
             )}
           </div>
@@ -342,7 +342,7 @@ const StaffTimelineRow = memo(
                       : 'w-24 border-l border-border/50',
 
                     // 30分ごとに微妙な色の変化を追加
-                    slot.minutes % 60 !== 30 && 'bg-neon-foreground'
+                    slot.minutes % 60 !== 30 && 'bg-muted'
                   )}
                 />
               )
@@ -424,13 +424,13 @@ const ReservationDetailDialog = memo(
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {reservation.is_free_nomination ? (
-                <Shuffle className="w-5 h-5 text-palette-5-foreground" />
+                <Shuffle className="w-5 h-5 text-link-foreground" />
               ) : (
                 <User className="w-5 h-5" />
               )}
               {t('detail')}
               {reservation.is_free_nomination && (
-                <span className="text-xs bg-palette-5-foreground text-palette-5 px-2 py-1 rounded-full font-medium ml-2">
+                <span className="text-xs bg-link-foreground text-link px-2 py-1 rounded-full font-medium ml-2">
                   指名フリー
                 </span>
               )}
@@ -467,12 +467,14 @@ const ReservationDetailDialog = memo(
             </div>
             <div>
               <label className="text-sm font-semibold text-primary">{t('dateTime')}</label>
-              <div className="mt-1 p-3 bg-link rounded-lg font-bold text-link-foreground">
-                <p className="text-sm flex items-center gap-2">
+              <div className="mt-1 p-3 border rounded-lg font-bold text-link-foreground">
+                <p className="text-base flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
-                  {convertTimestampToDateString(reservation.start_time_unix)}
+                  {format(new Date(reservation.start_time_unix), 'yyyy年MM月dd日(EEE)', {
+                    locale: ja,
+                  })}
                 </p>
-                <p className="text-sm flex items-center gap-2 mt-1">
+                <p className="text-base flex items-center gap-2 mt-1">
                   <Clock className="w-4 h-4" />
                   {convertTimestampToHour(reservation.start_time_unix)} -{' '}
                   {convertTimestampToHour(reservation.end_time_unix)}
@@ -487,7 +489,7 @@ const ReservationDetailDialog = memo(
             </div>
             <div className="pt-8 flex flex-col items-center justify-between gap-6">
               <div className="flex  gap-2 w-full">
-                <Button className="w-full" asChild variant="info">
+                <Button className="w-full" asChild variant="outline">
                   <Link href={`/dashboard/reservation/${reservation._id}`}>{t('moreDetail')}</Link>
                 </Button>
 
@@ -1309,31 +1311,10 @@ const ReservationList = memo(
           const enhancedColor =
             colorSet[reservation.status as keyof typeof colorSet] || colorSet.confirmed
 
-          // フリー指名用のボーダー色を設定
-          const getBorderColor = () => {
-            if (reservation.is_free_nomination) {
-              return enhancedColor.includes('purple')
-                ? 'palette-5'
-                : enhancedColor.includes('orange')
-                  ? 'palette-4'
-                  : enhancedColor.includes('emerald')
-                    ? 'palette-2'
-                    : 'palette-5'
-            }
-            return enhancedColor.includes('emerald')
-              ? 'palette-2'
-              : enhancedColor.includes('amber')
-                ? 'palette-4'
-                : 'palette-5'
-          }
-
           return (
             <Card
               key={reservation._id}
               className="cursor-pointer   border-l-4"
-              style={{
-                borderLeftColor: getBorderColor(),
-              }}
               onClick={() => onReservationClick(reservation)}
             >
               <CardContent className="p-3">
@@ -1341,13 +1322,13 @@ const ReservationList = memo(
                   <div className="space-y-2 flex-1">
                     <div className="font-semibold text-primary flex flex-wrap items-center gap-2">
                       {reservation.is_free_nomination ? (
-                        <Shuffle className="w-4 h-4 text-palette-5-foreground flex-shrink-0" />
+                        <Shuffle className="w-4 h-4 text-palette-1 flex-shrink-0" />
                       ) : (
                         <User className="w-4 h-4 flex-shrink-0" />
                       )}
                       <span className="break-all">{reservation.staff_name}</span>
                       {reservation.is_free_nomination && (
-                        <span className="text-xs bg-palette-5-foreground text-palette-5 px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                        <span className="text-xs bg-link text-link-foreground px-2 py-1 rounded-full font-medium whitespace-nowrap">
                           指名フリー
                         </span>
                       )}
@@ -1547,7 +1528,7 @@ export default function ReservationTimeLine() {
                         : 'bg-accent text-accent-foreground border-accent-foreground shadow-md'
                       : null,
                     isToday && !isSelected && 'font-semibold',
-                    item.count > 0 && !isSelected && 'bg-neon-foreground',
+                    item.count > 0 && !isSelected && 'bg-background',
                     isWeekend && !isSelected && 'text-destructive',
                     isHoliday && !isSelected && 'bg-warning text-warning-foreground'
                   )}
@@ -1555,7 +1536,9 @@ export default function ReservationTimeLine() {
                   <span className="text-[10px] opacity-70">{dayOfWeek}</span>
                   <span className="text-sm font-medium">{format(date, 'd')}</span>
                   <div className="flex items-center justify-center gap-1">
-                    {item.count > 0 && <div className="w-1.5 h-1.5 bg-neon rounded-full mt-0.5" />}
+                    {item.count > 0 && (
+                      <div className="w-1.5 h-1.5 bg-success-foreground rounded-full mt-0.5" />
+                    )}
                     <span
                       className={cn(
                         'text-xs',
@@ -1713,7 +1696,7 @@ function EnhancedDatePicker({
           {dayNumber}
         </span>
         {hasReservation && count > 0 && (
-          <span className="text-[7px] font-bold text-neon absolute top-0 right-0 bg-background rounded-full p-1.5 border border-neon h-3 w-3 flex items-center justify-center">
+          <span className="text-[7px] font-bold text-success-foreground absolute top-0 right-0 bg-background rounded-full p-1.5 border border-success-foreground h-3 w-3 flex items-center justify-center">
             {count}
           </span>
         )}

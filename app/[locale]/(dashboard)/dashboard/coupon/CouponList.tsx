@@ -76,30 +76,30 @@ export default function CouponList() {
           <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
             <div className="overflow-hidden border border-border rounded-lg">
               <table className="min-w-full divide-y divide-border">
-                <thead className="bg-neon-foreground text-nowrap px-2">
+                <thead className="bg-muted text-nowrap px-2">
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-neon sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-muted-foreground sm:pl-6"
                     >
                       {t('status')}
                     </th>
                     <th
                       scope="col"
-                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-neon sm:pl-6"
+                      className="py-3.5 pr-3 pl-4 text-left  text-sm  font-semibold text-muted-foreground sm:pl-6"
                     >
                       {t('couponName')}
                     </th>
 
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-neon"
+                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-muted-foreground"
                     >
                       {t('discountType')}
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-neon"
+                      className="px-3 py-3.5 text-left  text-sm  font-semibold text-muted-foreground"
                     >
                       {t('discountValue')}
                     </th>
@@ -120,7 +120,7 @@ export default function CouponList() {
                           className={`py-4 pr-3 pl-4  text-sm  font-medium whitespace-nowrap text-muted-foreground sm:pl-6 `}
                         >
                           <span
-                            className={`font-bold text-xs ${coupon.is_active ? 'bg-accent-2-foreground text-accent-2' : 'bg-muted-foreground text-background'} px-2 py-1 rounded-md`}
+                            className={`font-bold text-xs ${coupon.is_active ? 'bg-success-foreground text-success' : 'bg-muted-foreground text-background'} px-2 py-1 rounded-md`}
                           >
                             {coupon.is_active ? t('active') : t('inactive')}
                           </span>
@@ -141,8 +141,7 @@ export default function CouponList() {
                         </td>
                         <td className="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-6">
                           <Button
-                            variant="ghost"
-                            className="text-destructive bg-destructive-foreground hover:opacity-80"
+                            variant="destructive"
                             size="sm"
                             onClick={() => showDialog(coupon._id)}
                           >

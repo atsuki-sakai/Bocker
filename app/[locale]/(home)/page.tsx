@@ -109,7 +109,7 @@ async function generateStructuredData(locale: string) {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer service',
-      email: 'support@bocker.jp',
+      email: 'bocker.help@gmail.com',
       url: `${baseUrl}/contact`,
     },
     sameAs: ['https://twitter.com/bocker_jp'],

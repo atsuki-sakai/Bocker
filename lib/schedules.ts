@@ -1,13 +1,8 @@
 // app/lib/schedule.ts
 
-import {
-  DAY_OF_WEEK_VALUES_JA,
-  DayOfWeek,
-  DayOfWeekJA,
-} from './../convex/types'
+import { DAY_OF_WEEK_VALUES_JA, DayOfWeek, DayOfWeekJA } from './../convex/types'
 import { format, formatDistance, formatDistanceToNow, formatRelative } from 'date-fns'
 import { getDateFnsLocale, SupportedLocale } from './dateLocale'
-
 /**
  * 現在の Unix タイムスタンプ（ミリ秒単位）を取得する
  *
@@ -63,22 +58,6 @@ export function convertDayOfWeek(week: DayOfWeek, locale?: SupportedLocale): str
   }
 }
 
-// タイムスタンプを日付の文字列に変換する関数
-// 使用例:
-// const dateString = convertTimestampToDateString(1717334400000);
-// console.log(dateString); // 2024-06-01
-export function convertTimestampToDateString(timestampMs: number, timeZone?: string): string {
-  const date = new Date(timestampMs)
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone: timeZone ?? 'Asia/Tokyo',
-  }
-  const formatted = date.toLocaleDateString('ja-CA', options).replace(/\//g, '-')
-  return formatted
-}
-
 /**
  * 指定された日付の曜日を英語または日本語で取得する
  * @param date - 日付オブジェクト
@@ -87,7 +66,7 @@ export function convertTimestampToDateString(timestampMs: number, timeZone?: str
  */
 export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeek | DayOfWeekJA {
   const jsIdx = date.getDay() // JavaScript標準: 0=日曜, 1=月曜, ..., 6=土曜
-  
+
   if (ja) {
     // 日本語の場合はJavaScript標準のインデックスをそのまま使用
     return DAY_OF_WEEK_VALUES_JA[jsIdx]
@@ -96,7 +75,15 @@ export function getDayOfWeek(date: Date, ja: boolean = false): DayOfWeek | DayOf
     // システム配列は [monday, tuesday, ..., sunday] だが、
     // JavaScriptの getDay() は [sunday=0, monday=1, ..., saturday=6] なので
     // 正しいマッピングを作成
-    const dayMapping: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayMapping: DayOfWeek[] = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ]
     return dayMapping[jsIdx]
   }
 }

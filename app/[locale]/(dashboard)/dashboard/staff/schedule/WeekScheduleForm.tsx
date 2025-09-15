@@ -52,43 +52,43 @@ const DAYS_OF_WEEK = [
     id: 'monday',
     week: '月曜日',
     short_week: '月',
-    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
+    color: 'bg-success border-success text-success-foreground',
   },
   {
     id: 'tuesday',
     week: '火曜日',
     short_week: '火',
-    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
+    color: 'bg-success border-success text-success-foreground',
   },
   {
     id: 'wednesday',
     week: '水曜日',
     short_week: '水',
-    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
+    color: 'bg-success border-success text-success-foreground',
   },
   {
     id: 'thursday',
     week: '木曜日',
     short_week: '木',
-    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
+    color: 'bg-success border-success text-success-foreground',
   },
   {
     id: 'friday',
     week: '金曜日',
     short_week: '金',
-    color: 'bg-accent-2-foreground border-accent-2 text-accent-2',
+    color: 'bg-success border-success text-success-foreground',
   },
   {
     id: 'saturday',
     week: '土曜日',
     short_week: '土',
-    color: 'bg-link border-link-foreground text-link-foreground',
+    color: 'bg-link border-link text-link-foreground',
   },
   {
     id: 'sunday',
     week: '日曜日',
     short_week: '日',
-    color: 'bg-link border-link-foreground text-link-foreground',
+    color: 'bg-link border-link text-link-foreground',
   },
 ]
 
@@ -526,7 +526,7 @@ export default function WeekHourScheduleForm({ staff_id }: { staff_id: Id<'staff
                         <p className="font-semibold text-xs flex gap-2 items-center text-nowrap">
                           {day.week}
                           {schedule?.is_open ? (
-                            <span className="text-accent-2 bg-accent-2-foreground rounded-full px-2 py-1">
+                            <span className="text-success bg-success-foreground rounded-full px-2 py-1">
                               営業日
                             </span>
                           ) : (
