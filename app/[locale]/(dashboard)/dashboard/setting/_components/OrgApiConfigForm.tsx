@@ -503,11 +503,6 @@ const ApiSettingsCard = () => {
 
               <div className="bg-accent border border-accent p-4 rounded-md">
                 <p className="font-semibold text-base mb-3">📱 手順A: LINE公式アカウントの作成</p>
-                <div className="text-sm py-3 text-link-foreground underline">
-                  <Link href="https://youtu.be/QFhBruC3uc0" target="_blank">
-                    動画での作成方法はこちら
-                  </Link>
-                </div>
                 <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>
                     <Link
@@ -556,11 +551,6 @@ const ApiSettingsCard = () => {
                 <p className="font-semibold text-base mb-3">
                   ⚙️ 手順B: Messaging APIチャンネルの作成
                 </p>
-                <div className="text-sm py-3 text-link-foreground underline">
-                  <Link href="https://youtu.be/cPRd3q7BiCY" target="_blank">
-                    動画での作成方法はこちら
-                  </Link>
-                </div>
                 <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>
                     <Link
@@ -647,11 +637,6 @@ const ApiSettingsCard = () => {
                 <p className="font-semibold text-base mb-3">
                   🔐 手順A: LINEログインチャンネルの作成
                 </p>
-                <div className="text-sm py-3 text-link-foreground underline">
-                  <Link href="https://youtu.be/dih9AUEnGYc" target="_blank">
-                    動画での作成方法はこちら
-                  </Link>
-                </div>
                 <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>
                     <Link
@@ -700,11 +685,6 @@ const ApiSettingsCard = () => {
 
               <div className="bg-accent border border-accent p-4 rounded-md">
                 <p className="font-semibold text-base mb-3">📱 手順B: LIFFアプリの作成</p>
-                <div className="text-sm py-3 text-link-foreground underline">
-                  <Link href="https://youtu.be/dih9AUEnGYc" target="_blank">
-                    動画での作成方法はこちら
-                  </Link>
-                </div>
                 <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>作成したLINEログインチャンネルの「LIFF」タブを選択</li>
                   <li>「追加」ボタンをクリック</li>
@@ -770,11 +750,6 @@ const ApiSettingsCard = () => {
                 <p className="font-semibold text-muted-foreground text-base mb-2">
                   🚀 LINEログインの有効化・公式アカウントの紐付け設定
                 </p>
-                <div className="text-sm py-3 text-link-foreground underline">
-                  <Link href="https://youtu.be/m0lKVIFZwyM" target="_blank">
-                    動画での作成方法はこちら
-                  </Link>
-                </div>
                 <ol className="list-decimal list-inside text-sm space-y-1">
                   <li>LINEログインチャンネルの「LINEログイン設定」タブを開く</li>
                   <li>LINEログインを開く</li>
@@ -848,18 +823,6 @@ const ApiSettingsCard = () => {
               </p>
             </div>
 
-            {/* 動画リンク */}
-            <div className="flex items-center text-sm font-bold text-secondary-foreground py-3">
-              <p className="mr-1">動画での取得方法はこちら</p>
-              <Link
-                href="https://youtu.be/EI4aGIEhquY"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={externalLinkCls}
-              >
-                https://youtu.be/EI4aGIEhquY
-              </Link>
-            </div>
 
             {/* 前提条件 */}
             <div className="bg-warning border border-warning p-3 rounded-md">
@@ -943,18 +906,6 @@ const ApiSettingsCard = () => {
               </p>
             </div>
 
-            {/* 動画リンク */}
-            <div className="flex items-center text-sm font-bold text-secondary-foreground py-3">
-              <p className="mr-1">動画での取得方法はこちら</p>
-              <Link
-                href="https://youtu.be/cPRd3q7BiCY"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={externalLinkCls}
-              >
-                https://youtu.be/cPRd3q7BiCY
-              </Link>
-            </div>
 
             {/* 取得手順 */}
             <p className="font-semibold">取得手順</p>
@@ -1040,18 +991,6 @@ const ApiSettingsCard = () => {
               </p>
             </div>
 
-            {/* 動画リンク */}
-            <div className="flex items-center text-sm font-bold text-secondary-foreground py-3">
-              <p className="mr-1">動画での取得方法はこちら</p>
-              <Link
-                href="https://youtu.be/7pMRu79vPTA"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={externalLinkCls}
-              >
-                https://youtu.be/7pMRu79vPTA
-              </Link>
-            </div>
 
             {/* 前提条件 */}
             <div className="bg-warning border border-warning p-3 rounded-md">
@@ -1169,18 +1108,6 @@ const ApiSettingsCard = () => {
               </p>
             </div>
 
-            {/* 動画リンク */}
-            <div className="flex items-center text-sm font-bold text-secondary-foreground py-3">
-              <p className="mr-1">動画での取得方法はこちら</p>
-              <Link
-                href="https://youtu.be/sPA58Di_BiQ"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={externalLinkCls}
-              >
-                https://youtu.be/sPA58Di_BiQ
-              </Link>
-            </div>
 
             {/* 前提条件 */}
             <div className="bg-warning border border-warning p-3 rounded-md">
