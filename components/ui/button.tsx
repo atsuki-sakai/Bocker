@@ -19,7 +19,7 @@ const buttonVariants = cva(
         // Custom variants used across the app
         info: 'bg-palette-1 text-primary-foreground  shadow-sm hover:bg-info/90',
         edit: 'bg-palette-4 text-primary-foreground shadow-sm hover:bg-edit/90',
-        selected: 'bg-active text-active-foreground shadow-sm hover:bg-active/90',
+        selected: 'bg-success text-success-foreground shadow-sm hover:bg-success/90',
       },
       size: {
         default: 'h-9 px-4 py-2',

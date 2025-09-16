@@ -140,13 +140,21 @@ const checkMaintenance = (pathname: string, req: NextRequest) => {
 
 // 言語設定を除いたパスを取得する関数
 const getPathnameWithoutLocale = (pathname: string): string => {
-  const segments = pathname.split('/')
+  // Remove empty segments, locale prefixes, and route group labels like (reservation)
+  const segments = pathname
+    .split('/')
+    .filter((segment) => segment.length > 0)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (segments.length > 1 && routing.locales.includes(segments[1] as any)) {
-    return `/${segments.slice(2).join('/')}`
+  let startIndex = 0
+  if (segments.length > 0 && routing.locales.includes(segments[0] as any)) {
+    startIndex = 1
   }
-  return pathname
+
+  const normalizedSegments = segments
+    .slice(startIndex)
+    .filter((segment) => !/^\(.+\)$/.test(segment))
+
+  return `/${normalizedSegments.join('/')}` || '/'
 }
 
 // Clerkミドルウェアの設定

@@ -623,7 +623,7 @@ export const MenuView = ({
                               {convertPaymentMethod(menu.payment_method as PaymentMethod)}
                             </p>
                             {isSetMenu(menu) && (
-                              <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                              <span className="text-xs px-2 py-0.5 bg-accent text-accent-foreground rounded-full">
                                 セット
                               </span>
                             )}

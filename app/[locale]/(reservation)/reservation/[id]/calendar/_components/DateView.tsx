@@ -373,7 +373,7 @@ export const DateView = ({
                     className={`text-sm ${
                       selectedTime?.startHour === time.startHour &&
                       selectedTime?.endHour === time.endHour
-                        ? 'bg-neon-foreground text-neon '
+                        ? 'bg-success-foreground text-success'
                         : 'bg-muted'
                     }`}
                   >

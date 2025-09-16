@@ -33,7 +33,6 @@ type StaffViewProps = {
   onChangeStaffAction: (staff: StaffDisplay | 'free' | null) => void
 }
 
-
 export const StaffView = ({
   tenantId,
   orgId,
@@ -72,7 +71,7 @@ export const StaffView = ({
       <p className="text-muted-foreground mb-4 text-sm">
         担当してほしいスタッフを選択してください。
       </p>
-      
+
       {/* 指名フリーボタン */}
       <div className="mb-4">
         <div className="flex items-center justify-between border rounded-lg p-4 bg-muted/50">
@@ -89,7 +88,7 @@ export const StaffView = ({
               </p>
               <div className="flex items-end gap-2 text-muted-foreground">
                 <p className="text-xs">指名料</p>
-                <span className="text-sm text-accent-2">無料</span>
+                <span className="text-sm text-success-foreground">無料</span>
               </div>
             </div>
           </div>
@@ -101,7 +100,7 @@ export const StaffView = ({
           </Button>
         </div>
       </div>
-      
+
       <div className="space-y-3">
         {sortedStaffs.length > 0 ? (
           sortedStaffs.map((staff) => (
@@ -176,7 +175,7 @@ export const StaffView = ({
                   </p>
                   <div className="flex items-end gap-2 text-muted-foreground">
                     <p className="text-xs">指名料</p>
-                    <span className="text-sm text-accent-2">
+                    <span className="text-sm text-success-foreground">
                       {staff.extra_charge ? `¥${staff.extra_charge.toLocaleString()}` : `無料`}
                     </span>
                   </div>
@@ -208,12 +207,18 @@ export const StaffView = ({
                 </div>
               </div>
               <Button
-                variant={selectedStaff !== 'free' && selectedStaff?._id === staff._id ? 'selected' : 'default'}
+                variant={
+                  selectedStaff !== 'free' && selectedStaff?._id === staff._id
+                    ? 'selected'
+                    : 'default'
+                }
                 onClick={() => {
                   onChangeStaffAction(staff)
                 }}
               >
-                {selectedStaff !== 'free' && selectedStaff?._id === staff._id ? '選択中' : '選択する'}
+                {selectedStaff !== 'free' && selectedStaff?._id === staff._id
+                  ? '選択中'
+                  : '選択する'}
               </Button>
             </div>
           ))
@@ -257,7 +262,7 @@ export const StaffView = ({
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">指名料</span>
                 {infoStaff?.extra_charge ? (
-                  <span className="text-sm text-accent-2">
+                  <span className="text-sm text-success-foreground">
                     {`¥${infoStaff.extra_charge.toLocaleString()}`}
                   </span>
                 ) : (

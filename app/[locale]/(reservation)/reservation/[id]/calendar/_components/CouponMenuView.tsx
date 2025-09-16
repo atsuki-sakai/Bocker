@@ -147,8 +147,8 @@ const CouponMenuViewInner = ({
     api.menu.query.getDisplayByIds,
     excludedMenus && excludedMenus.length > 0
       ? {
-          menu_ids: excludedMenus.map(em => em.menu_id),
-          option_ids: []
+          menu_ids: excludedMenus.map((em) => em.menu_id),
+          option_ids: [],
         }
       : 'skip'
   )
@@ -228,7 +228,7 @@ const CouponMenuViewInner = ({
                 activeCustomerType,
                 sessionCustomerType,
                 condition1: activeCustomerType === 'all',
-                condition2: activeCustomerType === sessionCustomerType
+                condition2: activeCustomerType === sessionCustomerType,
               })
 
               // より厳密なクーポン顧客タイプの検証
@@ -255,11 +255,16 @@ const CouponMenuViewInner = ({
                   default:
                     // 不明なタイプは表示しない
                     isValidCustomerType = false
-                    console.log(`❌ [CouponFilter] 不明なactive_customer_type: ${activeCustomerType}`)
+                    console.log(
+                      `❌ [CouponFilter] 不明なactive_customer_type: ${activeCustomerType}`
+                    )
                 }
               }
 
-              console.log(`${isValidCustomerType ? '✅' : '❌'} [CouponFilter] "${coupon.name}" 表示結果:`, isValidCustomerType)
+              console.log(
+                `${isValidCustomerType ? '✅' : '❌'} [CouponFilter] "${coupon.name}" 表示結果:`,
+                isValidCustomerType
+              )
 
               return { coupon, isValid: isValidCustomerType, applicableMenus }
             } catch (error) {
@@ -334,9 +339,7 @@ const CouponMenuViewInner = ({
 
       return menus.filter(
         (menu) =>
-          Array.isArray(menu.categories) &&
-          menu.categories.includes(category) &&
-          !isSetMenu(menu)
+          Array.isArray(menu.categories) && menu.categories.includes(category) && !isSetMenu(menu)
       )
     },
     [menus, isSetMenu]
@@ -396,9 +399,11 @@ const CouponMenuViewInner = ({
         // プラン制限チェック（メニュー追加時のみ）
         const limits = getPlanLimits(planName as SubscriptionPlanName)
         const currentMenuCount = Object.keys(newSelectedMenuMap).length
-        
+
         if (currentMenuCount >= limits.maxMenuCount) {
-          alert(`${planName}プランでは最大${limits.maxMenuCount}個のメニューまでしか選択できません。`)
+          alert(
+            `${planName}プランでは最大${limits.maxMenuCount}個のメニューまでしか選択できません。`
+          )
           return
         }
 
@@ -1074,14 +1079,10 @@ const CouponMenuViewInner = ({
                     <Card
                       className={`transition-all p-2 h-full ${
                         isCurrentlySelected
-                          ? 'border-2 border-accent-2 shadow-md cursor-pointer'
+                          ? 'border border-success-foreground shadow-md cursor-pointer'
                           : isBlocked || isCouponExcluded
-                            ? 'opacity-50 border-2 border-transparent cursor-not-allowed'
-                            : 'hover:shadow-md border-2 border-transparent cursor-pointer'
-                      } ${
-                        selectedCoupon && !isMenuExcludedByCoupon(menu) && !isBlocked
-                          ? 'ring-2 ring-blue-200 bg-background'
-                          : ''
+                            ? 'opacity-50 border border-muted-foreground cursor-not-allowed'
+                            : 'hover:shadow-md border border-muted-foreground cursor-pointer'
                       }`}
                       onClick={() =>
                         !isBlocked &&
@@ -1092,7 +1093,7 @@ const CouponMenuViewInner = ({
                       <div className="px-2 pt-6 flex justify-between items-center relative">
                         <div className="absolute -top-2 -right-2 z-10">
                           {(isBlocked || isCouponExcluded) && (
-                            <span className="bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
+                            <span className="bg-destructive text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
                               選択不可
                             </span>
                           )}
@@ -1102,7 +1103,7 @@ const CouponMenuViewInner = ({
                             </span>
                           )}
                           {menu.categories?.includes('人気メニュー' as MenuCategory) && (
-                            <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
+                            <span className="bg-success-foreground border border-dashed border-success text-success text-[10px] font-bold px-2 py-1 rounded-full">
                               人気メニュー
                             </span>
                           )}
@@ -1159,6 +1160,7 @@ const CouponMenuViewInner = ({
                               )}
                             </div>
                             <div className="flex items-center justify-between gap-2 mt-1">
+                              secondary
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm text-muted-foreground">
@@ -1470,14 +1472,10 @@ const CouponMenuViewInner = ({
                               <Card
                                 className={`relative transition-all p-2 h-full ${
                                   isCurrentlySelected
-                                    ? 'border-2 border-accent-2 shadow-md cursor-pointer'
+                                    ? 'border-2 border-success-foreground shadow-md cursor-pointer'
                                     : isBlocked || isCouponExcluded
-                                      ? 'opacity-50 border-2 border-transparent cursor-not-allowed'
-                                      : 'hover:shadow-md border-2 border-transparent cursor-pointer'
-                                } ${
-                                  selectedCoupon && !isMenuExcludedByCoupon(menu) && !isBlocked
-                                    ? 'ring-2 ring-blue-200 bg-background'
-                                    : ''
+                                      ? 'opacity-50 border-2 border-primary cursor-not-allowed'
+                                      : 'hover:shadow-md border border-muted-foreground cursor-pointer'
                                 }`}
                                 onClick={() =>
                                   !isBlocked &&
@@ -1487,7 +1485,7 @@ const CouponMenuViewInner = ({
                               >
                                 <div className="absolute -top-4 -right-4 z-10">
                                   {(isBlocked || isCouponExcluded) && (
-                                    <span className="bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded-full">
+                                    <span className="bg-destructive text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
                                       選択不可
                                     </span>
                                   )}
@@ -1499,7 +1497,7 @@ const CouponMenuViewInner = ({
                                       </span>
                                     )}
                                   {menu.categories?.includes('人気メニュー' as MenuCategory) && (
-                                    <span className="bg-neon-foreground border border-dashed border-neon text-neon text-[10px] font-bold px-2 py-1 rounded-full">
+                                    <span className="bg-success-foreground border border-dashed border-success  text-success text-[10px] font-bold px-2 py-1 rounded-full">
                                       人気メニュー
                                     </span>
                                   )}
@@ -1702,7 +1700,7 @@ const CouponMenuViewInner = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive-foreground border-destructive-foreground bg-destructive h-8 w-8 p-0"
+                      className="text-primary-foreground border-destructive-foreground bg-destructive h-8 w-8 p-0"
                       onClick={() => handleMenuSelect(menu, isMultipleSelection)}
                     >
                       ×

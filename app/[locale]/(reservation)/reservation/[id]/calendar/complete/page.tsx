@@ -160,7 +160,7 @@ export default function CompletePage() {
       <div className="fixed inset-0 pointer-events-none z-50">
         {Array.from({ length: 100 }).map((_, i) => {
           const size = Math.random() * 8 + 5
-          const colors = ['#FFC700', '#FF0058', '#2E7CF6', '#17C964', '#F31260']
+          const colors = ['hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--destructive))']
           const color = colors[Math.floor(Math.random() * colors.length)]
           const left = Math.random() * 100
           const animationDuration = Math.random() * 3 + 2

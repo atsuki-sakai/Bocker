@@ -332,7 +332,7 @@ export const OptionView = ({
               selectedOption?.in_stock !== null &&
               selectedOption.in_stock <= 3 &&
               selectedOption.in_stock > 0 && (
-                <p className="text-xs text-amber-500 flex items-center mt-1">
+                <p className="text-xs text-warning-foreground flex items-center mt-1">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   残り僅か
                 </p>
