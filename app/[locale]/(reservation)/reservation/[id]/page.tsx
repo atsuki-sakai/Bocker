@@ -392,7 +392,7 @@ export default function ReservePage() {
                       // セッション作成成功時に十分な時間を待ってからリダイレクト
                       setTimeout(() => {
                         router.push(`/reservation/${orgId}/calendar`)
-                      }, 1000)
+                      }, 2000)
                     }}
                   />
                 </div>

@@ -197,7 +197,7 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
 
     try {
       console.log('[OptimizedLineLoginButton] Creating LINE session...')
-      
+
       const sessionResponse = await fetch('/api/auth/line-session', {
         method: 'POST',
         headers: {
@@ -223,11 +223,11 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
         sessionResponse: {
           status: sessionResponse.status,
           ok: sessionResponse.ok,
-        }
+        },
       })
 
       // Wait for cookie propagation (increased wait time)
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
       // Show success message
       toast.success('LINEログインが完了しました')
@@ -253,37 +253,52 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
       if (typeof window !== 'undefined' && window.liff) {
         try {
           const isLiffLoggedIn = window.liff.isLoggedIn && window.liff.isLoggedIn()
-          
+
           // LIFFからログアウトされているが、コンポーネントはまだ認証済みの場合
           if (!isLiffLoggedIn && isAuthenticated && authState === 'authenticated') {
-            console.log('[OptimizedLineLoginButton] LIFF logout detected, clearing authentication state...')
-            
+            console.log(
+              '[OptimizedLineLoginButton] LIFF logout detected, clearing authentication state...'
+            )
+
             // useLineAuthのlogout methodで状態をクリア
-            lineLogout().then(() => {
-              console.log('[OptimizedLineLoginButton] Authentication state cleared after LIFF logout')
-              
-              // コンポーネントの状態をリセット
-              setIsClicked(false)
-              setRetryCount(0)
-              if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current)
-                timeoutRef.current = null
-              }
-            }).catch((error) => {
-              console.error('[OptimizedLineLoginButton] Failed to clear auth state:', error)
-            })
-            
+            lineLogout()
+              .then(() => {
+                console.log(
+                  '[OptimizedLineLoginButton] Authentication state cleared after LIFF logout'
+                )
+
+                // コンポーネントの状態をリセット
+                setIsClicked(false)
+                setRetryCount(0)
+                if (timeoutRef.current) {
+                  clearTimeout(timeoutRef.current)
+                  timeoutRef.current = null
+                }
+              })
+              .catch((error) => {
+                console.error('[OptimizedLineLoginButton] Failed to clear auth state:', error)
+              })
+
             // LIFFログアウトが検出された場合は、自動セッション作成をしない
             return
           }
-          
+
           // LIFFログイン状態とコンポーネント認証状態が一致している場合のみ自動セッション作成
-          if (isLiffLoggedIn && isAuthenticated && !isLoading && !isClicked && authState === 'authenticated' && tokenState === 'valid') {
+          if (
+            isLiffLoggedIn &&
+            isAuthenticated &&
+            !isLoading &&
+            !isClicked &&
+            authState === 'authenticated' &&
+            tokenState === 'valid'
+          ) {
             // セッションクッキーが既に存在するかチェック
             const hasSession = document.cookie.includes('bocker_login_session=')
-            
+
             if (!hasSession) {
-              console.log('[OptimizedLineLoginButton] Auto-detecting successful LINE authentication, creating session...')
+              console.log(
+                '[OptimizedLineLoginButton] Auto-detecting successful LINE authentication, creating session...'
+              )
               // 自動セッション作成を実行
               handleSessionCreation()
             }
@@ -293,14 +308,22 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
         }
       }
     }
-    
+
     checkLiffLogoutState()
-    
-    // 定期的にLIFFログアウト状態をチェック（1秒間隔）
-    const interval = setInterval(checkLiffLogoutState, 1000)
-    
+
+    // 定期的にLIFFログアウト状態をチェック（5秒間隔）
+    const interval = setInterval(checkLiffLogoutState, 5000)
+
     return () => clearInterval(interval)
-  }, [isAuthenticated, isLoading, isClicked, authState, tokenState, lineLogout, handleSessionCreation])
+  }, [
+    isAuthenticated,
+    isLoading,
+    isClicked,
+    authState,
+    tokenState,
+    lineLogout,
+    handleSessionCreation,
+  ])
 
   // コンポーネントマウント時の設定とクリーンアップ
   useEffect(() => {

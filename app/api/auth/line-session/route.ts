@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body to get tenant and org info
     const body: { tenantId?: string; orgId?: string } = await request.json().catch(() => ({}))
-    
+
     // Also check cookies for tenant/org context (set during LINE auth)
     const cookieStore = await cookies()
     const tenantId = body.tenantId || cookieStore.get('line_ctx_tid')?.value
@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
     if (!tenantId || !orgId) {
       console.error('[API /api/auth/line-session] Missing tenant or org context')
       return NextResponse.json(
-        { 
+        {
           error: 'Missing tenant or organization context',
-          details: 'LINE認証コンテキストが見つかりません。再度ログインをお試しください。'
+          details: 'LINE認証コンテキストが見つかりません。再度ログインをお試しください。',
         },
         { status: 400 }
       )
@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
     if (!accessToken) {
       console.warn('[API /api/auth/line-session] No valid LINE access token available')
       return NextResponse.json(
-        { 
+        {
           error: 'LINE authentication required',
-          details: 'LINE認証が必要です。再度ログインをお試しください。'
+          details: 'LINE認証が必要です。再度ログインをお試しください。',
         },
         { status: 401 }
       )
@@ -66,11 +66,11 @@ export async function POST(request: NextRequest) {
     let lineProfile: LineProfileResponse
     try {
       console.log('[API /api/auth/line-session] Fetching LINE user profile...')
-      
+
       const profileResponse = await fetch('https://api.line.me/v2/profile', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
           'User-Agent': 'Bocker-LINE-Session/1.0',
         },
       })
@@ -86,19 +86,18 @@ export async function POST(request: NextRequest) {
       }
 
       lineProfile = await profileResponse.json()
-      
+
       console.log('[API /api/auth/line-session] LINE profile retrieved successfully:', {
         userId: lineProfile.userId,
         displayName: lineProfile.displayName?.substring(0, 20) + '...',
         hasPicture: !!lineProfile.pictureUrl,
       })
-
     } catch (error) {
       console.error('[API /api/auth/line-session] Failed to get LINE profile:', error)
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to retrieve LINE profile',
-          details: 'LINEプロフィール情報の取得に失敗しました。'
+          details: 'LINEプロフィール情報の取得に失敗しました。',
         },
         { status: 500 }
       )
@@ -116,55 +115,49 @@ export async function POST(request: NextRequest) {
 
     if (!customer) {
       console.log('[API /api/auth/line-session] Creating new LINE customer...')
-      
+
       try {
         // Create new customer with LINE information
         const customerResult = await customerRepo.createCustomerWithDetailsAndPoints(
           {
-            uid: uuidv4(),
+            uid: uuidv4(), //一時的に
             tenant_id: tenantId,
             org_id: orgId,
             line_id: lineProfile.userId,
             line_user_name: lineProfile.displayName,
-            customer_type: 'first_time'
+            customer_type: 'first_time',
           },
           {
             email: '', // LINE users might not have email
             gender: null,
             birthday: null,
             age: 0,
-            notes: `LINE登録ユーザー - ${lineProfile.displayName}`
+            notes: `LINE登録ユーザー - ${lineProfile.displayName}`,
           },
           0 // Initial points
         )
-        
+
         customer = customerResult.customer
         console.log('[API /api/auth/line-session] New LINE customer created:', customer?.uid)
-        
       } catch (error) {
         console.error('[API /api/auth/line-session] Failed to create LINE customer:', error)
         return NextResponse.json(
-          { 
+          {
             error: 'Failed to create customer account',
-            details: '顧客アカウントの作成に失敗しました。'
+            details: '顧客アカウントの作成に失敗しました。',
           },
           { status: 500 }
         )
       }
     } else {
       console.log('[API /api/auth/line-session] Existing LINE customer found:', customer.uid)
-      
+
       // Update LINE user name if it has changed
       if (customer.line_user_name !== lineProfile.displayName) {
         try {
-          await customerRepo.updateCustomer(
-            customer.uid,
-            tenantId,
-            orgId,
-            {
-              line_user_name: lineProfile.displayName,
-            }
-          )
+          await customerRepo.updateCustomer(customer.uid, tenantId, orgId, {
+            line_user_name: lineProfile.displayName,
+          })
           console.log('[API /api/auth/line-session] Updated LINE display name')
         } catch (error) {
           console.warn('[API /api/auth/line-session] Failed to update display name:', error)
@@ -186,12 +179,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create customer name with priority: first/last name → LINE display name → email → 'LINE User'
-    const customerName = 
-      (customer.last_name && customer.first_name)
+    const customerName =
+      customer.last_name && customer.first_name
         ? `${customer.last_name} ${customer.first_name}`
-        : customer.line_user_name ||
-          customer.email ||
-          'LINE User'
+        : customer.line_user_name || customer.email || 'LINE User'
 
     // Create JWT session payload
     const sessionPayload: SessionPayload = {
@@ -216,7 +207,7 @@ export async function POST(request: NextRequest) {
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days
     }
-    
+
     console.log('[API /api/auth/line-session] Setting session cookie:', {
       cookieName: LOGIN_SESSION_KEY,
       cookieOptions,
@@ -226,9 +217,9 @@ export async function POST(request: NextRequest) {
       requestHost: request.headers.get('host'),
       requestOrigin: request.headers.get('origin'),
     })
-    
+
     cookieStore.set(LOGIN_SESSION_KEY, token, cookieOptions)
-    
+
     // Force cookie to be written immediately by attempting to read it back
     const immediateVerification = cookieStore.get(LOGIN_SESSION_KEY)
     console.log('[API /api/auth/line-session] Immediate cookie verification after set:', {
@@ -236,7 +227,7 @@ export async function POST(request: NextRequest) {
       cookieLength: immediateVerification?.value?.length || 0,
       tokenMatches: immediateVerification?.value === token,
     })
-    
+
     // Verify cookie was set immediately
     const verifySessionCookie = cookieStore.get(LOGIN_SESSION_KEY)
     console.log('[API /api/auth/line-session] Immediate cookie verification:', {
@@ -244,13 +235,13 @@ export async function POST(request: NextRequest) {
       cookieValue: verifySessionCookie ? '***SET***' : 'NOT_SET',
       cookieValueLength: verifySessionCookie?.value?.length || 0,
     })
-    
+
     // Additional verification - list all cookies
     const allCookiesAfterSet = cookieStore.getAll()
     console.log('[API /api/auth/line-session] All cookies after setting:', {
       totalCookies: allCookiesAfterSet.length,
-      cookieNames: allCookiesAfterSet.map(c => c.name),
-      hasLoginSessionCookie: allCookiesAfterSet.some(c => c.name === LOGIN_SESSION_KEY),
+      cookieNames: allCookiesAfterSet.map((c) => c.name),
+      hasLoginSessionCookie: allCookiesAfterSet.some((c) => c.name === LOGIN_SESSION_KEY),
     })
 
     console.log('[API /api/auth/line-session] LINE session created successfully:', {
@@ -262,7 +253,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(
-      { 
+      {
         success: true,
         customerUid: customer.uid,
         customerName: customerName,
@@ -271,10 +262,9 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     )
-
   } catch (error) {
     console.error('[API /api/auth/line-session] Unexpected error:', error)
-    
+
     return NextResponse.json(
       {
         error: 'Internal server error',

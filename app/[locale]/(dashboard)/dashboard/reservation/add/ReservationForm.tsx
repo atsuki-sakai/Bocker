@@ -219,7 +219,7 @@ const MenuSelectionItem = React.memo(
               <span className="line-through text-muted-foreground">
                 ￥{menu.unit_price?.toLocaleString()}
               </span>
-              <span className="font-semibold text-accent-2">
+              <span className="font-semibold text-success-foreground">
                 ￥{menu.sale_price.toLocaleString()}
               </span>
             </>
@@ -247,9 +247,9 @@ const MenuSelectionItem = React.memo(
           variant="outline"
           onClick={onAdd}
           disabled={disabled}
-          className="border border-accent-2 hover:bg-accent-2-foreground"
+          className="border border-success hover:bg-success"
         >
-          <Plus className="w-4 h-4 text-accent-2" />
+          <Plus className="w-4 h-4 text-success-foreground" />
         </Button>
       </div>
     </CommandItem>
@@ -926,7 +926,7 @@ export default function ReservationForm() {
                   <div
                     className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
-                      currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
+                      currentStep >= step.id ? 'text-success-foreground' : 'text-muted-foreground'
                     )}
                   >
                     {currentStep > step.id ? (
@@ -938,7 +938,7 @@ export default function ReservationForm() {
                   <span
                     className={cn(
                       'text-xs md:text-sm font-medium text-center text-balance md:text-nowrap',
-                      currentStep >= step.id ? 'text-accent-2' : 'text-muted-foreground'
+                      currentStep >= step.id ? 'text-success-foreground' : 'text-muted-foreground'
                     )}
                   >
                     {step.title}
@@ -1003,7 +1003,7 @@ export default function ReservationForm() {
                                   className={cn(
                                     'cursor-pointer transition-all',
                                     isSelected
-                                      ? 'bg-accent-2 hover:bg-accent-2/90'
+                                      ? 'bg-success-foreground hover:bg-success-foreground'
                                       : 'hover:bg-muted'
                                   )}
                                   onClick={() => {
@@ -1040,9 +1040,7 @@ export default function ReservationForm() {
                                   variant={isSelected ? 'default' : 'outline'}
                                   className={cn(
                                     'cursor-pointer transition-all',
-                                    isSelected
-                                      ? 'bg-accent-2 hover:bg-accent-2/90'
-                                      : 'hover:bg-muted'
+                                    isSelected ? 'bg-success hover:bg-success/90' : 'hover:bg-muted'
                                   )}
                                   onClick={() => {
                                     if (isSelected) {
@@ -1080,9 +1078,7 @@ export default function ReservationForm() {
                                   variant={isSelected ? 'default' : 'outline'}
                                   className={cn(
                                     'cursor-pointer transition-all',
-                                    isSelected
-                                      ? 'bg-accent-2 hover:bg-accent-2/90'
-                                      : 'hover:bg-muted'
+                                    isSelected ? 'bg-success hover:bg-success/90' : 'hover:bg-muted'
                                   )}
                                   onClick={() => {
                                     if (isSelected) {
@@ -1132,8 +1128,8 @@ export default function ReservationForm() {
                         className={cn(
                           'p-4 rounded-xl border-2 transition-all cursor-pointer',
                           isSelected
-                            ? 'border-accent-2 bg-accent-2/5'
-                            : 'border-border hover:border-accent-2'
+                            ? 'border-success bg-success/5'
+                            : 'border-border hover:border-success'
                         )}
                       >
                         <div className="flex flex-col md:flex-row items-start justify-start">
@@ -1162,7 +1158,7 @@ export default function ReservationForm() {
                                     <span className="line-through text-muted-foreground text-sm">
                                       ￥{menu.unit_price?.toLocaleString()}
                                     </span>
-                                    <span className="font-bold text-accent-2">
+                                    <span className="font-bold text-success-foreground">
                                       ￥{menu.sale_price.toLocaleString()}
                                     </span>
                                   </>
@@ -1229,7 +1225,7 @@ export default function ReservationForm() {
                           key={option._id}
                           className={cn(
                             'p-4 rounded-lg border transition-all',
-                            isSelected ? 'border-accent-2 bg-accent-2-foreground' : 'border-border'
+                            isSelected ? 'border-success bg-success' : 'border-border'
                           )}
                         >
                           <div className="flex items-center justify-between">
@@ -1304,8 +1300,8 @@ export default function ReservationForm() {
 
                 {staffFormData === undefined && selectedMenus.length > 0 ? (
                   <div className="flex items-center justify-center p-8">
-                    <Loader2 className="h-6 w-6 animate-spin mr-3 text-accent-2" />
-                    <span className="text-accent-2">{t('searchingStaff')}</span>
+                    <Loader2 className="h-6 w-6 animate-spin mr-3 text-success-foreground" />
+                    <span className="text-success-foreground">{t('searchingStaff')}</span>
                   </div>
                 ) : availableStaff.length > 0 ? (
                   <div className="grid gap-4">
@@ -1318,24 +1314,28 @@ export default function ReservationForm() {
                       className={cn(
                         'p-4 rounded-xl border-2 transition-all cursor-pointer',
                         selectedStaffId === 'free'
-                          ? 'border-accent-2 bg-accent-2-foreground'
-                          : 'border-border hover:border-accent-2'
+                          ? 'border-success bg-success'
+                          : 'border-border hover:border-success'
                       )}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent-2/20 to-accent-2/40 flex items-center justify-center">
-                            <span className="text-xl font-bold text-accent-2">FREE</span>
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-success/20 to-success/40 flex items-center justify-center">
+                            <span className="text-xl font-bold text-success-foreground">FREE</span>
                           </div>
                           <div>
                             <h3 className="font-semibold text-lg">指名フリー</h3>
                             <p className="text-sm text-muted-foreground">
                               最適なスタッフを自動で割り当て
                             </p>
-                            <p className="text-sm font-medium text-accent-2 mt-1">指名料無料</p>
+                            <p className="text-sm font-medium text-success-foreground mt-1">
+                              指名料無料
+                            </p>
                           </div>
                         </div>
-                        {selectedStaffId === 'free' && <Check className="w-6 h-6 text-accent-2" />}
+                        {selectedStaffId === 'free' && (
+                          <Check className="w-6 h-6 text-success-foreground" />
+                        )}
                       </div>
                     </div>
 
@@ -1352,8 +1352,8 @@ export default function ReservationForm() {
                           className={cn(
                             'p-4 rounded-xl border-2 transition-all cursor-pointer',
                             selectedStaffId === staff._id
-                              ? 'border-accent-2 bg-accent-2-foreground'
-                              : 'border-border hover:border-accent-2'
+                              ? 'border-success bg-success'
+                              : 'border-border hover:border-success'
                           )}
                         >
                           <div className="flex items-center justify-between">
@@ -1387,7 +1387,7 @@ export default function ReservationForm() {
                               </div>
                             </div>
                             {selectedStaffId === staff._id && (
-                              <Check className="w-6 h-6 text-accent-2" />
+                              <Check className="w-6 h-6 text-success-foreground" />
                             )}
                           </div>
                         </div>
@@ -1462,8 +1462,8 @@ export default function ReservationForm() {
                               'p-3 rounded-lg font-medium transition-all border border-transparent',
                               watch('start_time_unix') ===
                                 convertHourToTimestamp(slot.startHour, formattedDate)
-                                ? 'bg-accent-2 text-accent-2-foreground'
-                                : 'bg-background border-border hover:bg-accent-2-foreground'
+                                ? 'bg-success text-success-foreground'
+                                : 'bg-background border-border hover:bg-success'
                             )}
                             onClick={() => {
                               const timestampStart = convertHourToTimestamp(
@@ -1514,7 +1514,7 @@ export default function ReservationForm() {
                       }}
                       className={cn(
                         'p-4 rounded-xl border-2 transition-all',
-                        isExistingCustomer ? 'border-accent-2 bg-accent-2/5' : 'border-border'
+                        isExistingCustomer ? 'border-success bg-success/5' : 'border-border'
                       )}
                     >
                       <User className="w-6 h-6 mb-2 mx-auto" />
@@ -1528,9 +1528,7 @@ export default function ReservationForm() {
                       }}
                       className={cn(
                         'p-4 rounded-xl border-2 transition-all',
-                        !isExistingCustomer
-                          ? 'border-accent-2 bg-accent-2-foreground'
-                          : 'border-border'
+                        !isExistingCustomer ? 'border-success bg-success' : 'border-border'
                       )}
                     >
                       <Plus className="w-6 h-6 mb-2 mx-auto" />
@@ -1552,8 +1550,8 @@ export default function ReservationForm() {
 
                     {isLoadingCustomers ? (
                       <div className="flex items-center justify-center p-8">
-                        <Loader2 className="h-5 w-5 animate-spin mr-2 text-accent-2" />
-                        <span className="text-accent-2">{t('searching')}</span>
+                        <Loader2 className="h-5 w-5 animate-spin mr-2 text-success-foreground" />
+                        <span className="text-success-foreground">{t('searching')}</span>
                       </div>
                     ) : customers.length > 0 ? (
                       <div className="grid gap-3">
@@ -1567,7 +1565,7 @@ export default function ReservationForm() {
                             className={cn(
                               'p-4 rounded-lg border-2 transition-all cursor-pointer',
                               selectedCustomer?.uid === customer.uid
-                                ? 'border-accent-2 bg-accent-2-foreground'
+                                ? 'border-success bg-success'
                                 : 'border-border'
                             )}
                           >
@@ -1753,7 +1751,7 @@ export default function ReservationForm() {
                 {totalTimeMinutes > 0 && (
                   <span className="text-muted-foreground mr-3">施術時間: {totalTimeMinutes}分</span>
                 )}
-                <span className="text-xl font-bold text-accent-2">
+                <span className="text-xl font-bold text-success-foreground">
                   ￥{totalPriceCalculated.toLocaleString()}
                 </span>
               </p>
@@ -1781,4 +1779,3 @@ export default function ReservationForm() {
     </div>
   )
 }
-
