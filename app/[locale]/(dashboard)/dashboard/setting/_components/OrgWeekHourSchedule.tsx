@@ -500,12 +500,12 @@ export default function OrgWeekHourSchedule() {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold mb-1">{day.week}</span>
                     {isOpen ? (
-                      <div className="flex items-center gap-1 text-xs">
+                      <div className="flex flex-col items-center gap-1 text-xs">
                         <Check className="h-4 w-4" />
                         <span>{t('businessDay')}</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 text-xs">
+                      <div className="flex flex-col items-center gap-1 text-xs">
                         <X className="h-4 w-4" />
                         <span>{t('regularHoliday')}</span>
                       </div>

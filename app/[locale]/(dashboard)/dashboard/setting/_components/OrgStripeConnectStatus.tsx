@@ -26,13 +26,14 @@ const statusColorMap: Record<string, string> = {
   not_connected: 'border border-palette-1-foreground text-palette-1-foreground bg-palette-1',
   pending: 'border border-palette-2-foreground text-palette-2-foreground bg-palette-2',
   incomplete: 'border border-palette-3-foreground text-palette-3-foreground bg-palette-3',
-  restricted: 'border border-palette-4-foreground text-palette-4-foreground bg-palette-4',
-  payouts_disabled: 'border border-palette-4-foreground text-palette-4-foreground bg-palette-4',
+  restricted: 'border border-destructive-foreground text-destructive-foreground bg-destructive',
+  payouts_disabled:
+    'border border-destructive-foreground text-destructive-foreground bg-destructive',
   external_account_removed:
     'border border-palette-3-foreground text-palette-3-foreground bg-palette-3',
   bank_account_missing: 'border border-palette-2-foreground text-palette-2-foreground bg-palette-2',
-  active: 'border border-palette-5-foreground text-palette-5-foreground bg-palette-5',
-  deauthorized: 'border border-palette-1-foreground text-palette-1-foreground bg-palette-1',
+  active: 'border border-success-foreground text-success-foreground bg-success',
+  deauthorized: 'border border-destructive-foreground text-destructive-foreground bg-destructive',
 }
 
 export default function StripeConnectStatus() {
@@ -159,9 +160,7 @@ export default function StripeConnectStatus() {
         <div className="flex items-center gap-2">
           <h4 className="text-2xl font-bold mb-1">{t('title')}</h4>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {t('description')}
-        </p>
+        <p className="text-sm text-muted-foreground">{t('description')}</p>
       </div>
 
       <div className="flex flex-col md:flex-row justify-start items-start md:items-center gap-2 my-6">
@@ -194,7 +193,9 @@ export default function StripeConnectStatus() {
             {t(`status.${status}`)}
           </span>
         </AlertTitle>
-        <AlertDescription className="mt-1 text-sm">{t(`statusDescription.${status}`)}</AlertDescription>
+        <AlertDescription className="mt-1 text-sm">
+          {t(`statusDescription.${status}`)}
+        </AlertDescription>
       </Alert>
 
       {(status === 'pending' || status === 'incomplete' || status === 'restricted') && (
@@ -287,9 +288,7 @@ export default function StripeConnectStatus() {
       <div className="bg-muted px-6 py-4 rounded-md mt-6">
         <div className="w-full flex flex-col-reverse sm:flex-row justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            <p className="text-sm font-semibold mb-1 text-muted-foreground">
-              {t('fee.title')}
-            </p>
+            <p className="text-sm font-semibold mb-1 text-muted-foreground">{t('fee.title')}</p>
             <div className="flex items-center gap-2 mt-1">
               <p className="text-xs">{t('fee.description')}</p>
             </div>
@@ -297,11 +296,7 @@ export default function StripeConnectStatus() {
             {(status === 'incomplete' || status === 'pending') && (
               <button
                 onClick={() => {
-                  if (
-                    window.confirm(
-                      t('reconnectConfirm')
-                    )
-                  ) {
+                  if (window.confirm(t('reconnectConfirm'))) {
                     handleConnectStripe()
                   }
                 }}

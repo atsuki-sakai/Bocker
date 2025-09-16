@@ -25,7 +25,7 @@ import { useQuery, useMutation } from 'convex/react'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 
 // 共通リンクスタイル
-const externalLinkCls = 'text-accent underline hover:text-accent-2'
+const externalLinkCls = 'text-primary underline hover:text-primary'
 // APIの設定フォーム用のスキーマ
 const organizationApiConfigFormSchema = z.object({
   line_access_token: z.string().optional(),
@@ -118,7 +118,6 @@ const ApiSettingsCard = () => {
     return <Loading />
   }
 
-
   return (
     <div className="">
       <div className="">
@@ -141,21 +140,21 @@ const ApiSettingsCard = () => {
             <div>
               <div className="flex items-start space-x-4">
                 <div className="flex-1">
-                  <div className="bg-background border border-primary/20 rounded-md p-4 mb-4">
+                  <div className="bg-primary border border-primary/20 rounded-md p-4 mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl font-bold text-primary">
+                      <span className="text-xl font-bold text-primary-foreground">
                         5,000円<small>（税込）</small>
                       </span>
-                      <span className="text-sm text-muted-foreground">でトータルサポート</span>
+                      <span className="text-sm text-muted">でトータルサポート</span>
                     </div>
-                    <p className="text-sm text-accent-2 font-medium">
+                    <p className="text-sm text-primary-foreground font-medium">
                       LINE公式アカウント作成からBockerとの完全API連携まで、すべてお任せください
                     </p>
                   </div>
 
                   <div className="space-y-3 text-sm">
                     <div className="flex items-start gap-3">
-                      <span className="text-primary text-lg flex-shrink-0">⏰</span>
+                      <span className="text-lg flex-shrink-0">⏰</span>
                       <div>
                         <p className="font-semibold text-foreground">
                           迅速対応：2〜3日以内に設定完了
@@ -167,7 +166,7 @@ const ApiSettingsCard = () => {
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <span className="text-accent text-lg flex-shrink-0">🎯</span>
+                      <span className="text-primary text-lg flex-shrink-0">🎯</span>
                       <div>
                         <p className="font-semibold text-foreground">完全サポート内容</p>
                         <ul className="text-xs text-muted-foreground mt-1 space-y-1 ml-2">
@@ -199,10 +198,10 @@ const ApiSettingsCard = () => {
 
                   <div className="mt-4 p-3 bg-background border border-accent-5/20 rounded-md">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-accent text-lg">💬</span>
-                      <p className="font-semibold text-accent">お申し込み・ご相談方法</p>
+                      <span className="text-primary text-lg">💬</span>
+                      <p className="font-semibold text-primary">お申し込み・ご相談方法</p>
                     </div>
-                    <p className="text-xs text-accent-2 leading-relaxed">
+                    <p className="text-xs text-primary leading-relaxed">
                       設定が難しいと感じたら、まずはお気軽にご相談ください。
                       <br />
                       <span className="font-bold text-primary">画面右下のチャットマーク（💬）</span>
@@ -213,7 +212,7 @@ const ApiSettingsCard = () => {
                   </div>
 
                   <div className="mt-3 text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                    <span className="text-accent font-semibold">💡 こんな方におすすめ：</span>
+                    <span className="text-primary font-semibold">💡 こんな方におすすめ：</span>
                     技術的な設定に不安がある方 / 時間をかけたくない方 / 確実に動作する状態にしたい方
                     / LINE公式アカウントを初めて作る方
                   </div>
@@ -449,36 +448,36 @@ const ApiSettingsCard = () => {
       <Accordion type="multiple" className="mt-8 space-y-2">
         {/* チャンネル開設ガイド */}
         <AccordionItem value="channel-setup-guide">
-          <AccordionTrigger className="text-accent-2 bg-accent-2-foreground p-3 border border-accent-2 rounded-md text-base font-bold mb-2">
+          <AccordionTrigger className="text-primary-foreground bg-primary p-3 border border-primary rounded-md text-base font-bold mb-2">
             🚀 LINE チャンネル開設ガイド（初回設定）
           </AccordionTrigger>
           <AccordionContent className="space-y-4">
-            <div className="bg-palette-2 border border-palette-2 p-4 rounded-md">
-              <p className="font-semibold text-palette-2-foreground text-base mb-2">
+            <div className="bg-secondary border border-secondary p-4 rounded-md">
+              <p className="font-semibold text-secondary-foreground text-base mb-2">
                 📋 LINE統合に必要な2つのチャンネル
               </p>
-              <p className="text-sm text-accent mb-4">
+              <p className="text-sm text-primary mb-4">
                 Bockerでは以下の2つのチャンネルが必要です。順序を守って作成してください。
               </p>
 
               <div className="space-y-3">
-                <div className="bg-card border border-palette-2 p-3 rounded-md">
-                  <p className="font-semibold text-palette-2-foreground text-sm mb-1">
+                <div className="bg-card border border-secondary p-3 rounded-md">
+                  <p className="font-semibold text-secondary-foreground text-sm mb-1">
                     1️⃣ Messaging APIチャンネル（メッセージ送信用）
                   </p>
-                  <p className="text-xs text-accent">
+                  <p className="text-xs text-primary">
                     • 用途：予約確認メッセージ、リマインダー等の送信
                   </p>
-                  <p className="text-xs text-accent">• 必要な設定：アクセストークン</p>
+                  <p className="text-xs text-primary">• 必要な設定：アクセストークン</p>
                 </div>
                 <div className="bg-card border border-border p-3 rounded-md">
-                  <p className="font-semibold text-palette-3-foreground text-sm mb-1">
+                  <p className="font-semibold text-primary text-sm mb-1">
                     2️⃣ LINEログインチャンネル（ログイン用）
                   </p>
-                  <p className="text-xs text-accent-2">
+                  <p className="text-xs text-primary">
                     • 用途：顧客のLINEログイン、LIFF（LINE内ブラウザ）
                   </p>
-                  <p className="text-xs text-accent-2">
+                  <p className="text-xs text-primary">
                     • 必要な設定：チャンネルID、チャンネルシークレット、LIFF ID
                   </p>
                 </div>
@@ -487,7 +486,7 @@ const ApiSettingsCard = () => {
 
             {/* Messaging APIチャンネル開設 */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-base text-palette-2-foreground">
+              <h4 className="font-semibold text-base text-secondary-foreground">
                 🔵 Step 1: Messaging APIチャンネルの開設
               </h4>
 
@@ -502,7 +501,7 @@ const ApiSettingsCard = () => {
                 </p>
               </div>
 
-              <div className="bg-palette-3 border border-palette-3 p-4 rounded-md">
+              <div className="bg-accent border border-accent p-4 rounded-md">
                 <p className="font-semibold text-base mb-3">📱 手順A: LINE公式アカウントの作成</p>
                 <div className="text-sm py-3 text-link-foreground underline">
                   <Link href="https://youtu.be/QFhBruC3uc0" target="_blank">
@@ -524,7 +523,7 @@ const ApiSettingsCard = () => {
                   <li>
                     LINEアカウントでログイン
                     <br />
-                    <span className="text-xs text-accent-2 font-bold">
+                    <span className="text-xs text-primary font-bold">
                       ※ 必ずサロン運営者本人のアカウントを使用
                     </span>
                   </li>
@@ -553,7 +552,7 @@ const ApiSettingsCard = () => {
                 </ol>
               </div>
 
-              <div className="bg-palette-3 border border-palette-3 p-4 rounded-md">
+              <div className="bg-accent border border-accent p-4 rounded-md">
                 <p className="font-semibold text-base mb-3">
                   ⚙️ 手順B: Messaging APIチャンネルの作成
                 </p>
@@ -640,11 +639,11 @@ const ApiSettingsCard = () => {
 
             {/* LINEログインチャンネル開設 */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-base text-palette-3-foreground">
+              <h4 className="font-semibold text-base text-primary">
                 🟢 Step 2: LINEログインチャンネルの開設
               </h4>
 
-              <div className="bg-palette-3 border border-palette-3 p-4 rounded-md">
+              <div className="bg-accent border border-accent p-4 rounded-md">
                 <p className="font-semibold text-base mb-3">
                   🔐 手順A: LINEログインチャンネルの作成
                 </p>
@@ -665,7 +664,7 @@ const ApiSettingsCard = () => {
                     </Link>
                     で同じプロバイダーを選択
                     <br />
-                    <span className="text-xs text-accent-2">
+                    <span className="text-xs text-primary">
                       💡 Messaging APIと同じプロバイダー内に作成することを推奨
                     </span>
                   </li>
@@ -699,7 +698,7 @@ const ApiSettingsCard = () => {
                 </ol>
               </div>
 
-              <div className="bg-palette-3 border border-palette-3 p-4 rounded-md">
+              <div className="bg-accent border border-accent p-4 rounded-md">
                 <p className="font-semibold text-base mb-3">📱 手順B: LIFFアプリの作成</p>
                 <div className="text-sm py-3 text-link-foreground underline">
                   <Link href="https://youtu.be/dih9AUEnGYc" target="_blank">
@@ -720,7 +719,7 @@ const ApiSettingsCard = () => {
                       </div>
                       <div>
                         • <strong>エンドポイントURL</strong>：
-                        <span className="text-accent underline">
+                        <span className="text-primary underline">
                           {window.location.origin}/{locale}/reservation
                         </span>
                       </div>
@@ -736,14 +735,14 @@ const ApiSettingsCard = () => {
                   <li>
                     発行されたLIFF IDの例
                     <br />
-                    <span className="text-xs text-accent-2">形式：1234567890-AbcdEfgh</span>
+                    <span className="text-xs text-primary">形式：1234567890-AbcdEfgh</span>
                   </li>
                 </ol>
               </div>
 
               {/* セキュリティ設定 */}
-              <div className="bg-palette-1 border border-palette-1 p-3 rounded-md">
-                <p className="font-semibold text-palette-1-foreground text-base mb-2">
+              <div className="bg-muted border border-muted p-3 rounded-md">
+                <p className="font-semibold text-muted-foreground text-base mb-2">
                   🔒 セキュリティ設定（重要）
                 </p>
                 <ol className="list-decimal list-inside text-sm space-y-1">
@@ -753,7 +752,7 @@ const ApiSettingsCard = () => {
                     <div className="ml-4 mt-1 space-y-1 font-mono text-xs">
                       <Link
                         href="https://bocker.jp/ja/reservation/auth/callback"
-                        className="text-accent underline"
+                        className="text-primary underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -767,8 +766,8 @@ const ApiSettingsCard = () => {
               </div>
 
               {/* LINEログインの有効化・公式アカウントの紐付け設定 */}
-              <div className="bg-palette-1 border border-palette-1 p-3 rounded-md">
-                <p className="font-semibold text-palette-1-foreground text-base mb-2">
+              <div className="bg-muted border border-muted p-3 rounded-md">
+                <p className="font-semibold text-muted-foreground text-base mb-2">
                   🚀 LINEログインの有効化・公式アカウントの紐付け設定
                 </p>
                 <div className="text-sm py-3 text-link-foreground underline">
@@ -789,8 +788,8 @@ const ApiSettingsCard = () => {
             </div>
 
             {/* 設定完了チェックリスト */}
-            <div className="bg-palette-4 border border-palette-4 p-4 rounded-md">
-              <p className="font-semibold text-palette-4-foreground text-base mb-3">
+            <div className="bg-card border border-border p-4 rounded-md">
+              <p className="font-semibold text-card-foreground text-base mb-3">
                 ✅ 設定完了チェックリスト
               </p>
               <div className="space-y-2 text-sm">
@@ -823,11 +822,11 @@ const ApiSettingsCard = () => {
             </div>
 
             {/* 次のステップ */}
-            <div className="bg-background border border-palette-2 p-3 rounded-md">
-              <p className="font-semibold text-palette-2-foreground text-sm mb-2">
+            <div className="bg-background border border-secondary p-3 rounded-md">
+              <p className="font-semibold text-secondary-foreground text-sm mb-2">
                 🎯 次のステップ
               </p>
-              <p className="text-sm text-accent">
+              <p className="text-sm text-primary">
                 チャンネル作成が完了したら、下記の各アコーディオンを開いて、
                 作成したチャンネルから必要な値（アクセストークン、シークレット、チャンネルID、LIFF
                 ID）を取得し、 このフォームに設定してください。
@@ -843,7 +842,7 @@ const ApiSettingsCard = () => {
             {/* 重要な注意 */}
             <div className="bg-background border border-border p-3 rounded-md mb-4">
               <p className="font-semibold text-palette-2-foreground text-sm mb-1">📌 重要</p>
-              <p className="text-xs text-accent">
+              <p className="text-xs text-primary">
                 このトークンは<strong>Messaging APIチャンネル</strong>
                 から取得します。LINEログインチャンネルからは取得できません。
               </p>
@@ -935,7 +934,7 @@ const ApiSettingsCard = () => {
             {/* 重要な注意 */}
             <div className="bg-background border border-border p-3 rounded-md mb-4">
               <p className="font-semibold text-palette-2-foreground text-sm mb-1">📌 重要</p>
-              <p className="text-xs text-accent">
+              <p className="text-xs text-primary">
                 このシークレットは<strong>LINEログインチャンネル</strong>
                 から取得します。Messaging APIチャンネルとは別物です。
               </p>
@@ -1030,9 +1029,9 @@ const ApiSettingsCard = () => {
           <AccordionTrigger>LIFF ID の取得方法（LINEログインチャンネル専用）</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             {/* 重要な注意 */}
-            <div className="bg-palette-3 border border-palette-3 p-3 rounded-md mb-4">
-              <p className="font-semibold text-palette-3-foreground text-sm mb-1">📌 重要</p>
-              <p className="text-xs text-accent-2">
+            <div className="bg-accent border border-accent p-3 rounded-md mb-4">
+              <p className="font-semibold text-primary text-sm mb-1">📌 重要</p>
+              <p className="text-xs text-primary">
                 LIFF IDは<strong>LINEログインチャンネル</strong>から取得します。Messaging
                 APIチャンネルからは取得できません。
               </p>
@@ -1079,7 +1078,7 @@ const ApiSettingsCard = () => {
               </li>
 
               {/* LINEログインチャンネルがない場合の手順 */}
-              <li className="bg-palette-2/20 p-2 rounded text-xs">
+              <li className="bg-secondary/20 p-2 rounded text-xs">
                 <strong>LINEログインチャンネルがない場合：</strong>
                 <br />「<strong>チャンネルを作成</strong>」→「<strong>LINEログイン</strong>」を選択
                 <br />
@@ -1123,8 +1122,8 @@ const ApiSettingsCard = () => {
             </ol>
 
             {/* チャンネル連携について */}
-            <div className="bg-palette-2 border border-palette-2 p-3 rounded-md">
-              <p className="font-semibold text-palette-2-foreground text-sm mb-2">
+            <div className="bg-secondary border border-secondary p-3 rounded-md">
+              <p className="font-semibold text-secondary-foreground text-sm mb-2">
                 🔗 チャンネル連携のメリット
               </p>
               <div className="text-xs space-y-1">
@@ -1136,8 +1135,8 @@ const ApiSettingsCard = () => {
 
             {/* 今後の変更予定 */}
             <div className="bg-background border border-border p-3 rounded-md">
-              <p className="font-semibold text-accent text-sm mb-2">🚀 今後の変更予定</p>
-              <p className="text-xs text-accent-2">
+              <p className="font-semibold text-primary text-sm mb-2">🚀 今後の変更予定</p>
+              <p className="text-xs text-primary">
                 2025年2月以降、LIFFとLINE MINI Appの統合が予定されています。 詳細は
                 <Link
                   href="https://developers.line.biz/"
@@ -1159,9 +1158,9 @@ const ApiSettingsCard = () => {
           </AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             {/* 重要な注意 */}
-            <div className="bg-palette-3 border border-palette-3 p-3 rounded-md mb-4">
-              <p className="font-semibold text-palette-3-foreground text-sm mb-1">📌 重要</p>
-              <p className="text-xs text-accent-2">
+            <div className="bg-accent border border-accent p-3 rounded-md mb-4">
+              <p className="font-semibold text-primary text-sm mb-1">📌 重要</p>
+              <p className="text-xs text-primary">
                 このChannel IDは<strong>LINEログインチャンネル</strong>から取得します。Messaging
                 APIチャンネルのChannel IDとは別物です。
               </p>
@@ -1234,14 +1233,14 @@ const ApiSettingsCard = () => {
             <div className="bg-background border border-border p-3 rounded-md">
               <p className="font-semibold text-destructive text-sm mb-2">⚡ チャンネルIDの区別</p>
               <div className="space-y-2 text-xs">
-                <div className="bg-palette-3 p-2 rounded">
-                  <p className="font-semibold text-palette-3-foreground">
+                <div className="bg-accent p-2 rounded">
+                  <p className="font-semibold text-primary">
                     ✅ LINEログインチャンネルのChannel ID
                   </p>
                   <p>• 用途：LINE IDトークンの検証</p>
                   <p>• 形式：数字のみ（例：1234567890）</p>
                   <p>• 取得場所：LINEログインチャンネル 基本設定</p>
-                  <p className="text-accent-2 font-semibold">→ このフォームに設定する値</p>
+                  <p className="text-primary font-semibold">→ このフォームに設定する値</p>
                 </div>
                 <div className="bg-destructive-foreground p-2 rounded">
                   <p className="font-semibold text-destructive">
@@ -1277,7 +1276,7 @@ const ApiSettingsCard = () => {
 
             {/* 確認方法 */}
             <div className="bg-background border border-border p-3 rounded-md">
-              <p className="font-semibold text-accent text-sm mb-2">
+              <p className="font-semibold text-primary text-sm mb-2">
                 ✅ 正しく設定できているかの確認
               </p>
               <div className="text-xs space-y-1">
@@ -1295,9 +1294,9 @@ const ApiSettingsCard = () => {
           <AccordionTrigger>予約受付の通知用LineユーザーIDの取得方法</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
             {/* 重要な注意 */}
-            <div className="bg-palette-3 border border-palette-3 p-3 rounded-md mb-4">
-              <p className="font-semibold text-palette-3-foreground text-sm mb-1">📌 重要</p>
-              <p className="text-xs text-accent-2">
+            <div className="bg-accent border border-accent p-3 rounded-md mb-4">
+              <p className="font-semibold text-primary text-sm mb-1">📌 重要</p>
+              <p className="text-xs text-primary">
                 このユーザーIDは<strong>Messaging APIチャンネルの基本設定</strong>
                 から取得します。
               </p>
@@ -1348,6 +1347,3 @@ const ApiSettingsCard = () => {
 }
 
 export default ApiSettingsCard
-
-
-

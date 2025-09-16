@@ -38,7 +38,7 @@ export const LinkList = () => {
       <p className="text-sm font-medium text-neon">
         以下のリンクをお客様に共有して予約の受付を開始してください
       </p>
-      <div className="p-2 bg-link rounded-lg border border-border ">
+      <div className="p-2 bg-muted rounded-lg border border-border ">
         <label className="text-sm font-medium">{t('completion.reservationUrlLabel')}</label>
         <div className="flex items-center gap-2 mt-2">
           <input
@@ -56,7 +56,7 @@ export const LinkList = () => {
           </Button>
         </div>
       </div>
-      <div className="p-2 bg-link rounded-lg border border-border">
+      <div className="p-2 bg-muted rounded-lg border border-border">
         <label className="text-sm font-medium">{t('completion.customerUrlLabel')}</label>
         <div className="flex items-center gap-2 mt-2">
           <input
