@@ -11,7 +11,6 @@ import { Loading } from '@/components/common'
 import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
 import { SubscriptionPlanName } from '@/convex/types'
-import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import {
   CouponMenuView,
   StaffView,
@@ -152,6 +151,7 @@ export default function CalendarPage() {
   const orgId = params.id as Id<'organization'>
   const { showErrorToast } = useErrorHandler()
   const { trackConversion } = useAnalytics()
+  const [planName, setPlanName] = useState<SubscriptionPlanName>('UNKNOWN')
 
   // ユーティリティ関数: 自動割り当てスタッフかどうかをチェック
   const isAutoAssignedStaff = (staff: StaffDisplay | 'free' | null | undefined): boolean => {
@@ -167,7 +167,6 @@ export default function CalendarPage() {
   // STATES
   const customerRepository = useMemo(() => new CustomerRepository(), [])
 
-  const { planName } = useTenantAndOrganization()
   const [sessionCustomer, setSessionCustomer] = useState<SessionPayload | null>(null)
   const [customerPhone, setCustomerPhone] = useState<string | null>(null)
   const [customerData, setCustomerData] = useState<{
@@ -482,7 +481,7 @@ export default function CalendarPage() {
   const handleLogout = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     setIsLogout(true)
-    
+
     try {
       // 1) LINEトークン（HttpOnly）をサーバー側でクリア
       try {
@@ -493,24 +492,23 @@ export default function CalendarPage() {
 
       // 2) アプリのセッション（bocker_login_session）をサーバー側で削除
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-      
+
       // 3) クライアントサイドの完全ログアウト（LIFF等）
       performCompleteLogout()
-      
+
       toast.success('ログアウトしました。')
-      
+
       // 少し待ってからリダイレクト
       setTimeout(() => {
         router.push(`/reservation/${orgId}`)
       }, 100)
-      
     } catch (error) {
       console.error('Logout error:', error)
       // エラーでも完全ログアウトは実行
       performCompleteLogout()
       router.push(`/reservation/${orgId}`)
     }
-    
+
     setIsLogout(false)
   }
 
@@ -1183,26 +1181,26 @@ export default function CalendarPage() {
         // セッションチェック（tenant_idとorg_idを含める）+ credentials修正
         const response = await fetch(
           `/api/auth/session?tenantId=${encodeURIComponent(orgData.tenant_id)}&orgId=${encodeURIComponent(orgId)}`,
-          { 
+          {
             method: 'GET',
             credentials: 'include',
             headers: {
-              'Cache-Control': 'no-cache'
-            }
+              'Cache-Control': 'no-cache',
+            },
           }
         )
 
         if (!response.ok) {
           console.error('認証セッションが見つかりません。完全ログアウト後、予約画面に戻ります。')
-          
+
           // 完全ログアウト実行
           performCompleteLogout()
-          
+
           // setTimeoutでナビゲーションを遅延実行（React setState during renderエラーを防ぐ）
           setTimeout(() => {
             router.push(`/reservation/${orgId}`)
           }, 100)
-          
+
           return
         }
 
@@ -1224,6 +1222,20 @@ export default function CalendarPage() {
             })
 
             setOrganizationComplete(organizationComplete)
+
+            try {
+              const subscription = await fetchQuery(
+                api.tenant.subscription.query.getSubscription,
+                {
+                  tenant_id: data.session.tenantId,
+                }
+              )
+              const derivedPlanName = (subscription?.plan_name ?? 'UNKNOWN') as SubscriptionPlanName
+              setPlanName(derivedPlanName)
+            } catch (subscriptionError) {
+              console.error('サブスクリプション情報の取得に失敗しました:', subscriptionError)
+              setPlanName('UNKNOWN')
+            }
 
             const { customer, customerDetail, customerPoints } =
               await customerRepository.getCompleteCustomerData(
@@ -1271,8 +1283,10 @@ export default function CalendarPage() {
   useEffect(() => {
     if (!organizationComplete && !isLoading && sessionCustomer) {
       // Use a stable reference to avoid conditional navigation
-      const redirectPath = sessionCustomer.orgId ? `/reservation/${sessionCustomer.orgId}` : '/reservation'
-      
+      const redirectPath = sessionCustomer.orgId
+        ? `/reservation/${sessionCustomer.orgId}`
+        : '/reservation'
+
       setTimeout(() => {
         router.push(redirectPath)
       }, 100)
