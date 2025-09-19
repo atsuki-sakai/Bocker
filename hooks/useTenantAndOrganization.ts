@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { useUser, useAuth } from '@clerk/nextjs';
-import { useClerk } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+import { useUser, useAuth } from '@clerk/nextjs'
+import { useClerk } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Id, Doc } from '@/convex/_generated/dataModel'

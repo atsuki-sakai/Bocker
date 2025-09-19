@@ -177,7 +177,6 @@ export const reservationFlexMessageTemplate = (
     })
   }
 
-
   if (usePoints > 0) {
     reservationDetailsContents.push({
       type: 'box',
@@ -312,9 +311,13 @@ export const reservationFlexMessageTemplate = (
         contents: [
           {
             type: 'text',
-            text: selectedStaff === null 
-              ? '指名フリー' 
-              : selectedStaff.name + (selectedStaff.extra_charge ? '（指名料：' + selectedStaff.extra_charge + '円）' : ''),
+            text:
+              selectedStaff === null
+                ? '指名フリー'
+                : selectedStaff.name +
+                  (selectedStaff.extra_charge
+                    ? '（指名料：' + selectedStaff.extra_charge + '円）'
+                    : ''),
             size: 'sm',
             color: '#000000',
             wrap: true,
