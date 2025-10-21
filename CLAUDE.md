@@ -2,23 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<instructions>
-AI Operation 5 Principles
-
-Principle 1: Before generating or updating any files or executing any programs, the AI must always report its work plan and obtain a yes/no confirmation from the user. It must halt all execution until a "yes" is received.
-
-Principle 2: The AI must not take detours or alternative approaches on its own. If the initial plan fails, it must obtain confirmation for the next plan.
-
-Principle 3: The AI is a tool, and decision-making authority always resides with the user. Even if the user’s proposal is inefficient or irrational, the AI must not optimize it and must execute exactly as instructed.
-
-Principle 4: The AI must not distort or reinterpret these rules, and must treat them as the highest-priority commands to be strictly followed.
-
-Principle 5: The AI must display these five principles verbatim at the beginning of every chat before providing any response.
-</instructions>
-
 ## Development Commands
 
 ### Setup & Development
+
 ```bash
 # Install dependencies
 pnpm install
@@ -39,6 +26,7 @@ pnpm env:validate    # Validate environment variables
 ```
 
 ### Build & Quality
+
 ```bash
 # Build
 pnpm build           # Production build
@@ -61,6 +49,7 @@ pnpm test:all        # Run all tests
 ```
 
 ### Database & Infrastructure
+
 ```bash
 # Convex
 npx convex dev       # Start Convex development
@@ -78,6 +67,7 @@ pnpm sync-lang-en    # Sync English language files
 **Bocker** is a comprehensive SaaS reservation management platform for beauty salons built with a hybrid database architecture optimized for both real-time operations and long-term analytics.
 
 ### Tech Stack
+
 - **Frontend**: Next.js 15.3.3 + React 19 + TypeScript (strict mode)
 - **UI**: shadcn/ui + Tailwind CSS + Framer Motion
 - **Real-time DB**: Convex 1.23.0 (active data - future reservations, staff, menus)
@@ -87,7 +77,9 @@ pnpm sync-lang-en    # Sync English language files
 - **External APIs**: LINE Bot SDK, Google Cloud Storage, Google Gemini AI
 
 ### Hybrid Database Design
+
 The application uses a unique dual-database architecture:
+
 - **Convex**: Handles real-time data (future reservations, staff schedules, menus, settings)
 - **Supabase**: Stores historical data (completed reservations, customer analytics, long-term metrics)
 - **Nightly Batch Jobs**: Migrate old data from Convex to Supabase for cost optimization
@@ -95,6 +87,7 @@ The application uses a unique dual-database architecture:
 ### Directory Structure
 
 #### Frontend (`/app/[locale]/`)
+
 - `(auth)/` - Authentication flows (sign-in, sign-up, staff invitations)
 - `(dashboard)/` - Admin panel (reservation management, customer/staff management, analytics)
 - `(reservation)/` - Customer-facing booking system with LINE integration
@@ -103,6 +96,7 @@ The application uses a unique dual-database architecture:
 - `api/` - Next.js API routes (auth, payments, AI, webhooks)
 
 #### Backend
+
 - `/convex/` - Real-time database functions (queries, mutations, actions)
 - `/services/` - External service integrations (Stripe, LINE, GCP, Supabase)
 - `/components/` - Reusable UI components
@@ -112,6 +106,7 @@ The application uses a unique dual-database architecture:
 ## Multi-tenant Architecture
 
 All database entities follow strict multi-tenant design:
+
 - Every table has `tenant_id` and `org_id` fields
 - Complete data isolation between tenants
 - All queries MUST include tenant/org filters
@@ -120,43 +115,48 @@ All database entities follow strict multi-tenant design:
 ## Key Convex Patterns
 
 ### Function Definition (New Syntax)
+
 ```typescript
 // Use the new Convex function syntax
 export const createReservation = mutation({
-  args: { /* validator */ },
+  args: {
+    /* validator */
+  },
   handler: async (ctx, args) => {
     // Implementation
-  }
+  },
 })
 ```
 
 ### Multi-tenant Queries
+
 ```typescript
 // Always include tenant/org filters
 const reservations = await ctx.db
-  .query("reservations")
-  .withIndex("by_tenant_org", (q) => 
-    q.eq("tenant_id", args.tenant_id).eq("org_id", args.org_id)
-  )
-  .filter((q) => q.eq(q.field("is_archive"), false))
+  .query('reservations')
+  .withIndex('by_tenant_org', (q) => q.eq('tenant_id', args.tenant_id).eq('org_id', args.org_id))
+  .filter((q) => q.eq(q.field('is_archive'), false))
   .collect()
 ```
 
 ## Testing Setup
 
 ### Vitest (Unit Tests)
+
 - Environment: jsdom with React Testing Library
 - Coverage: 70% thresholds for branches, functions, lines, statements
 - Fork-based execution for isolation
 - Setup file: `vitest.setup.ts`
 
 ### Playwright (E2E Tests)
+
 - Multi-browser: Chrome, Firefox, Safari, Mobile
 - Test environment setup with `.env.test`
 - Retry policies and parallel execution
 - Rich reporting (HTML, JUnit, JSON)
 
 ### Running Single Tests
+
 ```bash
 # Vitest single test
 pnpm test -- filename.test.tsx
@@ -168,28 +168,33 @@ pnpm test:e2e -- tests/specific-test.spec.ts
 ## External Service Integration
 
 ### Stripe Connect
+
 - Marketplace-style payments for multi-tenant SaaS
 - Webhook handling with proper idempotency
 - Subscription management (Lite/Pro plans)
 
 ### LINE Integration
+
 - LIFF (LINE Front-end Framework) for customer authentication
 - Flex Messages for rich notifications
 - Bot messaging for reservation confirmations
 
 ### AI Features
+
 - Google Gemini API for menu description generation
 - Proper rate limiting and error handling
 
 ## Development Best Practices
 
 ### Code Style
+
 - TypeScript strict mode is enforced
 - Use new Convex function syntax (`export const func = query({...})`)
 - Prefer Server Components, minimize "use client"
 - Follow existing shadcn/ui patterns
 
 ### Error Handling
+
 ```typescript
 // Use structured error handling
 import { ValidationError } from '@/lib/errors'
@@ -197,6 +202,7 @@ throw new ValidationError('Invalid input', { field: 'email' })
 ```
 
 ### Security
+
 - All customer data MUST include tenant/org isolation
 - Use HTTPOnly cookies for session management
 - Validate all inputs with Zod schemas
@@ -205,9 +211,11 @@ throw new ValidationError('Invalid input', { field: 'email' })
 ## Known Issues & Limitations
 
 ### Critical Issue: Stripe Webhook Handler
+
 The Stripe `checkout.session.completed` event handler is not fully implemented. Credit card payments will remain in "pending" status until this is resolved.
 
 **Required Implementation**: `/services/webhook/stripe/handlers.connect.ts`
+
 ```typescript
 export async function handleCheckoutSessionCompleted(
   evt: Stripe.CheckoutSessionCompletedEvent,
@@ -224,6 +232,7 @@ export async function handleCheckoutSessionCompleted(
 ```
 
 ### Performance Notes
+
 - Batch processes are currently disabled in production
 - Consider enabling cron jobs in `convex/crons.ts` for data migration
 - Large datasets should use Supabase for analytics queries
@@ -231,6 +240,7 @@ export async function handleCheckoutSessionCompleted(
 ## Business Context
 
 This is a commercial SaaS product targeting Japanese beauty salons with:
+
 - **Pricing**: Lite (¥8,000/month), Pro (¥12,000/month)
 - **Target Scale**: 3,000+ concurrent salon operations
 - **Revenue Model**: Monthly subscriptions with 30-day trials

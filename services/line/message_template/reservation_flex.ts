@@ -24,8 +24,7 @@ export const reservationFlexMessageTemplate = (
   reservationId: string,
   availableCancelDay: number
 ): Message[] => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reservationDetailsContents: any[] = [
+  const reservationDetailsContents = [
     {
       type: 'box',
       layout: 'horizontal',
@@ -42,7 +41,7 @@ export const reservationFlexMessageTemplate = (
               weight: 'bold',
             },
           ],
-          width: '80px',
+          flex: 0,
         },
         {
           type: 'box',
@@ -75,7 +74,7 @@ export const reservationFlexMessageTemplate = (
               weight: 'bold',
             },
           ],
-          width: '80px',
+          flex: 0,
         },
         {
           type: 'box',
@@ -120,7 +119,7 @@ export const reservationFlexMessageTemplate = (
               weight: 'bold',
             },
           ],
-          width: '80px',
+          flex: 0,
         },
         {
           type: 'box',
@@ -157,7 +156,7 @@ export const reservationFlexMessageTemplate = (
               weight: 'bold',
             },
           ],
-          width: '80px',
+          flex: 0,
         },
         {
           type: 'box',
@@ -194,7 +193,7 @@ export const reservationFlexMessageTemplate = (
               weight: 'bold',
             },
           ],
-          width: '80px',
+          flex: 0,
         },
         {
           type: 'box',
@@ -231,7 +230,7 @@ export const reservationFlexMessageTemplate = (
               weight: 'bold',
             },
           ],
-          width: '80px',
+          flex: 0,
         },
         {
           type: 'box',
@@ -267,7 +266,7 @@ export const reservationFlexMessageTemplate = (
             weight: 'bold',
           },
         ],
-        width: '80px',
+        flex: 0,
       },
       {
         type: 'box',
@@ -278,8 +277,6 @@ export const reservationFlexMessageTemplate = (
             text: calculateTotalPrice.toLocaleString() + '円',
             size: 'sm',
             color: '#000000',
-            wrap: true,
-            weight: 'bold',
           },
         ],
       },
@@ -303,7 +300,7 @@ export const reservationFlexMessageTemplate = (
             weight: 'bold',
           },
         ],
-        width: '80px',
+        flex: 0,
       },
       {
         type: 'box',
@@ -344,7 +341,7 @@ export const reservationFlexMessageTemplate = (
             weight: 'bold',
           },
         ],
-        width: '80px',
+        flex: 0,
       },
       {
         type: 'box',
@@ -369,7 +366,7 @@ export const reservationFlexMessageTemplate = (
       text: '予約内容',
       weight: 'bold',
       size: 'lg',
-      color: '#214A58FF',
+      color: '#214A58',
     },
     {
       type: 'separator',
@@ -396,7 +393,7 @@ export const reservationFlexMessageTemplate = (
           text: '店舗情報',
           weight: 'bold',
           size: 'md',
-          color: '#214A58FF',
+          color: '#214A58',
         },
         {
           type: 'box',
@@ -414,7 +411,7 @@ export const reservationFlexMessageTemplate = (
                   weight: 'bold',
                 },
               ],
-              width: '80px',
+              flex: 0,
             },
             {
               type: 'box',
@@ -448,7 +445,7 @@ export const reservationFlexMessageTemplate = (
                   weight: 'bold',
                 },
               ],
-              width: '80px',
+              flex: 0,
             },
             {
               type: 'box',
@@ -504,7 +501,7 @@ export const reservationFlexMessageTemplate = (
       altText: '予約確認',
       contents: {
         type: 'bubble',
-        size: 'giga',
+        size: 'mega',
         header: {
           type: 'box',
           layout: 'vertical',
@@ -536,7 +533,7 @@ export const reservationFlexMessageTemplate = (
             },
           ],
           paddingAll: '20px',
-          backgroundColor: '#214A58FF',
+          backgroundColor: '#214A58',
           spacing: 'md',
           paddingTop: '22px',
         },
@@ -559,7 +556,7 @@ export const reservationFlexMessageTemplate = (
                 label: '予約確認・キャンセル',
                 uri: `${BASE_URL}/customer/${orgId}/${customerUid}/reservation`,
               },
-              color: '#214A58FF',
+              color: '#214A58',
             },
             {
               type: 'box',
@@ -582,7 +579,7 @@ export const reservationFlexMessageTemplate = (
         },
         styles: {
           header: {
-            backgroundColor: '#214A58FF',
+            backgroundColor: '#214A58',
           },
           footer: {
             separator: true,
