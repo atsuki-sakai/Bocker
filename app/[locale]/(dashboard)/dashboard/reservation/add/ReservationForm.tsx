@@ -316,7 +316,7 @@ export default function ReservationForm() {
   // 複数選択に対応するためにstateを配列に変更
   const [selectedMenus, setSelectedMenus] = useState<ReservationMenu[]>([])
   const [selectedStaffId, setSelectedStaffId] = useState<Id<'staff'> | 'free' | null>(null)
-  const [selectdate, setSelectDate] = useState<Date | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectTime, setSelectTime] = useState<{
     startTimeUnix: number | undefined
     endTimeUnix: number | undefined
@@ -456,7 +456,7 @@ export default function ReservationForm() {
   // 時間スロットの状態を追加
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeRange[]>([])
   // 選択した日付を "yyyy-MM-dd" 形式で保持
-  const formattedDate = selectdate ? format(selectdate!, 'yyyy-MM-dd') : ''
+  const formattedDate = selectedDate ? format(selectedDate!, 'yyyy-MM-dd') : ''
 
   // 顧客検索の最適化されたコールバック
   const searchCustomers = useCallback(async () => {
@@ -556,14 +556,14 @@ export default function ReservationForm() {
 
   // 時間スロット取得の最適化されたコールバック
   const getAvailableTimeSlots = useCallback(async () => {
-    if (!selectedStaffId || !tenantId || !orgId || !selectdate || !totalTimeMinutes) {
+    if (!selectedStaffId || !tenantId || !orgId || !selectedDate || !totalTimeMinutes) {
       setAvailableTimeSlots([])
       return
     }
 
     try {
       // 日付をYYYY-MM-DD形式に変換
-      const formattedDate = format(selectdate!, 'yyyy-MM-dd')
+      const formattedDate = format(selectedDate!, 'yyyy-MM-dd')
 
       if (selectedStaffId === 'free') {
         // 指名フリーの場合は統合空き時間を取得
@@ -610,7 +610,7 @@ export default function ReservationForm() {
     selectedStaffId,
     tenantId,
     orgId,
-    selectdate,
+    selectedDate,
     totalTimeMinutes,
     selectedMenus,
     selectedOptions,
@@ -726,7 +726,7 @@ export default function ReservationForm() {
       case STEPS.STAFF:
         return selectedStaffId !== null
       case STEPS.DATETIME:
-        return selectdate !== null && selectTime !== null
+        return selectedDate !== null && selectTime !== null
       case STEPS.CUSTOMER:
         return isExistingCustomer
           ? selectedCustomer !== null
@@ -738,7 +738,7 @@ export default function ReservationForm() {
     currentStep,
     selectedMenus,
     selectedStaffId,
-    selectdate,
+    selectedDate,
     selectTime,
     isExistingCustomer,
     selectedCustomer,
@@ -836,7 +836,7 @@ export default function ReservationForm() {
               tenant_id: tenantId,
               org_id: orgId,
               menu_ids: selectedMenus.map((m) => m.id),
-              date: format(selectdate as Date, 'yyyy-MM-dd'),
+              date: format(selectedDate as Date, 'yyyy-MM-dd'),
               start_time_unix: selectTime?.startTimeUnix as number,
               end_time_unix: selectTime?.endTimeUnix as number,
             }
@@ -874,7 +874,7 @@ export default function ReservationForm() {
           staff_name: assignedStaffName,
           is_free_nomination: selectedStaffId === 'free',
           status: 'confirmed',
-          date: format(selectdate as Date, 'yyyy-MM-dd'),
+          date: format(selectedDate as Date, 'yyyy-MM-dd'),
           start_time_unix: selectTime?.startTimeUnix as number,
           end_time_unix: selectTime?.endTimeUnix as number,
           total_price: totalPriceCalculated,
@@ -1433,19 +1433,19 @@ export default function ReservationForm() {
                     className="rounded-xl border-2"
                     mode="single"
                     locale={ja}
-                    selected={selectdate ?? undefined}
+                    selected={selectedDate ?? undefined}
                     onSelect={(day) => {
-                      setSelectDate(day as Date)
+                      setSelectedDate(day as Date)
                       setSelectTime(null)
                     }}
                   />
                 </div>
 
                 {/* 時間スロット */}
-                {selectdate && (
+                {selectedDate && (
                   <div>
                     <h3 className="font-semibold mb-4">
-                      {selectdate.toLocaleDateString('ja-JP', {
+                      {selectedDate.toLocaleDateString('ja-JP', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -1740,9 +1740,9 @@ export default function ReservationForm() {
         <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              {selectdate && selectTime && (
+              {selectedDate && selectTime && (
                 <p className="text-sm text-muted-foreground text-nowrap">
-                  {format(selectdate!, 'yyyy年MM月dd日')}{' '}
+                  {format(selectedDate!, 'yyyy年MM月dd日')}{' '}
                   {formatTimestamp(selectTime.startTimeUnix!, { useJST: true })} 〜{' '}
                   {formatTimestamp(selectTime.endTimeUnix!, { useJST: true })}
                 </p>
