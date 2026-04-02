@@ -1,6 +1,8 @@
 import type { Message } from '@line/bot-sdk'
 import type { Doc } from '@/convex/_generated/dataModel'
 import { getAppUrl } from '@/lib/env-config'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
 
 export interface SalonReservationNotificationParams {
   organization: Doc<'organization'>
@@ -45,7 +47,7 @@ export const createSalonReservationNotification = ({
   // 予約時間のフォーマット
   const startTime = new Date(reservation.start_time_unix)
   const endTime = new Date(reservation.end_time_unix)
-  const timeSlot = `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')} - ${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`
+  const timeSlot = `${format(startTime, 'HH:mm', { locale: ja })} - ${format(endTime, 'HH:mm', { locale: ja })}`
 
   // メニューリストの生成
   const menuItems = reservationDetail.menus.map(menu => ({
