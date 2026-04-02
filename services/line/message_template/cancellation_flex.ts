@@ -62,7 +62,7 @@ export const createCustomerCancellationNotification = ({
   // 時刻をフォーマット
   const startTime = new Date(reservationData.startTimeUnix)
   const endTime = new Date(reservationData.endTimeUnix)
-  const timeSlot = `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')} 〜 ${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`
+  const timeSlot = `${format(startTime, 'HH:mm', { locale: ja })} 〜 ${format(endTime, 'HH:mm', { locale: ja })}`
 
   // キャンセル理由のテキスト
   const cancellationReasonText = reservationData.cancelledBy === 'customer' 
@@ -536,7 +536,7 @@ export const createSalonCancellationNotification = ({
   // 時刻をフォーマット
   const startTime = new Date(reservationData.startTimeUnix)
   const endTime = new Date(reservationData.endTimeUnix)
-  const timeSlot = `${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')} - ${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`
+  const timeSlot = `${format(startTime, 'HH:mm', { locale: ja })} - ${format(endTime, 'HH:mm', { locale: ja })}`
 
   // キャンセル理由のテキスト
   const cancellationReasonText = reservationData.cancelledBy === 'customer' 
