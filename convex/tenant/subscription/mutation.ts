@@ -60,8 +60,29 @@ export const upsertSubscription = mutation({
         .first();
     }
 
+    // plan_name が UNKNOWN の場合、既存レコードに有効な値があれば上書きしない。
+    // Stripe Webhook の Price/Product 解決に失敗した時に、既存の正しいプラン名が
+    // UNKNOWN で潰されるのを防ぎ、次に成功した Webhook で自動復旧できるようにする。
+    const resolved_plan_name =
+      args.plan_name === 'UNKNOWN' &&
+      existingSubscription &&
+      existingSubscription.plan_name &&
+      existingSubscription.plan_name !== 'UNKNOWN'
+        ? existingSubscription.plan_name
+        : args.plan_name;
+
+    if (
+      args.plan_name === 'UNKNOWN' &&
+      resolved_plan_name !== 'UNKNOWN'
+    ) {
+      console.warn(
+        `[upsertSubscription] Incoming plan_name was UNKNOWN; preserved existing plan_name="${resolved_plan_name}" for stripe_subscription_id=${args.stripe_subscription_id}`
+      );
+    }
+
     const payload = {
       ...args,
+      plan_name: resolved_plan_name,
       current_period_start: args.current_period_start * 1000,
       current_period_end: args.current_period_end * 1000,
     };

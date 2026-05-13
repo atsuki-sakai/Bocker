@@ -302,6 +302,64 @@ export function getPlanNameFromPriceId(priceId: string): SubscriptionPlanName {
   return planInfo.name
 }
 
+/**
+ * Stripe ProductIDからプラン名を取得するフォールバック関数
+ * Price ID は Stripe 上で再作成されると変わるが、Product ID は安定しているため、
+ * Price ID で UNKNOWN になった場合のリカバリ手段として用いる。
+ *
+ * @param productId Stripe Product ID
+ * @returns プラン名 ('MICRO' | 'LITE' | 'PRO' | 'UNKNOWN')
+ */
+export function getPlanNameFromProductId(
+  productId: string | null | undefined
+): SubscriptionPlanName {
+  if (!productId) return 'UNKNOWN'
+
+  try {
+    switch (productId) {
+      case getEnv('NEXT_PUBLIC_MICRO_PROD_ID'):
+        return 'MICRO'
+      case getEnv('NEXT_PUBLIC_LITE_PROD_ID'):
+        return 'LITE'
+      case getEnv('NEXT_PUBLIC_PRO_PROD_ID'):
+        return 'PRO'
+      default:
+        return 'UNKNOWN'
+    }
+  } catch (e) {
+    console.error('[getPlanNameFromProductId] Failed to read env product IDs:', e)
+    return 'UNKNOWN'
+  }
+}
+
+/**
+ * Stripe Price オブジェクトからプラン名を解決する。
+ * まず Price ID で照合し、失敗したら Product ID にフォールバックする。
+ * これにより Stripe 側で Price を再作成しても、Product が同じであれば
+ * プラン名を正しく復元できる。
+ *
+ * @param price Stripe Price オブジェクト（webhook から得られるもの）
+ * @returns プラン名 ('MICRO' | 'LITE' | 'PRO' | 'UNKNOWN')
+ */
+export function resolvePlanNameFromStripePrice(
+  price: Stripe.Price | null | undefined
+): SubscriptionPlanName {
+  if (!price) return 'UNKNOWN'
+
+  const byPrice = getPlanNameFromPriceId(price.id)
+  if (byPrice !== 'UNKNOWN') return byPrice
+
+  const productId =
+    typeof price.product === 'string' ? price.product : price.product?.id
+  const byProduct = getPlanNameFromProductId(productId)
+  if (byProduct !== 'UNKNOWN') {
+    console.warn(
+      `[resolvePlanNameFromStripePrice] Resolved plan via product fallback. priceId=${price.id}, productId=${productId}, plan=${byProduct}`
+    )
+  }
+  return byProduct
+}
+
 // プラン名と課金期間から価格IDを取得する関数
 export function getPriceNameFromPlanName(
   planName: SubscriptionPlanName,

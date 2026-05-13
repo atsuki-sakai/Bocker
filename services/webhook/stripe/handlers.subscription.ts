@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs';
 import { fetchAction, fetchMutation, fetchQuery } from 'convex/nextjs';
 import type { BillingPeriod, SubscriptionStatus } from '@/convex/types';
 import { Id } from '@/convex/_generated/dataModel'
-import { getPlanNameFromPriceId } from '@/lib/utils'
+import { resolvePlanNameFromStripePrice } from '@/lib/utils'
 
 export async function handleSubscriptionUpdated(
   /**
@@ -53,7 +53,7 @@ export async function handleSubscriptionUpdated(
         stripe_customer_id: evt.data.object.customer as string,
         status: evt.data.object.status as SubscriptionStatus,
         price_id: evt.data.object.items.data[0].price.id as string,
-        plan_name: getPlanNameFromPriceId(evt.data.object.items.data[0].price.id as string),
+        plan_name: resolvePlanNameFromStripePrice(evt.data.object.items.data[0].price),
         billing_period: evt.data.object.items.data[0].plan.interval as 'month' | 'year',
         current_period_start: evt.data.object.current_period_start,
         current_period_end: evt.data.object.current_period_end,
@@ -282,7 +282,7 @@ export async function handleInvoicePaymentSucceeded(
             stripe_customer_id: evt.data.object.customer as string,
             status: subscriptionStatus,
             price_id: evt.data.object.lines.data[0].price?.id as string, // planは旧式のため、priceオブジェクトを推奨
-            plan_name: getPlanNameFromPriceId(evt.data.object.lines.data[0].price?.id as string),
+            plan_name: resolvePlanNameFromStripePrice(evt.data.object.lines.data[0].price),
             billing_period: evt.data.object.lines.data[0].price?.recurring?.interval as BillingPeriod,
             current_period_start: evt.data.object.lines.data[0].period?.start as number,
             current_period_end: evt.data.object.lines.data[0].period?.end as number,
@@ -391,7 +391,7 @@ export async function handleInvoicePaymentFailed(
             stripe_customer_id: evt.data.object.customer as string,
             status: subscriptionStatus,
             price_id: subscription.items.data[0].price.id as string,
-            plan_name: getPlanNameFromPriceId(subscription.items.data[0].price.id as string),
+            plan_name: resolvePlanNameFromStripePrice(subscription.items.data[0].price),
             billing_period: subscription.items.data[0].plan.interval,
             current_period_start: subscription.current_period_start,
             current_period_end: subscription.current_period_end,
