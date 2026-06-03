@@ -527,9 +527,11 @@ export const findByAvailableStaffs = query({
       return (a.extra_charge ?? 0) - (b.extra_charge ?? 0) // 追加料金が安い順
     })
 
-    // 8. プラン制限に応じたスタッフ数を返す
-    const limits = getPlanLimits(args.planName)
-    return staffWithConfigs.slice(0, limits.maxStaffCount)
+    // 8. 顧客の予約画面ではサロンのプラン上限でスタッフ表示数を絞らない。
+    //    maxStaffCount は登録時にサーバー側で担保済みであり、ここで再適用すると
+    //    サブスク未契約（plan_name=UNKNOWN → 上限0）のサロンでスタッフが
+    //    1人も表示されず予約ができなくなる。
+    return staffWithConfigs
   },
 })
 

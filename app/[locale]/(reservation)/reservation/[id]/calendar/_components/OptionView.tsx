@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Doc, Id } from '@/convex/_generated/dataModel'
 import { SubscriptionPlanName } from '@/convex/types'
-import { getPlanLimits } from '@/convex/utils/helpers'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { useQuery } from 'convex/react'
@@ -31,7 +30,6 @@ type OptionViewProps = {
 export const OptionView = ({
   tenantId,
   orgId,
-  planName,
   selectedOptions,
   onChangeOptionsAction,
 }: OptionViewProps) => {
@@ -72,15 +70,9 @@ export const OptionView = ({
 
   // オプションの追加処理
   const addOption = (option: Doc<'option'>) => {
-    // プラン制限チェック
-    const limits = getPlanLimits(planName)
-    const currentOptionCount = selectedOptions.length
-    
-    if (currentOptionCount >= limits.maxOptionCount) {
-      setOptionSelectionError(`${planName}プランでは最大${limits.maxOptionCount}個のオプションまでしか選択できません。`)
-      return
-    }
-
+    // 顧客の予約時オプション選択はサロンのプラン上限で制限しない。
+    // maxOptionCount は登録時にサーバー側で担保済みであり、ここで再適用すると
+    // サブスク未契約（plan_name=UNKNOWN → 上限0）のサロンで予約ができなくなる。
     if (canAddOption(option)) {
       onChangeOptionsAction([...selectedOptions, option])
       setOptionSelectionError(null)
