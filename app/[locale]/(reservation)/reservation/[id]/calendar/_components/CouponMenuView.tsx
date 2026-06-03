@@ -9,7 +9,6 @@ import { useQuery, usePaginatedQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { ActiveCustomerType, SubscriptionPlanName } from '@/convex/types'
 import { convertActiveCustomerType } from '@/convex/types'
-import { getPlanLimits } from '@/convex/utils/helpers'
 import { fetchQuery } from 'convex/nextjs'
 import { CouponErrorBoundary } from './CouponErrorBoundary'
 import { Loading } from '@/components/common'
@@ -70,7 +69,6 @@ type MenuCategoryWithSet = MenuCategory | 'セットメニュー'
 const CouponMenuViewInner = ({
   tenantId,
   orgId,
-  planName,
   sessionCustomerType,
   onCouponChange,
   onMenuChange,
@@ -396,17 +394,11 @@ const CouponMenuViewInner = ({
           }
         }
       } else {
-        // プラン制限チェック（メニュー追加時のみ）
-        const limits = getPlanLimits(planName as SubscriptionPlanName)
-        const currentMenuCount = Object.keys(newSelectedMenuMap).length
-
-        if (currentMenuCount >= limits.maxMenuCount) {
-          alert(
-            `${planName}プランでは最大${limits.maxMenuCount}個のメニューまでしか選択できません。`
-          )
-          return
-        }
-
+        // 顧客の予約時メニュー選択はサロンのプラン上限で制限しない。
+        // maxMenuCount はサロンが登録できるメニュー数の上限であり、登録時に
+        // サーバー側（checkLimitByPlan）で担保済み。顧客の選択側で再適用すると、
+        // サブスク未契約（plan_name=UNKNOWN → 上限0）のサロンで予約が
+        // 一切できなくなるため、ここではチェックしない。
         const categoryIsBlocked = isSet
           ? false
           : menuCategories.some((cat) => blockedCategories.includes(cat))
@@ -447,7 +439,7 @@ const CouponMenuViewInner = ({
       setSelectedMenuMap(newSelectedMenuMap)
       onMenuChange(Object.values(newSelectedMenuMap))
     },
-    [selectedMenuMap, isSetMenu, blockedCategories, onMenuChange, planName]
+    [selectedMenuMap, isSetMenu, blockedCategories, onMenuChange]
   )
 
   const handleShowMenuDetails = useCallback((menu: Doc<'menu'>) => {
