@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useSignIn } from "@clerk/nextjs";
+import { useSignIn, useClerk } from "@clerk/nextjs";
 import { useZodForm } from "@/hooks/useZodForm";
 import { useState } from "react";
 import { Link } from '@/i18n/navigation'
@@ -30,6 +30,7 @@ export default function SignInForm() {
   })
 
   const { isLoaded, signIn, setActive } = useSignIn()
+  const clerk = useClerk()
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
@@ -48,6 +49,13 @@ export default function SignInForm() {
     if (!isLoaded) return
 
     try {
+      // 既存の（残存）セッションがある状態で signIn.create を呼ぶと
+      // 「you need to supply an active session」エラーになるため、
+      // 事前にサインアウトしてクリーンな状態にする（Issue #41）
+      if (clerk.session) {
+        await clerk.signOut()
+      }
+
       // まず既存のサインインセッションを作成
       const signInAttempt = await signIn.create({
         identifier: data.email,
