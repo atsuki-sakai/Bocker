@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import * as Sentry from '@sentry/nextjs'
-import { useSearchParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { useTranslations, useLocale } from 'next-intl'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import {
   Card,
@@ -183,6 +183,8 @@ const containerVariants = {
 
 export default function SignUpPage() {
   const t = useTranslations('auth.signUp')
+  const locale = useLocale()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const paramsReferralCode = searchParams.get('referral_code')
   const { showErrorToast } = useErrorHandler()
@@ -430,8 +432,8 @@ export default function SignUpPage() {
   // 認証コード確認ハンドラ
   const onVerifySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsVerifying(true)
     if (!isLoaded || !verificationCode) return
+    setIsVerifying(true)
     try {
       const result = await signUp.attemptEmailAddressVerification({
         code: verificationCode,
@@ -441,6 +443,12 @@ export default function SignUpPage() {
         if (result.createdSessionId) {
           await setActive({ session: result.createdSessionId })
           toast.success('認証に成功しました')
+          // セッション確立後にダッシュボードへ遷移させる
+          // （setActiveだけではクライアント側のナビゲーションが発生せず、
+          //   ミドルウェアのリダイレクトも走らないため画面に留まってしまう）
+          router.push(`/${locale}/dashboard`)
+        } else {
+          toast.error('認証に失敗しました')
         }
       } else {
         toast.error('認証に失敗しました')
