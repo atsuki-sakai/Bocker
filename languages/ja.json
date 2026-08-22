@@ -194,7 +194,25 @@
   "language": {
     "japanese": "日本語",
     "english": "English",
+    "thai": "ไทย",
     "switchLanguage": "言語を切り替える"
+  },
+  "voiceInput": {
+    "label": "音声入力",
+    "stop": "停止",
+    "startTitle": "音声入力を開始",
+    "stopTitle": "音声入力を停止",
+    "unsupported": "お使いのブラウザは音声入力に対応していません",
+    "started": "音声入力を開始しました。話してください",
+    "stopped": "音声入力を停止しました",
+    "errors": {
+      "network": "ネットワークエラーです。インターネット接続を確認してください",
+      "notAllowed": "マイクへのアクセスが許可されていません",
+      "noSpeech": "音声が検出されませんでした",
+      "audioCapture": "マイクが利用できません",
+      "serviceNotAllowed": "この端末では音声認識を利用できません。PCでお試しください",
+      "unknown": "音声認識エラー: {error}"
+    }
   },
   "point": {
     "common": {

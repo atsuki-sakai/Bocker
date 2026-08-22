@@ -180,7 +180,7 @@ export default function InviteManagement() {
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-link-primary mb-2"></div>
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-link-foreground mb-2"></div>
                 <p className="text-sm text-muted-foreground">読み込み中...</p>
               </div>
             </div>

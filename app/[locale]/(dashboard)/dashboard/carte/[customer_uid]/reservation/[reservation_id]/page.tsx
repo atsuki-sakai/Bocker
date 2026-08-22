@@ -39,7 +39,7 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel'
 import { format } from 'date-fns'
-import { ja, enUS } from 'date-fns/locale'
+import { ja, enUS, th } from 'date-fns/locale'
 import { toast } from 'sonner'
 import type { SupportedLocale } from '@/lib/dateLocale'
 import { Link } from '@/i18n/navigation'
@@ -343,8 +343,8 @@ export default function CarteDetailPage({ params: paramsPromise }: CarteDetailPa
   // 日付フォーマット
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-'
-    return format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', {
-      locale: locale === 'ja' ? ja : enUS,
+    return format(new Date(dateString), locale === 'ja' ? 'yyyy年MM月dd日 HH:mm' : 'PPP p', {
+      locale: locale === 'ja' ? ja : locale === 'th' ? th : enUS,
     })
   }
 

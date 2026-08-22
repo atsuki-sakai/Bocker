@@ -100,7 +100,7 @@ export default function OptionList() {
                         className={`py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap text-primary sm:pl-6 `}
                       >
                         <span
-                          className={`font-bold text-xs ${option.is_archive ? 'bg-muted-foreground text-muted-background' : 'bg-accent-2-foreground text-accent-2'} px-2 py-1 rounded-md`}
+                          className={`font-bold text-xs ${option.is_archive ? 'bg-muted-foreground text-background' : 'bg-accent-2-foreground text-accent-2'} px-2 py-1 rounded-md`}
                         >
                           {option.is_archive
                             ? t('list.table.statusDeleted')

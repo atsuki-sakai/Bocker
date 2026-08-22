@@ -3,6 +3,7 @@ import { clerkMiddleware } from '@clerk/nextjs/server'
 import { LOGIN_SESSION_KEY } from '@/services/line/constants'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from './i18n/routing'
+import { isAppLocale } from './i18n/config'
 // Remove direct import of token-manager to avoid Edge Runtime crypto issues
 // We'll use API calls instead for token validation
 
@@ -146,7 +147,7 @@ const getPathnameWithoutLocale = (pathname: string): string => {
     .filter((segment) => segment.length > 0)
 
   let startIndex = 0
-  if (segments.length > 0 && routing.locales.includes(segments[0] as any)) {
+  if (segments.length > 0 && isAppLocale(segments[0])) {
     startIndex = 1
   }
 
@@ -287,7 +288,7 @@ export default clerkMiddleware(async (auth, req) => {
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|json)).*)',
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest|json|xml|txt)).*)',
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],

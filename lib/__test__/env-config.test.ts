@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { envConfig, getEnv, hasEnv, validateEnv } from '../env-config'
+import { envConfig, getEnv, hasEnv, resolveAppUrl, validateEnv } from '../env-config'
 
 describe('env-config ライブラリ', () => {
   const originalEnv = process.env
@@ -28,6 +28,34 @@ describe('env-config ライブラリ', () => {
 
     it('存在しない環境変数でエラーをスローする', () => {
       expect(() => getEnv('NON_EXISTENT_KEY' as any)).toThrow('NON_EXISTENT_KEY is not set') // eslint-disable-line @typescript-eslint/no-explicit-any
+    })
+  })
+
+  describe('アプリURL解決', () => {
+    it('開発環境では開発URLを返す', () => {
+      expect(
+        resolveAppUrl({
+          NODE_ENV: 'development',
+          NEXT_PUBLIC_DEVELOP_URL: 'http://localhost:3000/ja',
+        })
+      ).toBe('http://localhost:3000/ja')
+    })
+
+    it('開発URLが未設定ならlocalhostへフォールバックする', () => {
+      expect(resolveAppUrl({ NODE_ENV: 'development' })).toBe('http://localhost:3000')
+      expect(resolveAppUrl({ NODE_ENV: 'test' })).toBe('http://localhost:3000')
+    })
+
+    it('本番環境ではデプロイURLを必須にする', () => {
+      expect(
+        resolveAppUrl({
+          NODE_ENV: 'production',
+          NEXT_PUBLIC_DEPLOY_URL: 'https://bocker.jp',
+        })
+      ).toBe('https://bocker.jp')
+      expect(() => resolveAppUrl({ NODE_ENV: 'production' })).toThrow(
+        'NEXT_PUBLIC_DEPLOY_URL is not set'
+      )
     })
   })
 
@@ -75,7 +103,7 @@ describe('env-config ライブラリ', () => {
     it('Clerk関連の環境変数が設定されている', () => {
       const publishableKey = getEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY')
       const secretKey = getEnv('CLERK_SECRET_KEY')
-      
+
       expect(publishableKey).toBeDefined()
       expect(secretKey).toBeDefined()
       expect(typeof publishableKey).toBe('string')
@@ -87,7 +115,7 @@ describe('env-config ライブラリ', () => {
     it('Stripe関連の環境変数が設定されている', () => {
       const stripeSecret = getEnv('STRIPE_SECRET_KEY')
       const liteMonthly = getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID')
-      
+
       expect(stripeSecret).toBeDefined()
       expect(liteMonthly).toBeDefined()
       expect(typeof stripeSecret).toBe('string')
@@ -98,7 +126,7 @@ describe('env-config ライブラリ', () => {
       // LITEプラン（美容サロン向け基本プラン）
       expect(getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID')).toContain('lite')
       expect(getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID')).toContain('lite')
-      
+
       // PROプラン（高機能プラン）
       expect(getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID')).toContain('pro')
       expect(getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID')).toContain('pro')
@@ -120,7 +148,7 @@ describe('env-config ライブラリ', () => {
       expect(supabaseUrl).toBeDefined()
       expect(typeof supabaseUrl).toBe('string')
       expect(supabaseUrl).toMatch(/^https?:\/\//)
-      
+
       // Service Role Keyは必須でない場合があるのでhasEnvで確認
       if (hasEnv('SUPABASE_SERVICE_ROLE_KEY')) {
         const serviceKey = getEnv('SUPABASE_SERVICE_ROLE_KEY')
@@ -135,7 +163,7 @@ describe('env-config ライブラリ', () => {
         const apiKey = getEnv('RESEND_API_KEY')
         expect(typeof apiKey).toBe('string')
       }
-      
+
       if (hasEnv('RESEND_FROM_EMAIL')) {
         const fromEmail = getEnv('RESEND_FROM_EMAIL')
         expect(typeof fromEmail).toBe('string')
@@ -149,7 +177,7 @@ describe('env-config ライブラリ', () => {
       // APIキーや秘密鍵が適切な形式
       const stripeSecret = getEnv('STRIPE_SECRET_KEY')
       const clerkSecret = getEnv('CLERK_SECRET_KEY')
-      
+
       expect(stripeSecret).toMatch(/^sk_test_/)
       expect(clerkSecret).toMatch(/^sk_test_/)
     })
@@ -158,7 +186,7 @@ describe('env-config ライブラリ', () => {
       // Public設定（フロントエンドで利用可能）
       expect(() => getEnv('NEXT_PUBLIC_CONVEX_URL')).not.toThrow()
       expect(() => getEnv('NEXT_PUBLIC_SUPABASE_URL')).not.toThrow()
-      
+
       // Private設定（サーバーサイドのみ）
       expect(() => getEnv('STRIPE_SECRET_KEY')).not.toThrow()
       expect(() => getEnv('CLERK_SECRET_KEY')).not.toThrow()
@@ -168,15 +196,15 @@ describe('env-config ライブラリ', () => {
   describe('実環境における設定検証', () => {
     it('美容サロン事業に必要な全サービスが設定されている', () => {
       const requiredServices = [
-        'NEXT_PUBLIC_CONVEX_URL',      // リアルタイムDB
+        'NEXT_PUBLIC_CONVEX_URL', // リアルタイムDB
         'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', // 認証
-        'STRIPE_SECRET_KEY',           // 決済
-        'NEXT_PUBLIC_SUPABASE_URL',    // 分析DB
-        'GCP_AI_STUDIO_API_KEY',       // AI機能
-        'RESEND_API_KEY',              // メール送信
+        'STRIPE_SECRET_KEY', // 決済
+        'NEXT_PUBLIC_SUPABASE_URL', // 分析DB
+        'GCP_AI_STUDIO_API_KEY', // AI機能
+        'RESEND_API_KEY', // メール送信
       ]
 
-      requiredServices.forEach(service => {
+      requiredServices.forEach((service) => {
         expect(hasEnv(service as any)).toBe(true) // eslint-disable-line @typescript-eslint/no-explicit-any
       })
     })
@@ -193,7 +221,7 @@ describe('env-config ライブラリ', () => {
       // 正しい型で設定を取得
       const nodeEnv: string = getEnv('NODE_ENV')
       const convexUrl: string = getEnv('NEXT_PUBLIC_CONVEX_URL')
-      
+
       expect(typeof nodeEnv).toBe('string')
       expect(typeof convexUrl).toBe('string')
     })

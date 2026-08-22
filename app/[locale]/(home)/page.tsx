@@ -3,6 +3,7 @@
 import { LandingPageClient } from './LandingPageClient'
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { getLocaleMetadata } from '@/i18n/config'
 
 export async function generateMetadata({
   params,
@@ -23,7 +24,10 @@ export async function generateMetadata({
   const twitterDescription = t('twitter.description')
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bocker.jp'
-  const ogImage = `${baseUrl}/opengraph-image`
+  const localePath = `/${locale}`
+  const canonicalUrl = `${baseUrl}${localePath}`
+  const ogImage = `${canonicalUrl}/opengraph-image`
+  const localeMetadata = getLocaleMetadata(locale)
 
   return {
     title,
@@ -39,17 +43,18 @@ export async function generateMetadata({
     },
     metadataBase: new URL(baseUrl),
     alternates: {
-      canonical: locale === 'ja' ? '/' : `/${locale}/`,
+      canonical: localePath,
       languages: {
-        'ja-JP': '/',
-        'en-US': '/en/',
+        'ja-JP': '/ja',
+        'en-US': '/en',
+        'th-TH': '/th',
       },
     },
     openGraph: {
       title: ogTitle,
       description: ogDescription,
       type: 'website',
-      url: locale === 'ja' ? '/' : `/${locale}/`,
+      url: canonicalUrl,
       siteName,
       images: [
         {
@@ -59,7 +64,10 @@ export async function generateMetadata({
           alt: ogImageAlt,
         },
       ],
-      locale: locale === 'ja' ? 'ja_JP' : 'en_US',
+      locale: localeMetadata.openGraphLocale,
+      alternateLocale: ['ja_JP', 'en_US', 'th_TH'].filter(
+        (item) => item !== localeMetadata.openGraphLocale
+      ),
     },
     twitter: {
       card: 'summary_large_image',
@@ -170,7 +178,7 @@ async function generateStructuredData(locale: string) {
       '@type': 'Organization',
       name: 'Bocker Team',
     },
-    inLanguage: locale === 'ja' ? 'ja-JP' : 'en-US',
+    inLanguage: getLocaleMetadata(locale).htmlLang,
   }
 
   return [organizationSchema, softwareApplicationSchema, websiteSchema]

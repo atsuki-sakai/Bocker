@@ -21,7 +21,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { CustomerRepository } from '@/services/supabase/repositories/customer'
 import type { RowType } from '@/services/supabase/SupabaseService'
-import type { SupportedLocale } from '@/lib/dateLocale'
+import { getIntlLocaleCode, type SupportedLocale } from '@/lib/dateLocale'
 
 // 1回のロードでより多くのアイテムを表示
 const PAGE_SIZE: number = 20
@@ -260,7 +260,7 @@ export default function CustomerSearchForm() {
   const formatReservationDate = useCallback(
     (timestamp: number | null | undefined): string => {
       if (!timestamp) return tCarte('noReservation')
-      return new Date(timestamp * 1000).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US')
+      return new Date(timestamp * 1000).toLocaleDateString(getIntlLocaleCode(locale))
     },
     [locale, tCarte]
   )

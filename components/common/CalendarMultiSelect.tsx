@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import React, { useMemo, useState, useEffect } from 'react';
-import { Calendar } from '@/components/ui/calendar';
-import { AnimatePresence, motion } from 'framer-motion';
-import { format, isSameDay, isToday } from 'date-fns';
-import type { Locale } from 'date-fns';
-import { CalendarIcon, X, CalendarCheck } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react'
+import { Calendar } from '@/components/ui/calendar'
+import { AnimatePresence, motion } from 'framer-motion'
+import { format, isSameDay, isToday } from 'date-fns'
+import type { Locale } from 'date-fns'
+import { CalendarIcon, X, CalendarCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useTranslations, useLocale } from 'next-intl';
-import { getDateFnsLocale, type SupportedLocale } from '@/lib/dateLocale';
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useTranslations, useLocale } from 'next-intl'
+import { getDateFnsLocale, type SupportedLocale } from '@/lib/dateLocale'
 
 /**
  * 複数日選択用カレンダーコンポーネントのProps定義
@@ -19,20 +19,20 @@ interface CalendarMultiSelectProps {
   /**
    * 親コンポーネントで管理する選択中の日付配列
    */
-  selectedDates: Date[];
+  selectedDates: Date[]
 
   /**
    * 日付選択/解除時に呼ばれるコールバック
    * 新しい日付配列を親コンポーネントに渡す
    */
-  onDatesChangeAction: (dates: Date[]) => void;
+  onDatesChangeAction: (dates: Date[]) => void
 
   /**
    * カレンダーの最小選択可能日付
    * 指定した日付より前は選択できなくなります
    */
-  fromDate?: Date;
-  disabled?: boolean;
+  fromDate?: Date
+  disabled?: boolean
 }
 
 // アニメーション用のバリアント定義
@@ -44,9 +44,7 @@ const containerVariants = {
       staggerChildren: 0.05,
     },
   },
-};
-
-
+}
 
 const emptyStateVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -114,7 +112,7 @@ function CalendarMultiSelect({
     const groups: Record<string, Date[]> = {}
 
     for (const date of sortedDates) {
-      // ロケールに応じたフォーマットを選択
+      // date-fns locale がタイ語の月名も含めて表示を切り替える。
       const monthFormat = currentLocale === 'ja' ? 'yyyy年MM月' : 'MMMM yyyy'
       const monthKey = format(date, monthFormat, { locale: dateFnsLocale })
       if (!groups[monthKey]) {
@@ -239,7 +237,7 @@ function CalendarMultiSelect({
                             `}
                             >
                               {(() => {
-                                // ロケールに応じた日付フォーマットを選択
+                                // PPP は date-fns locale に応じて英語・タイ語を切り替える。
                                 const dateFormat =
                                   currentLocale === 'ja' ? 'yyyy年MM月dd日(EEE)' : 'PPP'
                                 return format(date, dateFormat, { locale: dateFnsLocale })
@@ -284,4 +282,4 @@ function CalendarMultiSelect({
 }
 
 // パフォーマンス最適化のためメモ化しエクスポート
-export default React.memo(CalendarMultiSelect);
+export default React.memo(CalendarMultiSelect)

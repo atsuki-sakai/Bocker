@@ -8,20 +8,20 @@
 
 ### 環境URL
 
-| 環境 | URL | 用途 |
-|------|-----|------|
-| **本番環境** | https://bocker.jp | 実際のサービス提供 |
-| **開発環境** | https://bocker-project.vercel.app | 開発・テスト用 |
+| 環境         | URL                               | 用途               |
+| ------------ | --------------------------------- | ------------------ |
+| **本番環境** | https://bocker.jp                 | 実際のサービス提供 |
+| **開発環境** | https://bocker-project.vercel.app | 開発・テスト用     |
 
 ### 利用サービスと環境別設定
 
-| サービス | 開発環境 | 本番環境 | 用途 |
-|----------|----------|----------|------|
-| **GCP** | Cloud Storage, CDN | 同左 | 画像保存・配信 |
-| **Supabase** | DEV_Bocker | Bocker | 分析/履歴 DB |
-| **Convex** | Development | Production | リアルタイムDB |
-| **Clerk** | clerk:dev | clerk:prod | 認証 |
-| **Stripe** | stripe:dev | stripe:prod | 決済 |
+| サービス       | 開発環境    | 本番環境    | 用途           |
+| -------------- | ----------- | ----------- | -------------- |
+| **Cloudflare** | R2, CDN     | 同左        | 画像保存・配信 |
+| **Supabase**   | DEV_Bocker  | Bocker      | 分析/履歴 DB   |
+| **Convex**     | Development | Production  | リアルタイムDB |
+| **Clerk**      | clerk:dev   | clerk:prod  | 認証           |
+| **Stripe**     | stripe:dev  | stripe:prod | 決済           |
 
 ## 環境変数設定
 
@@ -29,7 +29,10 @@
 
 - 使うのは `.env.local` のみ
 - ひな形は `.env.example` をコピーして作成
+- Vercel の Development 設定を利用する場合は `pnpm env:login` 後に `pnpm env:dev` を実行
+- 設定確認は `pnpm env:validate` を実行（`pnpm dev` の開始前にも自動実行）
 - 変更反映には `pnpm dev` の再起動が必要
+- Sentry は Vercel Production のみ自動送信し、Development / Preview では無効
 
 ### 本番の管理
 
@@ -123,20 +126,22 @@ R2の認証情報はVercelとConvexのサーバー環境に設定し、`NEXT_PUB
 
 ### Webhook エンドポイント
 
-| サービス | エンドポイント | 処理内容 |
-|----------|----------------|----------|
-| **Stripe Checkout** | `/api/webhook/stripe/checkout` | 決済完了処理 |
+| サービス                | エンドポイント                     | 処理内容               |
+| ----------------------- | ---------------------------------- | ---------------------- |
+| **Stripe Checkout**     | `/api/webhook/stripe/checkout`     | 決済完了処理           |
 | **Stripe Subscription** | `/api/webhook/stripe/subscription` | サブスクリプション更新 |
-| **Stripe Connect** | `/api/webhook/stripe/connect` | Connect アカウント管理 |
-| **Clerk** | `/api/webhook/clerk` | ユーザー・組織管理 |
+| **Stripe Connect**      | `/api/webhook/stripe/connect`      | Connect アカウント管理 |
+| **Clerk**               | `/api/webhook/clerk`               | ユーザー・組織管理     |
 
 ### Webhook実装の特徴
 
 1. **環境変数による設定管理**
+
    - `lib/env-config.ts` で一元管理
    - 環境ごとに異なるWebhook署名シークレット
 
 2. **エラーハンドリング**
+
    - 署名検証の実装
    - べき等性の保証
    - リトライロジック
@@ -151,7 +156,7 @@ R2の認証情報はVercelとConvexのサーバー環境に設定し、`NEXT_PUB
 
 ```typescript
 // 環境に応じたURLを自動取得
-const appUrl = getAppUrl(); // development: develop_url, production: deploy_url
+const appUrl = getAppUrl() // development: develop_url, production: deploy_url
 
 // 環境判定
 if (isDevelopment()) {
@@ -166,15 +171,17 @@ if (isDevelopment()) {
 - **Convex**: `convex/auth.config.ts` で環境変数から設定を読み込み
 - **Stripe**: `services/stripe/StripeService.ts` で環境変数からAPIキーを取得
 - **Supabase**: `services/supabase/SupabaseService.ts` で環境ごとのプロジェクトに接続
-- **GCP**: `services/gcp/cloud_storage/GoogleStorageService.ts` でバケット・CDN設定
+- **Cloudflare R2**: `services/gcp/cloud_storage/GoogleStorageService.ts` の互換レイヤーからR2バケット・CDNを利用
 
 ## 画像配信（CDN）
 
-### GCS + Cloud CDN構成
+### Cloudflare R2 + CDN構成
 
-1. **アップロード**: GCSバケット（`bocker-prod-images`）に直接保存
-2. **配信**: Cloud CDN経由で配信（`https://cdn.bocker.jp`）
-3. **URL変換**: `lib/cdn-client-utils.ts` でGCS URLをCDN URLに自動変換
+1. **アップロード**: R2バケット（`bocker-images`）に直接保存
+2. **配信**: R2カスタムドメイン（`https://cdn.bocker.jp`）から配信
+3. **URL生成**: オブジェクトキーと `NEXT_PUBLIC_CDN_DOMAIN` から公開URLを生成
+
+既存GCSオブジェクトは読み出し・コピーせず、必要な画像はR2へ再アップロードします。
 
 ### 環境別の画像パス
 
@@ -187,10 +194,7 @@ if (isDevelopment()) {
 
 ```bash
 # 必須環境変数のチェック
-pnpm run check:env
-
-# または手動で確認
-node -e "require('./lib/env-config').validateEnv()"
+pnpm env:validate
 ```
 
 ### 2. MCPツールでの確認
@@ -201,7 +205,7 @@ node -e "require('./lib/env-config').validateEnv()"
 - **Supabase**: データベース接続・マイグレーション状態
 - **Stripe**: Webhook設定・プロダクト設定
 - **Clerk**: 組織設定・認証設定
-- **GCP**: バケット設定・CDN設定
+- **Cloudflare**: R2バケット・カスタムドメイン・DNS設定
 
 ### 3. Webhook動作確認
 
@@ -239,11 +243,13 @@ curl https://bocker.jp/api/webhook/stripe/checkout
 ## セキュリティ上の注意事項
 
 1. **環境変数の管理**
+
    - 本番環境のシークレットキーは絶対にコミットしない
    - `.env.local` は `.gitignore` に含める
    - Vercelのダッシュボードから本番環境変数を設定
 
 2. **Webhook署名の検証**
+
    - 全てのWebhookで署名検証を必須化
    - 署名シークレットは定期的に更新
 

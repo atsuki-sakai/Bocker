@@ -2,15 +2,23 @@
 // The config you add here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from '@sentry/nextjs'
+import { shouldEnableSentry } from './lib/sentry-enabled'
+
+const sentryEnabled = shouldEnableSentry({
+  override: process.env.NEXT_PUBLIC_SENTRY_ENABLED,
+  vercelEnvironment: process.env.NEXT_PUBLIC_VERCEL_ENV,
+})
 
 Sentry.init({
-  dsn: "https://713a69815489a796680c1c275ea85de5@o4508853357576192.ingest.us.sentry.io/4509006291468288",
+  dsn: 'https://713a69815489a796680c1c275ea85de5@o4508853357576192.ingest.us.sentry.io/4509006291468288',
+
+  // 開発時は送信せず、ブラウザ側は公開フラグで本番送信も停止できるようにする。
+  enabled: sentryEnabled,
+  environment: process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NODE_ENV,
 
   // Add optional integrations for additional features
-  integrations: [
-    Sentry.replayIntegration(),
-  ],
+  integrations: [Sentry.replayIntegration()],
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
@@ -25,4 +33,4 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
-});
+})

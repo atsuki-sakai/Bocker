@@ -40,7 +40,7 @@ import {
 import { cn } from '@/lib/utils'
 import { formatTimestamp, convertTimestampToHour } from '@/lib/schedules'
 import { format, addDays, subDays, isWeekend } from 'date-fns'
-import { ja, enUS } from 'date-fns/locale'
+import { ja, enUS, th } from 'date-fns/locale'
 import { useLocale } from 'next-intl'
 import Image from 'next/image'
 import { useQueryWithStatus } from '@/hooks/useQueryWithStatus'
@@ -1507,7 +1507,8 @@ export default function ReservationTimeLine() {
           <div className="w-full flex gap-2 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
             {reservationCounts.map((item) => {
               const date = new Date(item.date)
-              const dayOfWeek = format(date, 'E', { locale: locale === 'ja' ? ja : enUS })
+              const dateFnsLocale = locale === 'ja' ? ja : locale === 'th' ? th : enUS
+              const dayOfWeek = format(date, 'E', { locale: dateFnsLocale })
               const isWeekend = date.getDay() === 0 || date.getDay() === 6
               const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
               const isSelected = format(date, 'yyyy-MM-dd') === targetDateStr
@@ -1728,7 +1729,7 @@ function EnhancedDatePicker({
             setIsOpen(false)
           }}
           initialFocus
-          locale={locale === 'ja' ? ja : enUS}
+          locale={locale === 'ja' ? ja : locale === 'th' ? th : enUS}
           modifiers={{
             hasReservation: (date) => reservationCountMap.has(format(date, 'yyyy-MM-dd')),
           }}
