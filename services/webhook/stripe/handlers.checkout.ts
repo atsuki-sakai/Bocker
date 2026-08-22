@@ -9,10 +9,14 @@ import { PointTransactionRepository } from '@/services/supabase/repositories/poi
 import { CustomerRepository } from '@/services/supabase/repositories/customer';
 import { CouponTransactionRepository } from '@/services/supabase/repositories/coupon';
 import { createClient } from '@supabase/supabase-js';
-import { LineService } from '@/services/line/LineService';
 import { SupabaseService } from '@/services/supabase/SupabaseService';
 import { sendReservationConfirmationEmail } from '@/lib/email_templates/reservation_email';
 import { getAppUrl, getEnv } from '@/lib/env-config';
+import { sendLineFlexMessageOrThrow } from '@/services/line/sendLineFlexMessageOrThrow';
+import {
+  formatReservationDateInJapan,
+  formatReservationTimeRangeInJapan,
+} from '@/lib/reservationDateTime';
 
 /**
  * Stripe Checkout Session完了時のWebhookイベントを処理
@@ -206,22 +210,22 @@ export async function handleCheckoutSessionCompleted(
         orgAddress: organization?.config?.address || '',
         orgPhone: organization?.config?.phone || '',
         customerName: reservation.customer_name,
-        reservationDate: reservation.date,
-        reservationTime: new Date(reservation.start_time_unix).toLocaleTimeString('ja-JP', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
+        reservationDate: formatReservationDateInJapan(reservation.start_time_unix),
+        reservationTime: formatReservationTimeRangeInJapan(
+          reservation.start_time_unix,
+          reservation.end_time_unix
+        ),
         staffName: reservation.staff_name || '指名フリー',
         menus: reservationDetail.menus || [],
         options: reservationDetail.options || [],
         totalPrice: reservationDetail.total_price || 0,
         paymentMethod: 'credit_card',
+        reservationId,
         cancelUrl: cancelUrl,
       }) : Promise.resolve(),
       
       // LINE送信（LINE IDがある場合のみ）
       customer.line_id ? (async () => {
-        const lineService = new LineService();
         const flexMessage = {
           type: 'flex' as const,
           altText: '予約確認',
@@ -239,7 +243,7 @@ export async function handleCheckoutSessionCompleted(
                 },
                 {
                   type: 'text' as const,
-                  text: `予約日時: ${reservation.date} ${new Date(reservation.start_time_unix).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`,
+                  text: `予約日時: ${formatReservationDateInJapan(reservation.start_time_unix)} ${formatReservationTimeRangeInJapan(reservation.start_time_unix, reservation.end_time_unix)}`,
                   margin: 'md' as const,
                 },
                 {
@@ -255,28 +259,17 @@ export async function handleCheckoutSessionCompleted(
           }
         };
         
-        if (apiConfig?.line_access_token) {
-          await lineService.sendFlexMessage(
-            customer.line_id!,
-            [flexMessage],
-            apiConfig.line_access_token
-          );
-        }
+        await sendLineFlexMessageOrThrow({
+          lineId: customer.line_id,
+          messages: [flexMessage],
+          accessToken: apiConfig?.line_access_token,
+        });
       })() : Promise.resolve(),
 
-      // サロンへのLINE通知（弊社チャンネル経由）
+      // サロンへのLINE通知（テナントのチャネル経由）
       apiConfig?.org_line_id ? (async () => {
         const { createSalonReservationNotification } = await import('@/services/line/message_template/salon_reservation_notification');
-        
-        // 環境変数から弊社のLINEチャンネルアクセストークンを取得
-        const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN;
-        
-        if (!companyLineAccessToken) {
-          console.warn('弊社LINEチャンネルのアクセストークンが設定されていません');
-          return;
-        }
 
-        const lineService = new LineService();
         const salonFlexMessage = createSalonReservationNotification({
           organization: organization?.org,
           reservation: {
@@ -307,11 +300,11 @@ export async function handleCheckoutSessionCompleted(
           paymentMethod: 'credit_card',
         });
 
-        await lineService.sendFlexMessage(
-          apiConfig.org_line_id!,
-          [salonFlexMessage],
-          companyLineAccessToken
-        );
+        await sendLineFlexMessageOrThrow({
+          lineId: apiConfig.org_line_id,
+          messages: [salonFlexMessage],
+          accessToken: apiConfig.line_access_token,
+        });
       })() : Promise.resolve(),
     ]);
     

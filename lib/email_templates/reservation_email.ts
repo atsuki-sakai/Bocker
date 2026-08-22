@@ -37,6 +37,7 @@ interface SendReservationConfirmationEmailProps {
   options: Array<{ name: string; price: number; quantity: number }>;
   totalPrice: number;
   paymentMethod: 'cash' | 'credit_card';
+  reservationId: string;
   cancelUrl: string;
 }
 
@@ -182,6 +183,7 @@ export async function sendReservationConfirmationEmail(props: SendReservationCon
     menus,
     options,
     totalPrice,
+    reservationId,
     cancelUrl
   } = props;
 
@@ -200,7 +202,7 @@ export async function sendReservationConfirmationEmail(props: SendReservationCon
     reservationTime,
     menus: menuItems,
     totalPrice,
-    reservationId: new Date().getTime().toString(),
+    reservationId,
     cancelUrl
   });
 

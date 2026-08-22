@@ -70,6 +70,11 @@ import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useQuery } from 'convex/react'
 import { RowType } from '@/services/supabase/SupabaseService'
 import { useAnalytics } from '@/hooks/useAnalytics'
+import { requestSalonReservationNotification } from '@/services/line/requestSalonReservationNotification'
+import {
+  formatReservationDateWithWeekdayInJapan,
+  formatReservationTimeRangeInJapan,
+} from '@/lib/reservationDateTime'
 
 // 曜日をソートするための順序を定義
 const dayOrder: Record<string, number> = {
@@ -931,6 +936,18 @@ export default function CalendarPage() {
           reservation_id: reservationId,
         })
 
+        // 店舗通知は顧客向けLINE/メールの有無や送信結果に依存させない
+        try {
+          await requestSalonReservationNotification({
+            tenantId: sessionCustomer.tenantId,
+            organizationId: organizationComplete.organization._id,
+            reservationId,
+          })
+        } catch (salonNotificationError) {
+          console.warn('サロン通知の送信に失敗しました:', salonNotificationError)
+          // サロン通知の失敗は顧客の予約処理をブロックしない
+        }
+
         if (sessionCustomer.lineUserId && organizationComplete.config) {
           // Lineにメッセージ予約の確認用Flexメッセージを作成
           const flexMessages = reservationFlexMessageTemplate(
@@ -993,25 +1010,6 @@ export default function CalendarPage() {
           try {
             const result = await response.json()
             if (result.success) {
-              // サロンへのLINE通知を送信（エラーは無視）
-              try {
-                if (organizationComplete.apiConfig?.org_line_id) {
-                  await fetch('/api/line/salon-notification', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      tenantId: sessionCustomer.tenantId,
-                      organizationId: organizationComplete.organization._id,
-                      reservationId: reservationId,
-                      paymentMethod: 'cash',
-                    }),
-                  })
-                }
-              } catch (salonNotificationError) {
-                console.warn('サロン通知の送信に失敗しました:', salonNotificationError)
-                // サロン通知の失敗は顧客の予約処理をブロックしない
-              }
-
               router.push(
                 `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`
               )
@@ -1054,16 +1052,13 @@ export default function CalendarPage() {
               orgPhone: organizationComplete.config?.phone,
               orgAddress: organizationComplete.config?.address,
               orgPostalCode: organizationComplete.config?.postal_code,
-              reservationDate:
-                selectedDate?.toLocaleDateString('ja-JP', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  weekday: 'long',
-                }) || '日付未定',
-              reservationTime: selectedTime
-                ? `${selectedTime.startHour}～${selectedTime.endHour}`
-                : '時間未定',
+              reservationDate: formatReservationDateWithWeekdayInJapan(
+                reservationStartDateTime
+              ),
+              reservationTime: formatReservationTimeRangeInJapan(
+                reservationStartDateTime,
+                reservationEndDateTime
+              ),
               staffName:
                 selectedStaffCompleted.staff === 'free' ||
                 isAutoAssignedStaff(selectedStaffCompleted.staff)
@@ -1108,25 +1103,6 @@ export default function CalendarPage() {
             }
             const emailResult = await emailResponse.json()
             console.log('メール送信成功:', emailResult)
-
-            // サロンへのLINE通知を送信（エラーは無視）
-            try {
-              if (organizationComplete.apiConfig?.org_line_id) {
-                await fetch('/api/line/salon-notification', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    tenantId: sessionCustomer.tenantId,
-                    organizationId: organizationComplete.organization._id,
-                    reservationId: reservationId,
-                    paymentMethod: 'cash',
-                  }),
-                })
-              }
-            } catch (salonNotificationError) {
-              console.warn('サロン通知の送信に失敗しました:', salonNotificationError)
-              // サロン通知の失敗は顧客の予約処理をブロックしない
-            }
 
             router.push(
               `/reservation/${organizationComplete.organization._id}/calendar/complete?reservationId=${reservationId}`

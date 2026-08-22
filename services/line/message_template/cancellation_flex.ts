@@ -1,9 +1,12 @@
 import type { Message } from '@line/bot-sdk'
 import { Doc } from '@/convex/_generated/dataModel'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
 import { Id } from '@/convex/_generated/dataModel'
 import { BASE_URL } from '@/lib/constants'
+import {
+  formatReservationDateInJapan,
+  formatReservationDateTimeInJapan,
+  formatReservationTimeRangeInJapan,
+} from '@/lib/reservationDateTime'
 
 /**
  * 顧客向けキャンセル通知Flex Messageの型定義
@@ -60,9 +63,10 @@ export const createCustomerCancellationNotification = ({
   reservationData,
 }: CustomerCancellationParams): Message[] => {
   // 時刻をフォーマット
-  const startTime = new Date(reservationData.startTimeUnix)
-  const endTime = new Date(reservationData.endTimeUnix)
-  const timeSlot = `${format(startTime, 'HH:mm', { locale: ja })} 〜 ${format(endTime, 'HH:mm', { locale: ja })}`
+  const timeSlot = formatReservationTimeRangeInJapan(
+    reservationData.startTimeUnix,
+    reservationData.endTimeUnix
+  )
 
   // キャンセル理由のテキスト
   const cancellationReasonText = reservationData.cancelledBy === 'customer' 
@@ -131,11 +135,7 @@ export const createCustomerCancellationNotification = ({
           contents: [
             {
               type: 'text',
-              text: reservationData.date
-                ? format(new Date(reservationData.date), 'yyyy年MM月dd日', {
-                    locale: ja,
-                  })
-                : '',
+              text: formatReservationDateInJapan(reservationData.startTimeUnix),
               size: 'sm',
               color: '#000000',
             },
@@ -534,9 +534,10 @@ export const createSalonCancellationNotification = ({
   reservationData,
 }: SalonCancellationParams): Message => {
   // 時刻をフォーマット
-  const startTime = new Date(reservationData.startTimeUnix)
-  const endTime = new Date(reservationData.endTimeUnix)
-  const timeSlot = `${format(startTime, 'HH:mm', { locale: ja })} - ${format(endTime, 'HH:mm', { locale: ja })}`
+  const timeSlot = formatReservationTimeRangeInJapan(
+    reservationData.startTimeUnix,
+    reservationData.endTimeUnix
+  )
 
   // キャンセル理由のテキスト
   const cancellationReasonText = reservationData.cancelledBy === 'customer' 
@@ -805,7 +806,7 @@ export const createSalonCancellationNotification = ({
           },
           {
             type: 'text',
-            text: new Date().toLocaleString('ja-JP'),
+            text: formatReservationDateTimeInJapan(Date.now()),
             size: 'xs',
             color: '#888888',
             align: 'center',
@@ -818,4 +819,4 @@ export const createSalonCancellationNotification = ({
   }
 
   return flexMessage
-} 
+}

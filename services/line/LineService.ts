@@ -94,7 +94,9 @@ export class LineService {
       console.error('Error in LineService.sendFlexMessage:', error)
       return {
         success: false,
-        message: 'フレックスメッセージ送信に失敗しました: 不明なエラー',
+        message: `フレックスメッセージ送信に失敗しました: ${
+          error instanceof Error ? error.message : '不明なエラー'
+        }`,
       }
     }
   }

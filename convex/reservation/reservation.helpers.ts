@@ -1078,44 +1078,24 @@ export async function cancelNotification(
     // サロンにキャンセル通知を送信（org_line_idがある場合のみ）
     if (apiConfig.org_line_id) {
       try {
-        // 環境変数から弊社のLINEチャンネル情報を取得
-        const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN
+        // サロン向けキャンセル通知の対象を指定（通知内容はAPI側で予約データから取得）
+        const salonNotificationData = {
+          tenantId: args.reservation.tenant_id,
+          organizationId: args.reservation.org_id,
+          reservationId: args.reservation._id,
+        }
 
-        if (companyLineAccessToken) {
-          // サロン向けキャンセル通知のデータを準備
-          const salonNotificationData = {
-            tenantId: args.reservation.tenant_id,
-            organizationId: args.reservation.org_id,
-            reservationId: args.reservation._id,
-            cancelData: {
-              reservationId: args.reservation._id,
-              customerName: args.reservation.customer_name,
-              staffName: args.reservation.staff_name || '不明なスタッフ',
-              date: args.reservation.date,
-              startTimeUnix: args.reservation.start_time_unix,
-              endTimeUnix: args.reservation.end_time_unix,
-              menus: args.reservation.detail?.menus || [],
-              options: args.reservation.detail?.options || [],
-              totalPrice: args.reservation.detail?.total_price || 0,
-              cancelledBy: args.reservation.cancelled_by,
-              cancelReason: args.reservation.cancel_reason || '',
-            },
-          }
+        const baseUrl = getAppUrl()
+        const salonResponse = await fetch(`${baseUrl}/api/line/salon-cancellation-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(salonNotificationData),
+        })
 
-          const baseUrl = getAppUrl()
-          const salonResponse = await fetch(`${baseUrl}/api/line/salon-cancellation-notification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(salonNotificationData),
-          })
-
-          if (!salonResponse.ok) {
-            console.error('サロンキャンセル通知APIエラー:', salonResponse.status)
-          } else {
-            console.log('サロンキャンセル通知送信成功')
-          }
+        if (!salonResponse.ok) {
+          console.error('サロンキャンセル通知APIエラー:', salonResponse.status)
         } else {
-          console.warn('キャンセル通知: COMPANY_LINE_CHANNEL_ACCESS_TOKENが設定されていません')
+          console.log('サロンキャンセル通知送信成功')
         }
       } catch (salonNotificationError) {
         console.warn('サロンキャンセル通知の送信に失敗しました:', salonNotificationError)

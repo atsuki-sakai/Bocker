@@ -1,8 +1,11 @@
 import type { Message } from '@line/bot-sdk'
 import { Doc } from '@/convex/_generated/dataModel'
-import { format, differenceInMinutes } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { differenceInMinutes } from 'date-fns'
 import { ReservationMenu, ReservationOption } from '@/convex/types'
+import {
+  formatReservationDateInJapan,
+  formatReservationTimeInJapan,
+} from '@/lib/reservationDateTime'
 
 interface ReminderData {
   id: string
@@ -35,9 +38,9 @@ export const createReminderFlexMessage = ({
   const endDate = new Date(reservationData.endTimeUnix)
 
   // 日付と時刻をフォーマット
-  const dateStr = format(startDate, 'yyyy年MM月dd日', { locale: ja })
-  const startTimeStr = format(startDate, 'HH:mm', { locale: ja })
-  const endTimeStr = format(endDate, 'HH:mm', { locale: ja })
+  const dateStr = formatReservationDateInJapan(startDate)
+  const startTimeStr = formatReservationTimeInJapan(startDate)
+  const endTimeStr = formatReservationTimeInJapan(endDate)
   
   // 施術時間の計算
   const totalMinutes = differenceInMinutes(endDate, startDate)
