@@ -15,13 +15,13 @@
 
 ### 利用サービスと環境別設定
 
-| サービス     | 開発環境           | 本番環境    | 用途           |
-| ------------ | ------------------ | ----------- | -------------- |
-| **GCP**      | Cloud Storage, CDN | 同左        | 画像保存・配信 |
-| **Supabase** | DEV_Bocker         | Bocker      | 分析/履歴 DB   |
-| **Convex**   | Development        | Production  | リアルタイムDB |
-| **Clerk**    | clerk:dev          | clerk:prod  | 認証           |
-| **Stripe**   | stripe:dev         | stripe:prod | 決済           |
+| サービス       | 開発環境    | 本番環境    | 用途           |
+| -------------- | ----------- | ----------- | -------------- |
+| **Cloudflare** | R2, CDN     | 同左        | 画像保存・配信 |
+| **Supabase**   | DEV_Bocker  | Bocker      | 分析/履歴 DB   |
+| **Convex**     | Development | Production  | リアルタイムDB |
+| **Clerk**      | clerk:dev   | clerk:prod  | 認証           |
+| **Stripe**     | stripe:dev  | stripe:prod | 決済           |
 
 ## 環境変数設定
 
@@ -111,13 +111,16 @@ NEXT_PUBLIC_SUPABASE_URL=https://[project-id].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ[...]
 SUPABASE_SERVICE_ROLE_KEY=eyJ[...]
 
-# GCP Cloud Storage（共通バケット、環境でパス分離）
-GCP_PROJECT=bocker-cloud-storage
-GCP_CLIENT_EMAIL=[service-account]@[project].iam.gserviceaccount.com
-GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n[...]\n-----END PRIVATE KEY-----\n"
-NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME=bocker-prod-images
+# Cloudflare R2（認証情報はサーバー環境だけに設定）
+CLOUDFLARE_R2_ACCOUNT_ID=[cloudflare-account-id]
+CLOUDFLARE_R2_ACCESS_KEY_ID=[bucket-scoped-access-key-id]
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=[bucket-scoped-secret-access-key]
+CLOUDFLARE_R2_BUCKET_NAME=bocker-images
 NEXT_PUBLIC_CDN_DOMAIN=https://cdn.bocker.jp
 ```
+
+R2の認証情報はVercelとConvexのサーバー環境に設定し、`NEXT_PUBLIC_` を付けないでください。
+旧GCSの環境変数は移行時の読み取り・ロールバック専用であり、新規画像の保存には使用しません。
 
 ## Webhook処理
 
@@ -168,15 +171,17 @@ if (isDevelopment()) {
 - **Convex**: `convex/auth.config.ts` で環境変数から設定を読み込み
 - **Stripe**: `services/stripe/StripeService.ts` で環境変数からAPIキーを取得
 - **Supabase**: `services/supabase/SupabaseService.ts` で環境ごとのプロジェクトに接続
-- **GCP**: `services/gcp/cloud_storage/GoogleStorageService.ts` でバケット・CDN設定
+- **Cloudflare R2**: `services/gcp/cloud_storage/GoogleStorageService.ts` の互換レイヤーからR2バケット・CDNを利用
 
 ## 画像配信（CDN）
 
-### GCS + Cloud CDN構成
+### Cloudflare R2 + CDN構成
 
-1. **アップロード**: GCSバケット（`bocker-prod-images`）に直接保存
-2. **配信**: Cloud CDN経由で配信（`https://cdn.bocker.jp`）
-3. **URL変換**: `lib/cdn-client-utils.ts` でGCS URLをCDN URLに自動変換
+1. **アップロード**: R2バケット（`bocker-images`）に直接保存
+2. **配信**: R2カスタムドメイン（`https://cdn.bocker.jp`）から配信
+3. **URL生成**: オブジェクトキーと `NEXT_PUBLIC_CDN_DOMAIN` から公開URLを生成
+
+既存GCSオブジェクトは読み出し・コピーせず、必要な画像はR2へ再アップロードします。
 
 ### 環境別の画像パス
 
@@ -200,7 +205,7 @@ pnpm env:validate
 - **Supabase**: データベース接続・マイグレーション状態
 - **Stripe**: Webhook設定・プロダクト設定
 - **Clerk**: 組織設定・認証設定
-- **GCP**: バケット設定・CDN設定
+- **Cloudflare**: R2バケット・カスタムドメイン・DNS設定
 
 ### 3. Webhook動作確認
 

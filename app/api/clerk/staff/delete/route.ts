@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ConvexHttpClient } from 'convex/browser'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
+import { storageService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { z } from 'zod'
 import { validateRequest, createValidationErrorResponse } from '@/lib/api/validation'
 import { convexIdSchema } from '@/lib/validations/api/common'
@@ -112,7 +112,7 @@ export async function DELETE(req: NextRequest) {
     if (staffData.images && staffData.images.length > 0) {
       for (const image of staffData.images) {
         try {
-          await gcsService.deleteImageWithThumbnail(image.original_url)
+          await storageService.deleteImageWithThumbnail(image.original_url)
           console.log(`✅ 画像削除成功: ${image.original_url}`)
         } catch (imageError) {
           console.error(`❌ 画像削除エラー: ${image.original_url}`, imageError)

@@ -1,5 +1,3 @@
-import { Storage } from '@google-cloud/storage';
-import { STORAGE_URL } from './constants'
 import { SystemError } from '@/lib/errors/custom_errors';
 import { ERROR_STATUS_CODE, ERROR_SEVERITY } from '@/lib/errors/constants';
 import { sanitizeFileName } from '@/lib/utils'
@@ -9,6 +7,7 @@ import { AspectType } from '@/convex/types';
 import { ImageDirectory, ImageQuality, ProcessedImageResult, UploadedFileResult } from './types';
 import { getEnv } from '@/lib/env-config'
 import { ConvexError } from 'convex/values'
+import { R2StorageClient } from '@/services/cloudflare/r2/R2StorageClient'
 
 /**
  * 画像サイズとメモリ使用量の制限設定
@@ -24,7 +23,7 @@ const IMAGE_LIMITS = {
  */
 
 class GoogleStorageService {
-  private storage: Storage | null = null
+  private storage: R2StorageClient | null = null
   private bucketName: string | null = null
   private readonly activeFormat: 'webp' | 'avif' = 'webp'
   // activeFormatに基づいて拡張子とMIMEタイプを定義
@@ -35,29 +34,31 @@ class GoogleStorageService {
    * 必要な環境変数を取得し、存在しない場合はエラーを投げる
    */
   private getEnvConfig() {
-    const projectId = getEnv('GCP_PROJECT')
-    const clientEmail = getEnv('GCP_CLIENT_EMAIL')
-    const privateKey = getEnv('GCP_PRIVATE_KEY')
-    const bucketName = getEnv('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME')
-    if (!projectId || !clientEmail || !privateKey || !bucketName) {
-      throw new SystemError('GCS接続に必要な環境変数が不足しています。', {
+    const accountId = getEnv('CLOUDFLARE_R2_ACCOUNT_ID')
+    const accessKeyId = getEnv('CLOUDFLARE_R2_ACCESS_KEY_ID')
+    const secretAccessKey = getEnv('CLOUDFLARE_R2_SECRET_ACCESS_KEY')
+    const bucketName = getEnv('CLOUDFLARE_R2_BUCKET_NAME')
+    const publicBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN')
+    if (!accountId || !accessKeyId || !secretAccessKey || !bucketName || !publicBaseUrl) {
+      throw new SystemError('R2接続に必要な環境変数が不足しています。', {
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
         code: 'INTERNAL_SERVER_ERROR',
         status: 500,
         callFunc: 'GoogleStorageService.getEnvConfig',
-        message: 'GCS接続に必要な環境変数が不足しています。',
+        message: 'R2接続に必要な環境変数が不足しています。',
         title: '環境変数設定エラー',
         details: {
-          error: 'Required environment variables for GCS are missing.',
-          projectIdExists: Boolean(projectId),
-          clientEmailExists: Boolean(clientEmail),
-          privateKeyExists: Boolean(privateKey),
+          error: 'Required environment variables for R2 are missing.',
+          accountIdExists: Boolean(accountId),
+          accessKeyIdExists: Boolean(accessKeyId),
+          secretAccessKeyExists: Boolean(secretAccessKey),
           bucketNameExists: Boolean(bucketName),
+          publicBaseUrlExists: Boolean(publicBaseUrl),
         },
       })
     }
-    return { projectId, clientEmail, privateKey, bucketName }
+    return { accountId, accessKeyId, secretAccessKey, bucketName, publicBaseUrl }
   }
 
   /**
@@ -69,30 +70,19 @@ class GoogleStorageService {
     }
 
     // 必要な環境変数をまとめて取得
-    const { projectId, clientEmail, privateKey, bucketName } = this.getEnvConfig()
+    const config = this.getEnvConfig()
     try {
-      // 改行のエスケープ解除（もし \n で設定している場合）
-      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n')
-
-      // Storage クライアントの初期化
-      this.storage = new Storage({
-        projectId,
-        credentials: {
-          client_email: clientEmail,
-          private_key: formattedPrivateKey,
-        },
-      })
-
-      this.bucketName = bucketName
+      this.storage = new R2StorageClient(config)
+      this.bucketName = config.bucketName
     } catch (error) {
-      throw new SystemError('GCPストレージクライアントの初期化に失敗しました', {
+      throw new SystemError('R2ストレージクライアントの初期化に失敗しました', {
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'GoogleStorageService.initializeIfNeeded',
-        message: 'GCPストレージクライアントの初期化に失敗しました',
+        message: 'R2ストレージクライアントの初期化に失敗しました',
         code: 'INTERNAL_SERVER_ERROR',
         status: 500,
-        title: 'GCS初期化失敗',
+        title: 'R2初期化失敗',
         details: {
           error: this.formatErrorDetails(error),
         },
@@ -418,31 +408,16 @@ class GoogleStorageService {
     }
 
     try {
-      const bucket = this.storage!.bucket(this.bucketName!)
       const timestamp = new Date().toISOString().replace(/[-:Z]/g, '').split('.')[0]
       // 通常時も、fileNameに含まれる拡張子をそのまま使用
-      const gcsFilePath = `${directory}/${org_id}/${timestamp}_${safeFileName}`
+      const objectKey = `${directory}/${org_id}/${timestamp}_${safeFileName}`
 
-      const blob = bucket.file(gcsFilePath)
-
-      await blob.save(buffer, {
-        contentType: contentType, // 呼び出し元が正しいcontentTypeを指定することを信頼
-        metadata: {
-          cacheControl: 'public, max-age=31536000',
-        },
-      })
-
-      // パスの各セグメントを個別にエンコード
-      const pathSegments = gcsFilePath.split('/')
-      const encodedPath = pathSegments.map((segment) => encodeURIComponent(segment)).join('/')
-      const gcsUrl = `${STORAGE_URL}/${this.bucketName}/${encodedPath}`
-
-      // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
-      const publicUrl = this.getCdnUrl(gcsUrl)
+      await this.storage!.putObject(objectKey, buffer, contentType)
+      const publicUrl = this.storage!.getPublicUrl(objectKey)
 
       return {
         publicUrl,
-        filePath: gcsFilePath, // GCS内の実際のパスを返す
+        filePath: objectKey,
       }
     } catch (error) {
       const errorDetails = this.formatErrorDetails(error)
@@ -702,7 +677,7 @@ class GoogleStorageService {
   }
 
   /**
-   * imgUrl から GCS 内のファイルパスを抽出する
+   * imgUrl からR2オブジェクトキーを抽出する
    */
   private extractFilePath(imgUrl: string): string {
     if (!imgUrl || typeof imgUrl !== 'string') {
@@ -720,17 +695,15 @@ class GoogleStorageService {
     try {
       const url = new URL(imgUrl)
 
-      // CDN URL の場合の処理
-      // 例: https://cdn.bocker.jp/menu/original/v5789f07n426yg0karj64nctg57hv58j/20250615T163017_20250615T163017_IMG_2119.webp
-      if (url.hostname === 'cdn.bocker.jp') {
+      const cdnHostname = new URL(getEnv('NEXT_PUBLIC_CDN_DOMAIN')).hostname
+
+      // R2 custom domain URL の場合
+      if (url.hostname === cdnHostname) {
         const segments = url.pathname.split('/').filter((s) => s.length > 0)
         if (segments.length < 3) {
           throw new Error('CDN URLのパス形式が不正です')
         }
-        // CDN パスから GCS パスを再構築
-        // segments = ['menu', 'original', 'v5789f07n426yg0karj64nctg57hv58j', 'filename.webp']
-        // GCS パス = 'menu/original/v5789f07n426yg0karj64nctg57hv58j/filename.webp'
-        console.log('CDN URLからGCSパスを抽出:', {
+        console.log('CDN URLからR2オブジェクトキーを抽出:', {
           cdnUrl: imgUrl,
           segments,
           extractedPath: segments.join('/'),
@@ -738,12 +711,16 @@ class GoogleStorageService {
         return segments.join('/')
       }
 
-      // 通常のGCS URLの場合
-      const segments = url.pathname.split('/')
-      if (segments.length < 3 || segments[1] !== this.bucketName) {
-        throw new Error('URLが期待されるGCSの形式ではありません。')
+      // 移行期間中は保存済みのGCS直接URLも受け付ける
+      if (url.hostname === 'storage.googleapis.com') {
+        const segments = url.pathname.split('/').filter(Boolean)
+        if (segments.length < 2) {
+          throw new Error('URLが期待されるGCSの形式ではありません。')
+        }
+        return segments.slice(1).join('/')
       }
-      return segments.slice(2).join('/')
+
+      throw new Error('URLが期待されるR2またはGCSの形式ではありません。')
     } catch (e) {
       // URL解析失敗時はimgUrl自体がパスであると仮定するが、基本的な検証は行う
       if (imgUrl.includes('://') || imgUrl.startsWith('/')) {
@@ -764,38 +741,27 @@ class GoogleStorageService {
 
   /**
    * ファイルを削除する (imgUrl指定)
-   * GCSオブジェクトが見つからない(404)場合は警告ログを出力し、エラーをスローしない。
+   * R2オブジェクトが見つからない(404)場合も削除済みとして扱う。
    * @param imgUrl - 削除対象の画像URL
-   * @throws SystemError GCS通信エラーの場合（404以外）
+   * @throws SystemError R2通信エラーの場合（404以外）
    */
   async deleteImage(imgUrl: string): Promise<void> {
     this.initializeIfNeeded()
 
     // decode in case imgUrl or stored key is URL‑encoded
     const filePath = decodeURIComponent(this.extractFilePath(imgUrl))
-    console.log('GCSオブジェクトを削除します (imgUrl指定):', filePath)
+    console.log('R2オブジェクトを削除します (imgUrl指定):', filePath)
 
     try {
-      const bucket = this.storage!.bucket(this.bucketName!)
-      const file = bucket.file(filePath)
-      await file.delete()
-      console.log('GCSオブジェクトが正常に削除されました:', filePath)
+      await this.storage!.deleteObject(filePath)
+      console.log('R2オブジェクトが正常に削除されました:', filePath)
     } catch (error) {
       const errorDetails = this.formatErrorDetails(error)
-      const errAny = error as any // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (
-        errAny.code === 404 ||
-        (errorDetails.originalError as any)?.code === 404 || // eslint-disable-line @typescript-eslint/no-explicit-any
-        String(errorDetails.message).includes('No such object')
-      ) {
-        console.warn(`GCSオブジェクトが見つからなかったため、削除をスキップしました: ${filePath}`)
-        return
-      }
-      throw new SystemError('GCSからのファイル削除中にエラーが発生しました (imgUrl指定)。', {
+      throw new SystemError('R2からのファイル削除中にエラーが発生しました (imgUrl指定)。', {
         statusCode: ERROR_STATUS_CODE.INTERNAL_SERVER_ERROR,
         severity: ERROR_SEVERITY.ERROR,
         callFunc: 'GoogleStorageService.deleteImage',
-        message: 'GCSからのファイル削除中にエラーが発生しました (imgUrl指定)。',
+        message: 'R2からのファイル削除中にエラーが発生しました (imgUrl指定)。',
         code: 'INTERNAL_SERVER_ERROR',
         title: 'ファイル削除失敗',
         details: { error: errorDetails, imgUrl, filePath },
@@ -804,7 +770,7 @@ class GoogleStorageService {
   }
 
   /**
-   * GCS内のファイルパスを指定してオブジェクトを直接削除するプライベートメソッド
+   * R2オブジェクトキーを指定して直接削除するプライベートメソッド
    * 主にロールバック処理で使用。404エラーは警告ログのみとし、エラーをスローしない。
    */
   private async deleteObjectByPath(filePath: string): Promise<void> {
@@ -813,16 +779,14 @@ class GoogleStorageService {
       return
     }
     this.initializeIfNeeded()
-    console.log('GCSオブジェクトを削除します (filePath指定):', filePath)
+    console.log('R2オブジェクトを削除します (filePath指定):', filePath)
     try {
-      const bucket = this.storage!.bucket(this.bucketName!)
-      const file = bucket.file(filePath)
-      await file.delete()
-      console.log('GCSオブジェクトが正常に削除されました:', filePath)
+      await this.storage!.deleteObject(filePath)
+      console.log('R2オブジェクトが正常に削除されました:', filePath)
     } catch (originalError) {
       // 404以外のエラーはロールバック処理のコンテキストではログ出力に留める
       console.error(
-        `GCSオブジェクトの削除に失敗しました (filePath指定): ${filePath}`,
+        `R2オブジェクトの削除に失敗しました (filePath指定): ${filePath}`,
         this.formatErrorDetails(originalError)
       )
     }
@@ -846,7 +810,7 @@ class GoogleStorageService {
       originalPath = decodeURIComponent(this.extractFilePath(imgUrl))
 
       // サムネイルのパスを推測
-      // GCSのパス構造 'salonId/directory/original/...' から 'salonId/directory/thumbnail/...' へ
+      // キー構造 'directory/original/orgId/...' から 'directory/thumbnail/orgId/...' へ
       if (originalPath.includes('/original/')) {
         thumbnailPath = originalPath.replace('/original/', '/thumbnail/')
       } else {
@@ -898,12 +862,12 @@ class GoogleStorageService {
   }
 
   /**
-   * GCSへの直接アップロード用の署名付きURLを生成する
+   * R2への直接アップロード用の署名付きURLを生成する
    * @param fileName - アップロードするファイル名
    * @param contentType - ファイルのMIMEタイプ
    * @param orgId - 組織ID
    * @param directory - 保存先ディレクトリ
-   * @returns 署名付きURLとGCS内のファイルパス
+   * @returns 署名付きURLとR2内のオブジェクトキー
    * @throws SystemError URL生成に失敗した場合
    */
   async getSignedUploadUrl(
@@ -912,7 +876,7 @@ class GoogleStorageService {
     orgId: Id<'organization'>,
     directory: string
   ): Promise<{ url: string; filePath: string }> {
-    console.log('[GCS] 署名付きURL生成開始:', {
+    console.log('[R2] 署名付きURL生成開始:', {
       fileName,
       contentType,
       orgId,
@@ -921,42 +885,32 @@ class GoogleStorageService {
 
     try {
       this.initializeIfNeeded()
-      console.log('[GCS] クライアント初期化完了')
+      console.log('[R2] クライアント初期化完了')
 
-      // ここでSDKを直接使って署名付きURLを発行
-      const bucket = this.storage!.bucket(this.bucketName!)
       const filePath = `${directory}/${orgId}/${fileName}`
 
-      console.log('[GCS] 署名付きURL生成パラメータ:', {
+      console.log('[R2] 署名付きURL生成パラメータ:', {
         bucketName: this.bucketName,
         filePath,
         contentType,
       })
 
-      // 署名付きURL生成オプションを詳細に設定
-      const options = {
-        action: 'write' as const,
-        expires: Date.now() + 30 * 60 * 1000, // 30分有効
+      const url = this.storage!.createPresignedUrl('PUT', filePath, {
         contentType,
-        version: 'v4' as const,
-      }
+        expiresIn: 30 * 60,
+      })
 
-      console.log('[GCS] 署名付きURL生成オプション:', options)
-
-      const [url] = await bucket.file(filePath).getSignedUrl(options)
-
-      console.log('[GCS] 署名付きURL生成成功:', {
+      console.log('[R2] 署名付きURL生成成功:', {
         filePath,
-        urlPrefix: url.substring(0, 150) + '...',
         urlLength: url.length,
-        containsCredentials: url.includes('X-Goog-Credential'),
-        containsSignature: url.includes('X-Goog-Signature'),
+        containsCredentials: url.includes('X-Amz-Credential'),
+        containsSignature: url.includes('X-Amz-Signature'),
       })
 
       return { url, filePath }
     } catch (error) {
-      console.error('[GCS] 署名付きURL生成エラー:', error)
-      console.error('[GCS] エラー詳細:', {
+      console.error('[R2] 署名付きURL生成エラー:', error)
+      console.error('[R2] エラー詳細:', {
         errorName: error instanceof Error ? error.name : 'Unknown',
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         errorStack: error instanceof Error ? error.stack : 'No stack',
@@ -986,8 +940,8 @@ class GoogleStorageService {
    */
 
   /**
-   * GCS URLをCDN URLに変換する
-   * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
+   * 画像URLをR2 custom domain URLに変換する
+   * @param gcsUrl - GCSまたはR2の直接URL
    * @returns CDN経由のURL
    */
   getCdnUrl(gcsUrl: string | null | undefined): string {
@@ -997,31 +951,34 @@ class GoogleStorageService {
     // 環境変数からCDNのベースURLを取得
     const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN')
 
-    // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
+    // CDNが設定されていない場合は元URLをそのまま返す
     if (!cdnBaseUrl) {
       return gcsUrl
     }
 
     try {
-      // GCS URLをパース
       const url = new URL(gcsUrl)
+      const cdnUrl = new URL(cdnBaseUrl)
 
-      // storage.googleapis.com のURLでない場合はそのまま返す
-      if (url.hostname !== 'storage.googleapis.com') {
+      if (url.hostname === cdnUrl.hostname) {
         return gcsUrl
       }
 
-      // パスからバケット名を除去（最初のセグメントがバケット名）
       const pathSegments = url.pathname.split('/').filter((segment) => segment)
-      if (pathSegments.length < 2) {
-        return gcsUrl // 不正なパスの場合はそのまま返す
+      let objectKeySegments: string[]
+      if (url.hostname === 'storage.googleapis.com') {
+        objectKeySegments = pathSegments.slice(1)
+      } else if (url.hostname.endsWith('.r2.cloudflarestorage.com')) {
+        objectKeySegments = pathSegments[0] === this.bucketName ? pathSegments.slice(1) : pathSegments
+      } else {
+        return gcsUrl
       }
 
-      // バケット名を除いたパスを構築
-      const pathWithoutBucket = pathSegments.slice(1).join('/')
+      if (objectKeySegments.length === 0) {
+        return gcsUrl
+      }
 
-      // CDN URLを構築
-      return `${cdnBaseUrl}/${pathWithoutBucket}`
+      return `${cdnBaseUrl.replace(/\/+$/, '')}/${objectKeySegments.join('/')}`
     } catch (error) {
       console.warn('[CDN] URL変換エラー:', error, { gcsUrl })
       // エラーの場合は元のURLを返す
@@ -1086,36 +1043,9 @@ class GoogleStorageService {
     }
   }
 
-  /**
-   * CDN URLからGCS URLに逆変換する（デバッグ用）
-   * @param cdnUrl - CDN経由のURL
-   * @returns GCSの直接URL
-   */
-  getGcsUrlFromCdn(cdnUrl: string): string {
-    const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN')
-    const bucketName = this.bucketName
-
-    if (!cdnBaseUrl || !bucketName || !cdnUrl) {
-      return cdnUrl
-    }
-
-    try {
-      const url = new URL(cdnUrl)
-      const cdnUrlObj = new URL(cdnBaseUrl)
-
-      // CDN URLでない場合はそのまま返す
-      if (url.hostname !== cdnUrlObj.hostname) {
-        return cdnUrl
-      }
-
-      // パスを抽出してGCS URLを構築
-      const path = url.pathname
-      return `https://storage.googleapis.com/${bucketName}${path}`
-    } catch (error) {
-      console.warn('[CDN] 逆変換エラー:', error, { cdnUrl })
-      return cdnUrl
-    }
-  }
 }
 
-export const gcsService = new GoogleStorageService();
+export const storageService = new GoogleStorageService()
+
+/** @deprecated 新規コードでは storageService を使用すること。 */
+export const gcsService = storageService
