@@ -22,9 +22,8 @@ export default defineConfig({
 
       // Clerk認証設定
       CLERK_JWT_ISSUER_DOMAIN: 'https://distinct-muskox-3.clerk.accounts.dev',
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
-        'pk_test_ZGlzdGluY3QtbXVza294LTMuY2xlcmsuYWNjb3VudHMuZGV2JA',
-      CLERK_SECRET_KEY: 'sk_test_6HdomeRplYVEdqcQqCS8pwTrfv2S16asx1bpwwCgxs',
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test_mock',
+      CLERK_SECRET_KEY: 'sk_test_mock',
       CLERK_WEBHOOK_SECRET: 'whsec_test_mock',
       CLERK_WEBHOOK_SIGNING_SECRET: 'whsec_test_clerk_webhook',
       NEXT_PUBLIC_CLERK_SIGN_UP_URL: '/sign-up',
