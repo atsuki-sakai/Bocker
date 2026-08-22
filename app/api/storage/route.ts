@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
+import { storageService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { Id } from '@/convex/_generated/dataModel'
 import { ImageDirectory, ProcessedImageResult } from '@/services/gcp/cloud_storage/types'
 import { AspectType } from '@/convex/types';
@@ -176,7 +176,7 @@ export const POST = withAuth(async (request, auth) => {
     // 複数ファイルの処理
     if (files.length > 1) {
       const uploadPromises = files.map(async (file: UploadedFile) => {
-        return gcsService.uploadCompressedImageWithThumbnail(
+        return storageService.uploadCompressedImageWithThumbnail(
           file.buffer.toString('base64'), // 既存の関数はbase64を期待するため変換
           file.filename,
           directory as ImageDirectory,
@@ -209,7 +209,7 @@ export const POST = withAuth(async (request, auth) => {
         // 失敗があった場合、成功した画像を削除 (ロールバック)
         for (const uploaded of successfulUploads) {
           try {
-            await gcsService.deleteImageWithThumbnail(uploaded.originalUrl);
+            await storageService.deleteImageWithThumbnail(uploaded.originalUrl);
           } catch (deleteErr) {
             console.error(`Failed to delete image ${uploaded.originalUrl} during rollback:`, deleteErr);
           }
@@ -226,7 +226,7 @@ export const POST = withAuth(async (request, auth) => {
       // 単数ファイルの処理
       const file = files[0];
       
-      const result = await gcsService.uploadCompressedImageWithThumbnail(
+      const result = await storageService.uploadCompressedImageWithThumbnail(
         file.buffer.toString('base64'), // 既存の関数はbase64を期待するため変換
         file.filename,
         directory as ImageDirectory,
@@ -284,9 +284,9 @@ export const DELETE = withAuth(async (request, auth) => {
 
     const deletePromises = urlsToDelete.map(url => {
       if (withThumbnail) {
-        return gcsService.deleteImageWithThumbnail(url);
+        return storageService.deleteImageWithThumbnail(url);
       } else {
-        return gcsService.deleteImage(url);
+        return storageService.deleteImage(url);
       }
     });
 

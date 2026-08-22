@@ -2,51 +2,19 @@ import { AspectType } from "@/convex/types";
 import { ImageDirectory, ImageQuality } from "./types";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "@/convex/_generated/dataModel";
-import { STORAGE_URL } from "./constants";
 import { getEnv } from '@/lib/env-config'
 
-/**
- * GCS URLをCDN URLに変換する（クライアントサイド版）
- * @param gcsUrl - GCSの直接URL（例: https://storage.googleapis.com/bucket/path/to/image.webp）
- * @returns CDN経由のURL
- */
-function getCdnUrl(gcsUrl: string | null | undefined): string {
-  // 空文字列、null、undefinedの場合はそのまま返す
-  if (!gcsUrl) return ''
-
-  // 環境変数からCDNのベースURLを取得
+function getPublicUrlFromObjectKey(objectKey: string): string {
   const cdnBaseUrl = getEnv('NEXT_PUBLIC_CDN_DOMAIN')
-
-  // CDNが設定されていない場合はGCS URLをそのまま返す（フォールバック）
   if (!cdnBaseUrl) {
-    return gcsUrl
+    throw new Error('NEXT_PUBLIC_CDN_DOMAIN環境変数が設定されていません')
   }
 
-  try {
-    // GCS URLをパース
-    const url = new URL(gcsUrl)
-
-    // storage.googleapis.com のURLでない場合はそのまま返す
-    if (url.hostname !== 'storage.googleapis.com') {
-      return gcsUrl
-    }
-
-    // パスからバケット名を除去（最初のセグメントがバケット名）
-    const pathSegments = url.pathname.split('/').filter((segment) => segment)
-    if (pathSegments.length < 2) {
-      return gcsUrl // 不正なパスの場合はそのまま返す
-    }
-
-    // バケット名を除いたパスを構築
-    const pathWithoutBucket = pathSegments.slice(1).join('/')
-
-    // CDN URLを構築
-    return `${cdnBaseUrl}/${pathWithoutBucket}`
-  } catch (error) {
-    console.warn('[CDN] URL変換エラー:', error, { gcsUrl })
-    // エラーの場合は元のURLを返す
-    return gcsUrl
-  }
+  const encodedKey = objectKey
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+  return `${cdnBaseUrl.replace(/\/+$/, '')}/${encodedKey}`
 }
 
 export function isCdnEnabled(): boolean {
@@ -379,7 +347,7 @@ async function executeCanvasFallback(
  * @param directory ディレクトリ
  * @param aspectType アスペクト比の種類 (square, landscape, mobile)
  * @param quality 画像品質設定 ('low' | medium |  'high')
- * @returns オリジナル画像とサムネイル画像の公開URLとGCSパス
+ * @returns オリジナル画像とサムネイル画像の公開URLとR2オブジェクトキー
  */
 export async function uploadCompressedImageWithThumbnailSignedUrl(
   file: File,
@@ -480,7 +448,6 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
 
       try {
         console.log('[画像アップロード] PUTリクエスト開始:', {
-          url: url.substring(0, 100) + '...',
           method: options.method,
           headers: options.headers,
           bodySize: options.body instanceof Blob ? options.body.size : 'unknown',
@@ -498,7 +465,6 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
           error: error instanceof Error ? error.message : String(error),
           errorName: error instanceof Error ? error.name : 'unknown',
           errorStack: error instanceof Error ? error.stack : undefined,
-          url: url.substring(0, 100) + '...',
           method: options.method,
           headers: options.headers,
         })
@@ -509,7 +475,7 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
             '[画像アップロード] CORSエラーの可能性が高いです。ブラウザのネットワークタブで詳細を確認してください。'
           )
           throw new Error(
-            'CORSエラー: 画像アップロードがブロックされました。GCSのCORS設定を確認してください。'
+            'CORSエラー: 画像アップロードがブロックされました。R2のCORS設定を確認してください。'
           )
         }
 
@@ -602,25 +568,13 @@ export async function uploadCompressedImageWithThumbnailSignedUrl(
     // 並列アップロード実行
     await Promise.all(uploadPromises)
 
-    const bucket = getEnv('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME')
-
-    if (!bucket) {
-      console.error('[画像アップロード] バケット名が設定されていません')
-      throw new Error('NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME環境変数が設定されていません')
-    }
-
-    // GCS URLを構築
-    const originalGcsUrl = `${STORAGE_URL}/${bucket}/${originalFilePath}`
-    const thumbnailGcsUrl = `${STORAGE_URL}/${bucket}/${thumbFilePath}`
-
-    // CDN URLに変換（CDNが無効な場合はGCS URLがそのまま返される）
     const result = {
       original: {
-        publicUrl: getCdnUrl(originalGcsUrl),
+        publicUrl: getPublicUrlFromObjectKey(originalFilePath),
         filePath: originalFilePath,
       },
       thumbnail: {
-        publicUrl: getCdnUrl(thumbnailGcsUrl),
+        publicUrl: getPublicUrlFromObjectKey(thumbFilePath),
         filePath: thumbFilePath,
       },
     }

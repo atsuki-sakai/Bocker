@@ -2,7 +2,7 @@
 
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService';
+import { storageService } from '@/services/gcp/cloud_storage/GoogleStorageService';
 import { checkAuth } from '@/convex/utils/auth';
 import { imgDirectoryType, imageQualityType, aspectType } from '@/convex/types';
 import { ConvexError } from 'convex/values';
@@ -76,8 +76,8 @@ export const upload = action({
       });
     }
     try {
-    // GCSにアップロード - Fileオブジェクトを使わずに直接バッファを渡す
-    return await gcsService.uploadFileBuffer(
+    // R2にアップロード - Fileオブジェクトを使わずに直接バッファを渡す
+    return await storageService.uploadFileBuffer(
       binaryData,
       args.filePath,
       args.contentType,
@@ -133,7 +133,7 @@ export const uploadWithThumbnail = action({
     }
 
     try {
-      const result = await gcsService.uploadCompressedImageWithThumbnail(
+      const result = await storageService.uploadCompressedImageWithThumbnail(
         args.base64Data,
         args.fileName,
         args.directory,
@@ -172,7 +172,7 @@ export const kill = action({
       });
     }
     try {
-      await gcsService.deleteImage(args.originalUrl)
+      await storageService.deleteImage(args.originalUrl)
       return { success: true }
     } catch (error) {
       throw error
@@ -202,7 +202,7 @@ export const killWithThumbnail = action({
       });
     }
     try {
-      await gcsService.deleteImageWithThumbnail(args.originalUrl)
+      await storageService.deleteImageWithThumbnail(args.originalUrl)
       return { success: true }
     } catch (error) {
       throw error
@@ -312,7 +312,7 @@ export const bulkUploadWithThumbnails = action({
     // 同時実行数を抑えるため逐次処理
     for (const image of args.images) {
       try {
-        const uploaded = await gcsService.uploadCompressedImageWithThumbnail(
+        const uploaded = await storageService.uploadCompressedImageWithThumbnail(
           image.base64Data,
           image.fileName,
           image.directory,
@@ -336,7 +336,7 @@ export const bulkUploadWithThumbnails = action({
     if (failedUploadsInfo.length > 0) {
       for (const uploaded of successfulUploads) {
         try {
-          await gcsService.deleteImageWithThumbnail(uploaded.uploadedOriginalUrl);
+          await storageService.deleteImageWithThumbnail(uploaded.uploadedOriginalUrl);
         } catch (deleteErr) {
           console.error(`Rollback deletion failed for ${uploaded.uploadedOriginalUrl}:`, deleteErr);
         }

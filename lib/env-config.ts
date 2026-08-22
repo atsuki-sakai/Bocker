@@ -53,6 +53,12 @@ type EnvConfig = {
   NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME: string;
   NEXT_PUBLIC_CDN_DOMAIN: string;
 
+  // Cloudflare R2
+  CLOUDFLARE_R2_ACCOUNT_ID: string;
+  CLOUDFLARE_R2_ACCESS_KEY_ID: string;
+  CLOUDFLARE_R2_SECRET_ACCESS_KEY: string;
+  CLOUDFLARE_R2_BUCKET_NAME: string;
+
   // LINE
   COMPANY_LINE_CHANNEL_ACCESS_TOKEN: string;
   
@@ -151,6 +157,12 @@ class EnvConfigManager {
       NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME: process.env.NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME!,
       NEXT_PUBLIC_CDN_DOMAIN: process.env.NEXT_PUBLIC_CDN_DOMAIN!,
 
+      // Cloudflare R2
+      CLOUDFLARE_R2_ACCOUNT_ID: process.env.CLOUDFLARE_R2_ACCOUNT_ID!,
+      CLOUDFLARE_R2_ACCESS_KEY_ID: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID!,
+      CLOUDFLARE_R2_SECRET_ACCESS_KEY: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
+      CLOUDFLARE_R2_BUCKET_NAME: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
+
       // LINE
       COMPANY_LINE_CHANNEL_ACCESS_TOKEN: process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN!,
       
@@ -190,7 +202,8 @@ class EnvConfigManager {
   }
   
   has(key: keyof EnvConfig): boolean {
-    return this.config[key] !== undefined;
+    const value = this.config[key]
+    return typeof value === 'string' ? value.trim().length > 0 : value !== undefined
   }
   
   isDevelopment(): boolean {
@@ -220,6 +233,11 @@ class EnvConfigManager {
       'STRIPE_SECRET_KEY',
       'NEXT_PUBLIC_SUPABASE_URL',
       'SUPABASE_SERVICE_ROLE_KEY',
+      'CLOUDFLARE_R2_ACCOUNT_ID',
+      'CLOUDFLARE_R2_ACCESS_KEY_ID',
+      'CLOUDFLARE_R2_SECRET_ACCESS_KEY',
+      'CLOUDFLARE_R2_BUCKET_NAME',
+      'NEXT_PUBLIC_CDN_DOMAIN',
     ];
     
     const missing = requiredKeys.filter(key => !this.has(key));
@@ -243,4 +261,3 @@ export const isProduction = () => envConfig.isProduction();
 export const getAppUrl = () => envConfig.getAppUrl();
 
 export const validateEnv = () => envConfig.validateRequired();
-

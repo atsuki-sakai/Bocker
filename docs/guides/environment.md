@@ -108,13 +108,16 @@ NEXT_PUBLIC_SUPABASE_URL=https://[project-id].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ[...]
 SUPABASE_SERVICE_ROLE_KEY=eyJ[...]
 
-# GCP Cloud Storage（共通バケット、環境でパス分離）
-GCP_PROJECT=bocker-cloud-storage
-GCP_CLIENT_EMAIL=[service-account]@[project].iam.gserviceaccount.com
-GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n[...]\n-----END PRIVATE KEY-----\n"
-NEXT_PUBLIC_GCP_STORAGE_BUCKET_NAME=bocker-prod-images
+# Cloudflare R2（認証情報はサーバー環境だけに設定）
+CLOUDFLARE_R2_ACCOUNT_ID=[cloudflare-account-id]
+CLOUDFLARE_R2_ACCESS_KEY_ID=[bucket-scoped-access-key-id]
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=[bucket-scoped-secret-access-key]
+CLOUDFLARE_R2_BUCKET_NAME=bocker-images
 NEXT_PUBLIC_CDN_DOMAIN=https://cdn.bocker.jp
 ```
+
+R2の認証情報はVercelとConvexのサーバー環境に設定し、`NEXT_PUBLIC_` を付けないでください。
+旧GCSの環境変数は移行時の読み取り・ロールバック専用であり、新規画像の保存には使用しません。
 
 ## Webhook処理
 

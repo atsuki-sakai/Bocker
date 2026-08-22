@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { gcsService } from '@/services/gcp/cloud_storage/GoogleStorageService'
+import { storageService } from '@/services/gcp/cloud_storage/GoogleStorageService'
 import { Id } from '@/convex/_generated/dataModel'
 import { withAuthAndValidation } from '@/lib/api/middleware'
 import { signedUrlRequestSchema } from '@/lib/validations/api'
@@ -40,7 +40,7 @@ export const POST = withAuthAndValidation(
     // 署名付きURL発行処理
     console.log('[署名付きURL API] 署名付きURL生成開始')
     console.log('[署名付きURL API] 使用するContent-Type:', contentType)
-    const { url, filePath } = await gcsService.getSignedUploadUrl(fileName, contentType, orgId as Id<'organization'>, directory);
+    const { url, filePath } = await storageService.getSignedUploadUrl(fileName, contentType, orgId as Id<'organization'>, directory);
     
     console.log('[署名付きURL API] 署名付きURL生成成功:', {
       filePath,
