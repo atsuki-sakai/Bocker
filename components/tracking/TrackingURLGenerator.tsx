@@ -121,7 +121,7 @@ export function TrackingURLGenerator({
   return (
     <div className="space-y-6">
       {/* UTMパラメータ活用ガイド */}
-      <div className="p-4 border-l-4 border-l-blue-500 bg-blue-50/50 rounded-md">
+      <div className="p-4 border-l-4 border-l-info-foreground bg-info/60 rounded-md">
         <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
           📚 UTMパラメータ活用ガイド
         </h4>

@@ -1092,7 +1092,7 @@ export const Questionnaire = ({
                         form.getValues().stylingMethod.map((v: string) => (
                           <span
                             key={v}
-                            className="inline-block bg-slate-200 border border-slate-300 text-slate-700 rounded px-2 py-1 text-xs mr-1"
+                            className="inline-block bg-muted border border-border text-foreground rounded px-2 py-1 text-xs mr-1"
                           >
                             {v === 'dry'
                               ? 'ドライのみ'

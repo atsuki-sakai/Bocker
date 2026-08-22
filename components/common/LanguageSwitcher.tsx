@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { AppLocale } from '@/i18n/config'
+import { LOCALE_OPTIONS, type AppLocale } from '@/i18n/config'
 
 export function LanguageSwitcher() {
   const locale = useLocale()
@@ -17,25 +17,23 @@ export function LanguageSwitcher() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const locales = [
-    { value: 'ja', label: t('japanese'), flag: '🇯🇵' },
-    { value: 'en', label: t('english'), flag: '🇺🇸' },
-    { value: 'th', label: t('thai'), flag: '🇹🇭' },
-  ] satisfies ReadonlyArray<{ value: AppLocale; label: string; flag: string }>
-
   const handleLocaleChange = (newLocale: AppLocale) => {
     router.push(pathname, { locale: newLocale })
   }
 
-  const currentLocale = locales.find((l) => l.value === locale)
+  const currentLocale = LOCALE_OPTIONS.find((option) => option.value === locale)
 
   return (
     <Select
       data-testid="language-switch"
+      name="locale"
       value={locale}
       onValueChange={(value) => handleLocaleChange(value as AppLocale)}
     >
-      <SelectTrigger className="h-9 w-auto min-w-[132px] border-border/80 bg-card/90 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/60">
+      <SelectTrigger
+        aria-label={t('switchLanguage')}
+        className="h-9 w-auto min-w-[132px] border-border/80 bg-card/90 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/60"
+      >
         <div className="flex items-center gap-2">
           <SelectValue>
             <span className="flex items-center gap-1">
@@ -46,8 +44,12 @@ export function LanguageSwitcher() {
         </div>
       </SelectTrigger>
       <SelectContent>
-        {locales.map((loc) => (
-          <SelectItem key={loc.value} value={loc.value}>
+        {LOCALE_OPTIONS.map((loc) => (
+          <SelectItem
+            key={loc.value}
+            value={loc.value}
+            data-testid={`language-option-${loc.value}`}
+          >
             <div className="flex items-center gap-2">
               <span>{loc.flag}</span>
               <span>{loc.label}</span>

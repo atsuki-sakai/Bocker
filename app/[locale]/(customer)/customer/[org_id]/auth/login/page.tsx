@@ -420,7 +420,7 @@ export default function CustomerLoginPage({ params }: CustomerLoginPageProps) {
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-palette-1 to-palette-2 opacity-30"></div>
                   <div className="absolute bottom-0 left-0 right-0 py-1 text-center">
-                    <h1 className="text-xl font-bold text-primary-foreground text-shadow py-1 bg-black">
+                    <h1 className="text-xl font-bold text-primary-foreground text-shadow py-1 bg-primary">
                       {organization.org.org_name}
                     </h1>
                     <p className="text-sm text-foreground mt-1">{organization.config.address}</p>

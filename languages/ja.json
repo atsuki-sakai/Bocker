@@ -3408,6 +3408,7 @@
   "aboutPage": {
     "title": "Bockerについて",
     "subtitle": "美容サロンのDXを推進し、業界の未来を創造します",
+    "dashboardImageAlt": "Bockerの予約管理ダッシュボード",
     "mission": {
       "title": "ミッション & バリュー",
       "description": "私たちは、テクノロジーの力で美容サロン運営を革新し、サロンオーナー、スタッフ、お客様のすべてに価値を提供します。",

@@ -290,7 +290,7 @@ export default function ReservePage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex-col w-full h-full bg-gradient-to-b from-palette-1 to-palette-2 text-white flex items-center justify-center">
+                <div className="flex-col w-full h-full bg-gradient-to-b from-palette-1 to-palette-2 text-palette-1-foreground flex items-center justify-center">
                   <h1 className="text-2xl font-bold text-muted-foreground">
                     {organization.org.org_name}
                   </h1>

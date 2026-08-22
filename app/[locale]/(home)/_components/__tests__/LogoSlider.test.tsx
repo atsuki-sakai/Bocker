@@ -20,7 +20,7 @@ describe('LogoSlider', () => {
       render(<LogoSlider />)
 
       const container = document.querySelector('[data-testid="logo-slider"]')
-      expect(container).toHaveClass('bg-white')
+      expect(container).toHaveClass('bg-background')
     })
   })
 

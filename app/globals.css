@@ -6,7 +6,7 @@ body {
   font-family: var(--font-noto-sans-jp);
 }
 
-[lang='th-TH'] {
+[lang='th-TH'] body {
   font-family: var(--font-noto-sans-thai), var(--font-noto-sans-jp), sans-serif;
 }
 
@@ -42,11 +42,22 @@ body {
     --border: oklch(0.885 0.018 210);
     --input: oklch(0.91 0.018 210);
     --ring: oklch(0.52 0.1 190);
+    --overlay: oklch(0.12 0.025 215 / 55%);
     --chart-1: oklch(0.36 0.065 215);
     --chart-2: oklch(0.52 0.1 190);
     --chart-3: oklch(0.65 0.18 35);
     --chart-4: oklch(0.72 0.1 75);
     --chart-5: oklch(0.62 0.07 155);
+    --chart-6: oklch(0.56 0.11 245);
+    --chart-7: oklch(0.59 0.1 315);
+    --chart-8: oklch(0.62 0.13 50);
+    --chart-9: oklch(0.68 0.09 205);
+    --chart-10: oklch(0.6 0.08 125);
+    --chart-grid: oklch(0.885 0.018 210);
+    --chart-axis: oklch(0.5 0.035 215);
+    --chart-surface: oklch(1 0 0);
+    --chart-surface-foreground: oklch(0.25 0.04 215);
+    --chart-label: oklch(0.99 0.005 95);
     --palette-1: oklch(0.36 0.065 215);
     --palette-1-foreground: oklch(0.99 0.005 95);
     --palette-2: oklch(0.49 0.085 205);
@@ -110,11 +121,22 @@ body {
     --border: oklch(0.94 0.012 190 / 15%);
     --input: oklch(0.94 0.012 190 / 20%);
     --ring: oklch(0.68 0.1 190);
+    --overlay: oklch(0.08 0.02 215 / 68%);
     --chart-1: oklch(0.75 0.09 195);
     --chart-2: oklch(0.72 0.17 35);
     --chart-3: oklch(0.74 0.11 75);
     --chart-4: oklch(0.66 0.08 155);
     --chart-5: oklch(0.72 0.09 250);
+    --chart-6: oklch(0.72 0.1 225);
+    --chart-7: oklch(0.73 0.1 315);
+    --chart-8: oklch(0.74 0.13 50);
+    --chart-9: oklch(0.76 0.09 205);
+    --chart-10: oklch(0.72 0.08 125);
+    --chart-grid: oklch(0.94 0.012 190 / 18%);
+    --chart-axis: oklch(0.72 0.03 195);
+    --chart-surface: oklch(0.22 0.035 215);
+    --chart-surface-foreground: oklch(0.94 0.012 190);
+    --chart-label: oklch(0.99 0.005 95);
     --palette-1: oklch(0.35 0.06 215);
     --palette-1-foreground: oklch(0.94 0.012 190);
     --palette-2: oklch(0.43 0.075 205);

@@ -1090,7 +1090,7 @@ const CouponMenuViewInner = ({
                             </span>
                           )}
                           {selectedCoupon && !isMenuExcludedByCoupon(menu) && !isBlocked && (
-                            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                            <span className="bg-info text-info-foreground text-xs font-bold px-2 py-1 rounded-full">
                               適用対象
                             </span>
                           )}
@@ -1125,7 +1125,7 @@ const CouponMenuViewInner = ({
                       <CardContent className="p-2">
                         <div className="flex items-start gap-3">
                           {menu.images && menu.images.length > 0 && (
-                            <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                            <div className="relative h-28 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
                               <Image
                                 src={menu.images[0].thumbnail_url || ''}
                                 alt={menu.name || ''}
@@ -1146,7 +1146,7 @@ const CouponMenuViewInner = ({
                                 {convertPaymentMethod(menu.payment_method as PaymentMethod)}
                               </p>
                               {isSetMenu(menu) && (
-                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">
+                                <span className="text-xs px-2 py-0.5 bg-info text-info-foreground rounded-full">
                                   セット
                                 </span>
                               )}
@@ -1484,7 +1484,7 @@ const CouponMenuViewInner = ({
                                   {selectedCoupon &&
                                     !isMenuExcludedByCoupon(menu) &&
                                     !isBlocked && (
-                                      <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                      <span className="bg-success text-success-foreground text-xs font-bold px-2 py-1 rounded-full">
                                         適用対象
                                       </span>
                                     )}
@@ -1522,7 +1522,7 @@ const CouponMenuViewInner = ({
                                 <CardContent className="p-2">
                                   <div className="flex items-start gap-3">
                                     {menu.images && menu.images.length > 0 && (
-                                      <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                      <div className="relative h-28 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
                                         <Image
                                           src={menu.images[0].thumbnail_url || ''}
                                           alt={menu.name || ''}

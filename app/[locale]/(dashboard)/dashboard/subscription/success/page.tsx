@@ -34,7 +34,7 @@ export default function SuccessSubscriptionPage() {
         variants={containerVariants}
       >
         <Card className="border-0 shadow-lg overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-green-400 to-emerald-500"></div>
+          <div className="h-2 bg-gradient-to-r from-success-foreground to-chart-2"></div>
           <CardContent className="pt-10 pb-8 px-8">
             <motion.div className="text-center space-y-6" variants={containerVariants}>
               <motion.div className="inline-flex p-4 rounded-full bg-success-foreground">
@@ -58,7 +58,7 @@ export default function SuccessSubscriptionPage() {
               <motion.div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
                 <Button
                   asChild
-                  className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-600 hover:to-emerald-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <Link href={`/dashboard`}>
                     <span className="flex items-center">

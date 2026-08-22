@@ -13,6 +13,7 @@ import {
   Cell
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CHART_AXIS_COLOR, CHART_COLORS, CHART_GRID_COLOR } from '@/lib/chart-colors'
 import { BarChartDataPoint } from '@/services/supabase/repositories/analytics/types';
 
 interface BarChartProps {
@@ -95,21 +96,7 @@ export function BarChart({
   horizontal = false,
   maxBars = 10,
 }: BarChartProps) {
-  // デフォルトの色パレット（HEXカラー）
-  const defaultColors = [
-    '#3b82f6',
-    '#10b981',
-    '#f59e0b',
-    '#ef4444',
-    '#8b5cf6',
-    '#06b6d4',
-    '#84cc16',
-    '#f97316',
-    '#ec4899',
-    '#6366f1',
-  ]
-
-  const colors = barColors || defaultColors
+  const colors = barColors || CHART_COLORS
 
   // データを制限（必要に応じて）
   const limitedData = maxBars ? data.slice(0, maxBars) : data
@@ -165,23 +152,25 @@ export function BarChart({
               layout={horizontal ? 'vertical' : undefined}
               margin={margin}
             >
-              {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />}
+              {showGrid && (
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} opacity={0.7} />
+              )}
 
               {horizontal ? (
                 <>
                   <XAxis
                     type="number"
-                    tick={{ fontSize: 12, fill: '#374151' }}
-                    axisLine={{ stroke: '#d1d5db' }}
-                    tickLine={{ stroke: '#d1d5db' }}
+                    tick={{ fontSize: 12, fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
                     tickFormatter={(value) => `¥${value.toFixed(0)}`}
                   />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: '#374151' }}
-                    axisLine={{ stroke: '#d1d5db' }}
-                    tickLine={{ stroke: '#d1d5db' }}
+                    tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
                     width={120}
                     tickFormatter={(value: string) => {
                       // 長いメニュー名を省略
@@ -196,9 +185,9 @@ export function BarChart({
                 <>
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: '#374151' }}
-                    axisLine={{ stroke: '#d1d5db' }}
-                    tickLine={{ stroke: '#d1d5db' }}
+                    tick={{ fontSize: 11, fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
                     angle={limitedData.length > 5 ? -45 : 0}
                     textAnchor={limitedData.length > 5 ? 'end' : 'middle'}
                     height={limitedData.length > 5 ? 100 : 60}
@@ -212,9 +201,9 @@ export function BarChart({
                     }}
                   />
                   <YAxis
-                    tick={{ fontSize: 12, fill: '#374151' }}
-                    axisLine={{ stroke: '#d1d5db' }}
-                    tickLine={{ stroke: '#d1d5db' }}
+                    tick={{ fontSize: 12, fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
                     tickFormatter={(value) => `¥${value.toFixed(0)}`}
                   />
                 </>
@@ -236,7 +225,7 @@ export function BarChart({
                 <Legend
                   wrapperStyle={{
                     fontSize: '12px',
-                    color: 'hsl(var(--foreground))',
+                    color: 'var(--foreground)',
                   }}
                 />
               )}

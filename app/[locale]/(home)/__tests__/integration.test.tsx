@@ -145,10 +145,8 @@ describe('Landing Page Integration Tests', () => {
 
       // 料金プランのリストが存在することを確認
       const pricingSection = screen.getByTestId('pricing')
-      const pricingList = within(pricingSection).getAllByRole('plan')
-      pricingList.map((plan) => {
-        expect(plan).toBeInTheDocument()
-      })
+      const pricingList = pricingSection.querySelectorAll('[data-tier]')
+      expect(pricingList).toHaveLength(3)
     })
   })
 

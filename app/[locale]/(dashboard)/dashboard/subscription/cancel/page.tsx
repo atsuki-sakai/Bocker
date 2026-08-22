@@ -84,7 +84,7 @@ export default function CancelSubscriptionPage() {
                     <Separator />
 
                     <div className="flex flex-col sm:flex-row items-center gap-3 text-left">
-                      <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                      <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-info text-info-foreground">
                         <HelpCircle className="w-5 h-5" />
                       </div>
                       <div className="flex-1">

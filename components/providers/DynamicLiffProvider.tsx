@@ -132,14 +132,14 @@ export function DynamicLiffProvider({ children, tenantId, orgId }: DynamicLiffPr
   // エラー表示
   if (showError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
-          <h2 className="text-red-600 text-xl font-bold mb-4">エラーが発生しました</h2>
-          <p className="text-gray-700 mb-6">{errorMessage}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+        <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md max-w-md w-full">
+          <h2 className="text-destructive text-xl font-bold mb-4">エラーが発生しました</h2>
+          <p className="text-foreground mb-6">{errorMessage}</p>
           <div className="flex justify-center">
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               再読み込み
             </button>

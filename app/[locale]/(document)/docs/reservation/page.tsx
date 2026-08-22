@@ -150,7 +150,7 @@ export default function ReservationManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <Star className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               主要機能:

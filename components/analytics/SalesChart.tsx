@@ -23,13 +23,8 @@ import { ja } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CHART_COLORS, CHART_GRID_COLOR } from '@/lib/chart-colors'
 import { cn } from '@/lib/utils';
-
-// チャートで使用するカラーパレット
-const CHART_COLORS = [
-  '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1',
-  '#d084d0', '#ffb347', '#87ceeb', '#dda0dd', '#98fb98'
-];
 
 export interface ChartDataPoint {
   date?: string;
@@ -206,7 +201,7 @@ export function SalesChart({
       case 'area':
         return (
           <AreaChart {...commonProps}>
-            {gridLines && <CartesianGrid strokeDasharray="3 3" className="opacity-30" />}
+            {gridLines && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />}
             <XAxis 
               dataKey="date" 
               tickFormatter={dateFormatter}
@@ -244,7 +239,7 @@ export function SalesChart({
       case 'bar':
         return (
           <BarChart {...commonProps}>
-            {gridLines && <CartesianGrid strokeDasharray="3 3" className="opacity-30" />}
+            {gridLines && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />}
             <XAxis 
               dataKey="name" 
               className="text-xs text-muted-foreground"
@@ -265,7 +260,7 @@ export function SalesChart({
       case 'line':
         return (
           <LineChart {...commonProps}>
-            {gridLines && <CartesianGrid strokeDasharray="3 3" className="opacity-30" />}
+            {gridLines && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />}
             <XAxis 
               dataKey="date" 
               tickFormatter={dateFormatter}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { AboutPageClient } from './AboutPageClient'
 
 // vitest.setup.tsで設定済みのため削除
@@ -18,6 +18,7 @@ vi.mock('next-intl', () => ({
       'story.content.2.description': 'お客様のビジネス成功のために...',
       'story.content.3.title': '未来への展望',
       'story.content.3.description': '美容業界のデジタル変革を...',
+      dashboardImageAlt: 'Bockerの予約管理ダッシュボード',
     }
     return (key: string) => translations[key] || key
   }),
@@ -26,10 +27,6 @@ vi.mock('next-intl', () => ({
 // コンポーネントのモック
 vi.mock('../_components/CTASection', () => ({
   CTASection: () => <div data-testid="cta-section">CTA Section</div>,
-}))
-
-vi.mock('../_components/TeamSection', () => ({
-  TeamSection: () => <div data-testid="team-section">Team Section</div>,
 }))
 
 vi.mock('../_components/Header', () => ({
@@ -59,7 +56,6 @@ describe('AboutPageClient', () => {
     it('必要なセクションが表示される', () => {
       render(<AboutPageClient />)
       
-      expect(screen.getByTestId('team-section')).toBeInTheDocument()
       expect(screen.getByTestId('cta-section')).toBeInTheDocument()
     })
 
@@ -86,7 +82,9 @@ describe('AboutPageClient', () => {
     it('ダッシュボード画像が表示される', () => {
       render(<AboutPageClient />)
       
-      const dashboardImage = screen.getByTestId('next-image')
+      const dashboardImage = screen.getByRole('img', {
+        name: 'Bockerの予約管理ダッシュボード',
+      })
       expect(dashboardImage).toBeInTheDocument()
       expect(dashboardImage).toHaveAttribute('src', '/assets/mockup/pc/dashboard.png')
     })
@@ -94,8 +92,10 @@ describe('AboutPageClient', () => {
     it('画像にalt属性が設定されている', () => {
       render(<AboutPageClient />)
       
-      const dashboardImage = screen.getByTestId('next-image')
-      expect(dashboardImage).toHaveAttribute('alt')
+      const dashboardImage = screen.getByRole('img', {
+        name: 'Bockerの予約管理ダッシュボード',
+      })
+      expect(dashboardImage).toHaveAttribute('alt', 'Bockerの予約管理ダッシュボード')
     })
   })
 
@@ -120,8 +120,6 @@ describe('AboutPageClient', () => {
       expect(sectionOrder).toEqual([
         'header',
         'section',
-        'next-image',
-        'team-section', 
         'cta-section',
         'footer'
       ])
@@ -193,7 +191,7 @@ describe('AboutPageClient', () => {
     it('画像の遅延読み込みが設定されている', () => {
       render(<AboutPageClient />)
       
-      const image = screen.getByTestId('next-image')
+      const image = screen.getByRole('img', { name: 'Bockerの予約管理ダッシュボード' })
       // Next.js Imageコンポーネントはデフォルトで遅延読み込みが有効
       expect(image).toBeInTheDocument()
     })
@@ -207,18 +205,13 @@ describe('AboutPageClient', () => {
       expect(screen.getByTestId('header')).toBeInTheDocument()
       
       // メインコンテンツが表示される
-      expect(screen.getByText('missing.story.title')).toBeInTheDocument()
+      expect(screen.getByText('私たちのストーリー')).toBeInTheDocument()
       
       // 全ストーリーセクションが表示される
-      await waitFor(() => {
-        expect(screen.getByText('missing.story.content.0.title')).toBeInTheDocument()
-        expect(screen.getByText('missing.story.content.1.title')).toBeInTheDocument()
-        expect(screen.getByText('missing.story.content.2.title')).toBeInTheDocument()
-        expect(screen.getByText('missing.story.content.3.title')).toBeInTheDocument()
-      })
-      
-      // チームセクションが表示される
-      expect(screen.getByTestId('team-section')).toBeInTheDocument()
+      expect(screen.getByText('創業のきっかけ')).toBeInTheDocument()
+      expect(screen.getByText('技術への取り組み')).toBeInTheDocument()
+      expect(screen.getByText('お客様第一')).toBeInTheDocument()
+      expect(screen.getByText('未来への展望')).toBeInTheDocument()
       
       // CTAセクションが表示される
       expect(screen.getByTestId('cta-section')).toBeInTheDocument()

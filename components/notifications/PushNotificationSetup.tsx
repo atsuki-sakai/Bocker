@@ -163,9 +163,9 @@ export default function PushNotificationSetup({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {isEnabled ? (
-            <Bell className="h-5 w-5 text-green-600" />
+            <Bell className="h-5 w-5 text-success-foreground" />
           ) : (
-            <BellOff className="h-5 w-5 text-gray-400" />
+            <BellOff className="h-5 w-5 text-muted-foreground" />
           )}
           プッシュ通知設定
         </CardTitle>
@@ -175,8 +175,8 @@ export default function PushNotificationSetup({
       </CardHeader>
       <CardContent className="space-y-4">
         {permission === 'denied' && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-800">
+          <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+            <p className="text-sm text-destructive">
               通知がブロックされています。ブラウザの設定から許可してください。
             </p>
           </div>

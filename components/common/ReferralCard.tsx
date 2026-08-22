@@ -217,7 +217,7 @@ export default function ReferralCard() {
 
                   <Progress
                     value={calculateProgress()}
-                    className="h-2 data-[state=indeterminate]:bg-slate-300 bg-indigo-500"
+                    className="h-2 data-[state=indeterminate]:bg-muted bg-primary"
                   />
                 </div>
               </div>

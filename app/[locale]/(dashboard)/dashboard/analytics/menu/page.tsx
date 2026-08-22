@@ -77,6 +77,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CHART_COLORS } from '@/lib/chart-colors'
 
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { MenuSalesRepository } from '@/services/supabase/repositories/analytics'
@@ -787,7 +788,7 @@ function MenuAnalyticsPage() {
         {
           name: '平均以上',
           value: performanceAnalysis.performanceDistribution.high,
-          fill: '#10b981',
+          fill: 'var(--success-foreground)',
           percentage:
             (performanceAnalysis.performanceDistribution.high /
               (performanceAnalysis.performanceDistribution.high +
@@ -798,7 +799,7 @@ function MenuAnalyticsPage() {
         {
           name: '平均の50-100%',
           value: performanceAnalysis.performanceDistribution.medium,
-          fill: '#f59e0b',
+          fill: 'var(--warning-foreground)',
           percentage:
             (performanceAnalysis.performanceDistribution.medium /
               (performanceAnalysis.performanceDistribution.high +
@@ -809,7 +810,7 @@ function MenuAnalyticsPage() {
         {
           name: '平均の50%未満',
           value: performanceAnalysis.performanceDistribution.low,
-          fill: '#ef4444',
+          fill: 'var(--destructive)',
           percentage:
             (performanceAnalysis.performanceDistribution.low /
               (performanceAnalysis.performanceDistribution.high +
@@ -827,7 +828,7 @@ function MenuAnalyticsPage() {
       revenue: tier.totalAmount,
       bookings: tier.bookingCount,
       menuCount: tier.menuCount,
-      fill: ['#3b82f6', '#10b981', '#f59e0b'][index] || '#64748b',
+      fill: CHART_COLORS[index] || 'var(--chart-axis)',
     })) || []
 
   return (
@@ -967,11 +968,11 @@ function MenuAnalyticsPage() {
                               variant={index < 3 ? 'default' : 'secondary'}
                               className={`w-8 h-8 flex items-center justify-center rounded-full ${
                                 index === 0
-                                  ? 'bg-blue-600 text-blue-100'
+                                  ? 'bg-info text-info-foreground'
                                   : index === 1
-                                    ? 'bg-emerald-600 text-emerald-100'
+                                    ? 'bg-success text-success-foreground'
                                     : index === 2
-                                      ? 'bg-yellow-600 text-yellow-200'
+                                      ? 'bg-warning text-warning-foreground'
                                       : ''
                               }`}
                             >

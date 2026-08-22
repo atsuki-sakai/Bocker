@@ -602,7 +602,7 @@ export const MenuView = ({
                     <CardContent className="p-2">
                       <div className="flex items-start gap-3">
                         {menu.images && menu.images.length > 0 && (
-                          <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                          <div className="relative h-28 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
                             <Image
                               src={menu.images[0].thumbnail_url || ''}
                               alt={menu.name || ''}
@@ -1183,7 +1183,7 @@ export const MenuView = ({
                               <CardContent className="p-2">
                                 <div className="flex items-start gap-3">
                                   {menu.images && menu.images.length > 0 && (
-                                    <div className="relative h-28 w-20 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <div className="relative h-28 w-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
                                       <Image
                                         src={menu.images[0].thumbnail_url || ''}
                                         alt={menu.name || ''}

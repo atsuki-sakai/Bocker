@@ -225,33 +225,33 @@ export default function LineAuthCallbackPage() {
         <div className="text-center">
           {callbackState.status === 'loading' && (
             <>
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-green-600 mb-4" />
+              <Loader2 className="h-12 w-12 animate-spin mx-auto text-success-foreground mb-4" />
               <h1 className="text-xl font-semibold  mb-2">認証情報を確認中</h1>
-              <p className="text-gray-600">{callbackState.message}</p>
+              <p className="text-muted-foreground">{callbackState.message}</p>
             </>
           )}
 
           {callbackState.status === 'processing' && (
             <>
-              <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
+              <Loader2 className="h-12 w-12 animate-spin mx-auto text-info-foreground mb-4" />
               <h1 className="text-xl font-semibold  mb-2">ログイン処理中</h1>
-              <p className="text-gray-600">{callbackState.message}</p>
+              <p className="text-muted-foreground">{callbackState.message}</p>
             </>
           )}
 
           {callbackState.status === 'success' && (
             <>
-              <CheckCircle className="h-12 w-12 mx-auto text-green-600 mb-4" />
+              <CheckCircle className="h-12 w-12 mx-auto text-success-foreground mb-4" />
               <h1 className="text-xl font-semibold  mb-2">ログイン完了</h1>
-              <p className="text-gray-600 mb-4">{callbackState.message}</p>
+              <p className="text-muted-foreground mb-4">{callbackState.message}</p>
             </>
           )}
 
           {callbackState.status === 'error' && (
             <>
-              <AlertCircle className="h-12 w-12 mx-auto text-red-600 mb-4" />
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
               <h1 className="text-xl font-semibold  mb-2">ログインエラー</h1>
-              <p className="text-gray-600 mb-4">{callbackState.message}</p>
+              <p className="text-muted-foreground mb-4">{callbackState.message}</p>
 
               {process.env.NODE_ENV === 'development' && callbackState.error && (
                 <div className="rounded-lg p-3 mb-4 text-left">

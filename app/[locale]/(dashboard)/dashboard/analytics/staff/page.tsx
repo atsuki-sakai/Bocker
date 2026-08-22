@@ -716,7 +716,7 @@ function StaffAnalyticsPage() {
         {
           name: '平均以上',
           value: performanceComparison.performanceDistribution.high,
-          fill: '#10b981',
+          fill: 'var(--success-foreground)',
           percentage:
             (performanceComparison.performanceDistribution.high /
               (performanceComparison.performanceDistribution.high +
@@ -727,7 +727,7 @@ function StaffAnalyticsPage() {
         {
           name: '平均の50-100%',
           value: performanceComparison.performanceDistribution.medium,
-          fill: '#f59e0b',
+          fill: 'var(--warning-foreground)',
           percentage:
             (performanceComparison.performanceDistribution.medium /
               (performanceComparison.performanceDistribution.high +
@@ -738,7 +738,7 @@ function StaffAnalyticsPage() {
         {
           name: '平均の50%未満',
           value: performanceComparison.performanceDistribution.low,
-          fill: '#ef4444',
+          fill: 'var(--destructive)',
           percentage:
             (performanceComparison.performanceDistribution.low /
               (performanceComparison.performanceDistribution.high +
@@ -877,11 +877,11 @@ function StaffAnalyticsPage() {
                           variant={index < 3 ? 'default' : 'secondary'}
                           className={`w-8 h-8 flex items-center justify-center rounded-full ${
                             index === 0
-                              ? 'bg-blue-600 text-blue-100'
+                              ? 'bg-info text-info-foreground'
                               : index === 1
-                                ? 'bg-emerald-600 text-emerald-100'
+                                ? 'bg-success text-success-foreground'
                                 : index === 2
-                                  ? 'bg-yellow-600 text-yellow-200'
+                                  ? 'bg-warning text-warning-foreground'
                                   : ''
                           }`}
                         >

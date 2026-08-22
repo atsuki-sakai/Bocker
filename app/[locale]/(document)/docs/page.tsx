@@ -197,7 +197,7 @@ export default function DocsHomePage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <Star className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               初期設定完了後は、予約管理・顧客管理の順で進めることを推奨します。

@@ -1853,7 +1853,7 @@ export default function CalendarPage() {
                       <strong>電話:</strong>{' '}
                       <a
                         href={`tel:${organizationComplete.config?.phone}`}
-                        className="hover:underline text-blue-500"
+                        className="hover:underline text-link-foreground"
                       >
                         {organizationComplete.config?.phone}
                       </a>
@@ -1862,7 +1862,7 @@ export default function CalendarPage() {
                       <strong>メール:</strong>{' '}
                       <a
                         href={`mailto:${organizationComplete.organization.org_email}`}
-                        className="hover:underline text-blue-500"
+                        className="hover:underline text-link-foreground"
                       >
                         {organizationComplete.organization.org_email}
                       </a>

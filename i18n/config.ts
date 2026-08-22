@@ -13,6 +13,12 @@ export const LOCALE_METADATA: Record<
   th: { htmlLang: 'th-TH', openGraphLocale: 'th_TH', speechRecognitionLang: 'th-TH' },
 }
 
+export const LOCALE_OPTIONS = [
+  { value: 'ja', label: '日本語', flag: '🇯🇵' },
+  { value: 'en', label: 'English', flag: '🇺🇸' },
+  { value: 'th', label: 'ไทย', flag: '🇹🇭' },
+] as const satisfies ReadonlyArray<{ value: AppLocale; label: string; flag: string }>
+
 export function isAppLocale(locale: string): locale is AppLocale {
   return SUPPORTED_LOCALES.includes(locale as AppLocale)
 }
