@@ -4,8 +4,10 @@ import { render } from '@react-email/render'
 import ReservationReminderEmail from '@/components/emails/ReservationReminderEmail'
 import React from 'react'
 import { getEnv } from '@/lib/env-config'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import {
+  formatReservationDateInJapan,
+  formatReservationTimeInJapan,
+} from '@/lib/reservationDateTime'
 
 const resend = new Resend(getEnv('RESEND_API_KEY'))
 
@@ -91,11 +93,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 日時のフォーマット
-    const startDate = new Date(reservationData.start_time_unix)
-    const endDate = new Date(reservationData.end_time_unix)
-    const reservationDate = format(startDate, 'yyyy年MM月dd日', { locale: ja })
-    const startTime = format(startDate, 'HH:mm')
-    const endTime = format(endDate, 'HH:mm')
+    const reservationDate = formatReservationDateInJapan(reservationData.start_time_unix)
+    const startTime = formatReservationTimeInJapan(reservationData.start_time_unix)
+    const endTime = formatReservationTimeInJapan(reservationData.end_time_unix)
 
     // メールプロパティの準備
     const emailProps = {

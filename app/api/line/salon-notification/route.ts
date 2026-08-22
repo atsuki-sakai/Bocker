@@ -2,42 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import type { Id } from '@/convex/_generated/dataModel'
-import { LineService } from '@/services/line/LineService'
 import { createSalonReservationNotification } from '@/services/line/message_template/salon_reservation_notification'
+import { sendLineFlexMessageOrThrow } from '@/services/line/sendLineFlexMessageOrThrow'
 
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, organizationId, reservationId, paymentMethod } = await request.json()
+    const { tenantId, organizationId, reservationId } = await request.json()
 
-    if (!tenantId || !organizationId || !reservationId || !paymentMethod) {
+    if (!tenantId || !organizationId || !reservationId) {
       return NextResponse.json(
-        { error: 'organizationId, reservationId, paymentMethod are required' },
+        { error: 'tenantId, organizationId and reservationId are required' },
         { status: 400 }
       )
     }
 
-    // 環境変数から弊社のLINEチャンネル情報を取得
-    const companyLineAccessToken = process.env.COMPANY_LINE_CHANNEL_ACCESS_TOKEN
-    
-    // デバッグ用ログ（本番環境では削除）
-    console.log('Environment check:', {
-      hasToken: !!companyLineAccessToken,
-      tokenLength: companyLineAccessToken?.length || 0,
-      tokenPrefix: companyLineAccessToken?.substring(0, 10) + '...',
-      nodeEnv: process.env.NODE_ENV
-    })
-
-    // 弊社のLINEチャンネル情報を確認
-    if (!companyLineAccessToken) {
-      console.error('弊社LINEチャンネルのアクセストークンが設定されていません')
-      return NextResponse.json(
-        { error: 'Company LINE channel access token not configured' },
-        { status: 500 }
-      )
-    }
-
-    // 組織情報とAPIコンフィグを取得
-    const [organization, apiConfig] = await Promise.all([
+    // 組織情報・APIコンフィグ・予約情報を取得
+    const [organization, apiConfig, reservationWithDetail] = await Promise.all([
       fetchQuery(api.organization.query.findByOrgId, {
         org_id: organizationId as Id<'organization'>,
       }),
@@ -45,9 +25,12 @@ export async function POST(request: NextRequest) {
         tenant_id: tenantId as Id<'tenant'>,
         org_id: organizationId as Id<'organization'>,
       }),
+      fetchQuery(api.reservation.query.getWithDetailById, {
+        id: reservationId as Id<'reservation'>,
+      }),
     ])
 
-    if (!organization) {
+    if (!organization || organization.tenant_id !== tenantId) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
@@ -55,11 +38,6 @@ export async function POST(request: NextRequest) {
       console.log(`組織 ${organization.org_name} にはorg_line_idが設定されていません`)
       return NextResponse.json({ success: true, message: 'No salon LINE ID configured' })
     }
-
-    // 予約情報を取得
-    const reservationWithDetail = await fetchQuery(api.reservation.query.getWithDetailById, {
-      id: reservationId as Id<'reservation'>,
-    })
 
     if (!reservationWithDetail) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
@@ -69,6 +47,24 @@ export async function POST(request: NextRequest) {
 
     if (!reservation || !reservationDetail) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
+
+    if (reservation.tenant_id !== tenantId || reservation.org_id !== organizationId) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 })
+    }
+
+    if (!apiConfig.line_access_token) {
+      console.error(`組織 ${organization.org_name} のLINEアクセストークンが設定されていません`)
+      return NextResponse.json(
+        { error: 'Tenant LINE channel access token not configured' },
+        { status: 500 }
+      )
+    }
+
+    const paymentMethod = reservationDetail.payment_method
+
+    if (paymentMethod !== 'cash' && paymentMethod !== 'credit_card') {
+      return NextResponse.json({ error: 'Invalid reservation payment method' }, { status: 500 })
     }
 
     // 顧客情報を取得（可能な場合）
@@ -93,7 +89,9 @@ export async function POST(request: NextRequest) {
       reservation: {
         _id: reservation._id,
         customer_name: reservation.customer_name,
-        staff_name: reservation.is_free_nomination ? '指名フリー' + ('自動割り当て'　+ reservation.staff_name || reservation.assigned_staff_name || '不明') : reservation.staff_name || '不明',
+        staff_name: reservation.is_free_nomination
+          ? reservation.assigned_staff_name || reservation.staff_name || '指名フリー'
+          : reservation.staff_name || '不明',
         date: reservation.date,
         start_time_unix: reservation.start_time_unix,
         end_time_unix: reservation.end_time_unix,
@@ -111,27 +109,18 @@ export async function POST(request: NextRequest) {
         use_points: reservationDetail.use_points,
       },
       customer: customer || {},
-      paymentMethod: paymentMethod as 'cash' | 'credit_card',
+      paymentMethod,
     })
 
     // LINEメッセージを送信
-    const lineService = new LineService()
-    const result = await lineService.sendFlexMessage(
-      apiConfig.org_line_id,
-      [salonFlexMessage],
-      companyLineAccessToken
-    )
+    await sendLineFlexMessageOrThrow({
+      lineId: apiConfig.org_line_id,
+      messages: [salonFlexMessage],
+      accessToken: apiConfig.line_access_token,
+    })
 
-    if (result.success) {
-      console.log(`サロン通知送信成功: ${organization.org_name} (${apiConfig.org_line_id})`)
-      return NextResponse.json({ success: true, message: 'Salon notification sent successfully' })
-    } else {
-      console.error(`サロン通知送信失敗: ${organization.org_name}`, result.message)
-      return NextResponse.json(
-        { error: 'Failed to send salon notification', details: result.message },
-        { status: 500 }
-      )
-    }
+    console.log(`サロン通知送信成功: ${organization.org_name} (${apiConfig.org_line_id})`)
+    return NextResponse.json({ success: true, message: 'Salon notification sent successfully' })
   } catch (error) {
     console.error('サロン通知API処理エラー:', error)
     return NextResponse.json(
