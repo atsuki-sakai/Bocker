@@ -8,20 +8,20 @@
 
 ### 環境URL
 
-| 環境 | URL | 用途 |
-|------|-----|------|
-| **本番環境** | https://bocker.jp | 実際のサービス提供 |
-| **開発環境** | https://bocker-project.vercel.app | 開発・テスト用 |
+| 環境         | URL                               | 用途               |
+| ------------ | --------------------------------- | ------------------ |
+| **本番環境** | https://bocker.jp                 | 実際のサービス提供 |
+| **開発環境** | https://bocker-project.vercel.app | 開発・テスト用     |
 
 ### 利用サービスと環境別設定
 
-| サービス | 開発環境 | 本番環境 | 用途 |
-|----------|----------|----------|------|
-| **GCP** | Cloud Storage, CDN | 同左 | 画像保存・配信 |
-| **Supabase** | DEV_Bocker | Bocker | 分析/履歴 DB |
-| **Convex** | Development | Production | リアルタイムDB |
-| **Clerk** | clerk:dev | clerk:prod | 認証 |
-| **Stripe** | stripe:dev | stripe:prod | 決済 |
+| サービス     | 開発環境           | 本番環境    | 用途           |
+| ------------ | ------------------ | ----------- | -------------- |
+| **GCP**      | Cloud Storage, CDN | 同左        | 画像保存・配信 |
+| **Supabase** | DEV_Bocker         | Bocker      | 分析/履歴 DB   |
+| **Convex**   | Development        | Production  | リアルタイムDB |
+| **Clerk**    | clerk:dev          | clerk:prod  | 認証           |
+| **Stripe**   | stripe:dev         | stripe:prod | 決済           |
 
 ## 環境変数設定
 
@@ -29,7 +29,10 @@
 
 - 使うのは `.env.local` のみ
 - ひな形は `.env.example` をコピーして作成
+- Vercel の Development 設定を利用する場合は `pnpm env:login` 後に `pnpm env:dev` を実行
+- 設定確認は `pnpm env:validate` を実行（`pnpm dev` の開始前にも自動実行）
 - 変更反映には `pnpm dev` の再起動が必要
+- Sentry は Vercel Production のみ自動送信し、Development / Preview では無効
 
 ### 本番の管理
 
@@ -120,20 +123,22 @@ NEXT_PUBLIC_CDN_DOMAIN=https://cdn.bocker.jp
 
 ### Webhook エンドポイント
 
-| サービス | エンドポイント | 処理内容 |
-|----------|----------------|----------|
-| **Stripe Checkout** | `/api/webhook/stripe/checkout` | 決済完了処理 |
+| サービス                | エンドポイント                     | 処理内容               |
+| ----------------------- | ---------------------------------- | ---------------------- |
+| **Stripe Checkout**     | `/api/webhook/stripe/checkout`     | 決済完了処理           |
 | **Stripe Subscription** | `/api/webhook/stripe/subscription` | サブスクリプション更新 |
-| **Stripe Connect** | `/api/webhook/stripe/connect` | Connect アカウント管理 |
-| **Clerk** | `/api/webhook/clerk` | ユーザー・組織管理 |
+| **Stripe Connect**      | `/api/webhook/stripe/connect`      | Connect アカウント管理 |
+| **Clerk**               | `/api/webhook/clerk`               | ユーザー・組織管理     |
 
 ### Webhook実装の特徴
 
 1. **環境変数による設定管理**
+
    - `lib/env-config.ts` で一元管理
    - 環境ごとに異なるWebhook署名シークレット
 
 2. **エラーハンドリング**
+
    - 署名検証の実装
    - べき等性の保証
    - リトライロジック
@@ -148,7 +153,7 @@ NEXT_PUBLIC_CDN_DOMAIN=https://cdn.bocker.jp
 
 ```typescript
 // 環境に応じたURLを自動取得
-const appUrl = getAppUrl(); // development: develop_url, production: deploy_url
+const appUrl = getAppUrl() // development: develop_url, production: deploy_url
 
 // 環境判定
 if (isDevelopment()) {
@@ -184,10 +189,7 @@ if (isDevelopment()) {
 
 ```bash
 # 必須環境変数のチェック
-pnpm run check:env
-
-# または手動で確認
-node -e "require('./lib/env-config').validateEnv()"
+pnpm env:validate
 ```
 
 ### 2. MCPツールでの確認
@@ -236,11 +238,13 @@ curl https://bocker.jp/api/webhook/stripe/checkout
 ## セキュリティ上の注意事項
 
 1. **環境変数の管理**
+
    - 本番環境のシークレットキーは絶対にコミットしない
    - `.env.local` は `.gitignore` に含める
    - Vercelのダッシュボードから本番環境変数を設定
 
 2. **Webhook署名の検証**
+
    - 全てのWebhookで署名検証を必須化
    - 署名シークレットは定期的に更新
 
