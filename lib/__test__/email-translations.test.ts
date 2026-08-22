@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SupportedLocale } from '../dateLocale'
 
 // Mock language files with proper module structure - must be at top level
-vi.mock('@/languages/ja.json', () => ({ 
+vi.mock('@/languages/ja.json', () => ({
   default: {
     emails: {
       customerRegistration: {
@@ -21,11 +21,11 @@ vi.mock('@/languages/ja.json', () => ({
         subject: '【テスト】パスワードリセット',
         greeting: 'こんにちは',
       },
-    }
-  }
+    },
+  },
 }))
 
-vi.mock('@/languages/en.json', () => ({ 
+vi.mock('@/languages/en.json', () => ({
   default: {
     emails: {
       customerRegistration: {
@@ -44,11 +44,11 @@ vi.mock('@/languages/en.json', () => ({
         subject: '[Test] Password Reset',
         greeting: 'Hello',
       },
-    }
-  }
+    },
+  },
 }))
 
-vi.mock('@/languages/fr.json', () => ({ 
+vi.mock('@/languages/fr.json', () => ({
   default: {
     emails: {
       customerRegistration: {
@@ -67,11 +67,11 @@ vi.mock('@/languages/fr.json', () => ({
         subject: '[Test] Réinitialisation du mot de passe',
         greeting: 'Bonjour',
       },
-    }
-  }
+    },
+  },
 }))
 
-vi.mock('@/languages/ko.json', () => ({ 
+vi.mock('@/languages/ko.json', () => ({
   default: {
     emails: {
       customerRegistration: {
@@ -90,11 +90,11 @@ vi.mock('@/languages/ko.json', () => ({
         subject: '[테스트] 비밀번호 재설정',
         greeting: '안녕하세요',
       },
-    }
-  }
+    },
+  },
 }))
 
-vi.mock('@/languages/zh.json', () => ({ 
+vi.mock('@/languages/zh.json', () => ({
   default: {
     emails: {
       customerRegistration: {
@@ -113,8 +113,31 @@ vi.mock('@/languages/zh.json', () => ({
         subject: '[测试] 密码重置',
         greeting: '您好',
       },
-    }
-  }
+    },
+  },
+}))
+
+vi.mock('@/languages/th.json', () => ({
+  default: {
+    emails: {
+      customerRegistration: {
+        subject: '[ทดสอบ] ลงทะเบียนสำเร็จ',
+        greeting: 'สวัสดี',
+      },
+      reservationConfirmation: {
+        subject: '[ทดสอบ] ยืนยันการจอง',
+        greeting: 'ขอบคุณ',
+      },
+      passwordChanged: {
+        subject: '[ทดสอบ] เปลี่ยนรหัสผ่านแล้ว',
+        greeting: 'สวัสดี',
+      },
+      passwordReset: {
+        subject: '[ทดสอบ] รีเซ็ตรหัสผ่าน',
+        greeting: 'สวัสดี',
+      },
+    },
+  },
 }))
 
 // Import after mocks are defined
@@ -139,7 +162,7 @@ const mockJaTranslations = {
       subject: '【テスト】パスワードリセット',
       greeting: 'こんにちは',
     },
-  }
+  },
 }
 
 const mockEnTranslations = {
@@ -160,7 +183,7 @@ const mockEnTranslations = {
       subject: '[Test] Password Reset',
       greeting: 'Hello',
     },
-  }
+  },
 }
 
 const mockFrTranslations = {
@@ -181,7 +204,7 @@ const mockFrTranslations = {
       subject: '[Test] Réinitialisation du mot de passe',
       greeting: 'Bonjour',
     },
-  }
+  },
 }
 
 const mockKoTranslations = {
@@ -202,7 +225,7 @@ const mockKoTranslations = {
       subject: '[테스트] 비밀번호 재설정',
       greeting: '안녕하세요',
     },
-  }
+  },
 }
 
 const mockZhTranslations = {
@@ -223,7 +246,28 @@ const mockZhTranslations = {
       subject: '[测试] 密码重置',
       greeting: '您好',
     },
-  }
+  },
+}
+
+const mockThTranslations = {
+  emails: {
+    customerRegistration: {
+      subject: '[ทดสอบ] ลงทะเบียนสำเร็จ',
+      greeting: 'สวัสดี',
+    },
+    reservationConfirmation: {
+      subject: '[ทดสอบ] ยืนยันการจอง',
+      greeting: 'ขอบคุณ',
+    },
+    passwordChanged: {
+      subject: '[ทดสอบ] เปลี่ยนรหัสผ่านแล้ว',
+      greeting: 'สวัสดี',
+    },
+    passwordReset: {
+      subject: '[ทดสอบ] รีเซ็ตรหัสผ่าน',
+      greeting: 'สวัสดี',
+    },
+  },
 }
 
 describe('email-translations ライブラリ', () => {
@@ -255,6 +299,11 @@ describe('email-translations ライブラリ', () => {
     it('中国語のメール翻訳を取得する', () => {
       const translations = getEmailTranslations('zh')
       expect(translations).toEqual(mockZhTranslations.emails)
+    })
+
+    it('タイ語のメール翻訳を取得する', () => {
+      const translations = getEmailTranslations('th')
+      expect(translations).toEqual(mockThTranslations.emails)
     })
 
     it('ロケール未指定時はデフォルトで日本語を返す', () => {
@@ -289,8 +338,13 @@ describe('email-translations ライブラリ', () => {
     })
 
     it('会員登録テンプレートの翻訳を取得する', () => {
-      const customerRegistrationTranslations = getEmailTemplateTranslations('customerRegistration', 'ja')
-      expect(customerRegistrationTranslations).toEqual(mockJaTranslations.emails.customerRegistration)
+      const customerRegistrationTranslations = getEmailTemplateTranslations(
+        'customerRegistration',
+        'ja'
+      )
+      expect(customerRegistrationTranslations).toEqual(
+        mockJaTranslations.emails.customerRegistration
+      )
     })
 
     it('ロケール未指定時はデフォルトで日本語を返す', () => {
@@ -325,17 +379,17 @@ describe('email-translations ライブラリ', () => {
 
   describe('多言語対応の整合性', () => {
     it('すべてのサポート言語で同じテンプレート構造を持つ', () => {
-      const supportedLocales: SupportedLocale[] = ['ja', 'en', 'fr', 'ko', 'zh']
-      
-      supportedLocales.forEach(locale => {
+      const supportedLocales: SupportedLocale[] = ['ja', 'en', 'th', 'fr', 'ko', 'zh']
+
+      supportedLocales.forEach((locale) => {
         const translations = getEmailTranslations(locale)
-        
+
         // 必須テンプレートの存在確認
         expect(translations.reservationConfirmation).toBeDefined()
         expect(translations.customerRegistration).toBeDefined()
         expect(translations.passwordChanged).toBeDefined()
         expect(translations.passwordReset).toBeDefined()
-        
+
         // 各テンプレートの必須フィールド確認
         expect(translations.reservationConfirmation.subject).toBeDefined()
         expect(translations.reservationConfirmation.greeting).toBeDefined()
@@ -346,22 +400,27 @@ describe('email-translations ライブラリ', () => {
 
     it('テンプレートキーが全言語で一致している', () => {
       const baseKeys = Object.keys(getEmailTranslations('ja'))
-      const supportedLocales: SupportedLocale[] = ['en', 'fr', 'ko', 'zh']
-      
-      supportedLocales.forEach(locale => {
+      const supportedLocales: SupportedLocale[] = ['en', 'th', 'fr', 'ko', 'zh']
+
+      supportedLocales.forEach((locale) => {
         const localeKeys = Object.keys(getEmailTranslations(locale))
         expect(localeKeys).toEqual(baseKeys)
       })
     })
 
     it('各テンプレート内のフィールドキーが全言語で一致している', () => {
-      const supportedLocales: SupportedLocale[] = ['ja', 'en', 'fr', 'ko', 'zh']
-      const templateKeys = ['reservationConfirmation', 'customerRegistration', 'passwordChanged', 'passwordReset'] as const
-      
-      templateKeys.forEach(templateKey => {
+      const supportedLocales: SupportedLocale[] = ['ja', 'en', 'th', 'fr', 'ko', 'zh']
+      const templateKeys = [
+        'reservationConfirmation',
+        'customerRegistration',
+        'passwordChanged',
+        'passwordReset',
+      ] as const
+
+      templateKeys.forEach((templateKey) => {
         const baseFields = Object.keys(getEmailTemplateTranslations(templateKey, 'ja'))
-        
-        supportedLocales.slice(1).forEach(locale => {
+
+        supportedLocales.slice(1).forEach((locale) => {
           const localeFields = Object.keys(getEmailTemplateTranslations(templateKey, locale))
           expect(localeFields).toEqual(baseFields)
         })
@@ -381,11 +440,11 @@ describe('email-translations ライブラリ', () => {
 
     it('メール送信に必要な情報が含まれている', () => {
       const reservationEmail = getEmailTemplateTranslations('reservationConfirmation', 'ja')
-      
+
       // メール送信に必要な基本情報
       expect(reservationEmail.subject).toBeDefined()
       expect(reservationEmail.greeting).toBeDefined()
-      
+
       // 文字列として取得できる
       expect(typeof reservationEmail.subject).toBe('string')
       expect(typeof reservationEmail.greeting).toBe('string')

@@ -5,12 +5,14 @@ import type { Locale } from 'date-fns'
 // Mock date-fns locale imports
 const mockJaLocale = { code: 'ja' } as Locale
 const mockEnLocale = { code: 'en' } as Locale
+const mockThLocale = { code: 'th' } as Locale
 const mockFrLocale = { code: 'fr' } as Locale
 const mockZhLocale = { code: 'zh' } as Locale
 const mockKoLocale = { code: 'ko' } as Locale
 
 vi.mock('date-fns/locale/ja', () => ({ ja: mockJaLocale }))
 vi.mock('date-fns/locale/en-US', () => ({ enUS: mockEnLocale }))
+vi.mock('date-fns/locale/th', () => ({ th: mockThLocale }))
 vi.mock('date-fns/locale/fr', () => ({ fr: mockFrLocale }))
 vi.mock('date-fns/locale/zh-CN', () => ({ zhCN: mockZhLocale }))
 vi.mock('date-fns/locale/ko', () => ({ ko: mockKoLocale }))
@@ -29,6 +31,11 @@ describe('dateLocale ライブラリ', () => {
     it('英語ロケールを正しく取得する', async () => {
       const locale = await getDateFnsLocale('en')
       expect(locale).toBe(mockEnLocale)
+    })
+
+    it('タイ語ロケールを正しく取得する', async () => {
+      const locale = await getDateFnsLocale('th')
+      expect(locale).toBe(mockThLocale)
     })
 
     it('フランス語ロケールを正しく取得する', async () => {
@@ -51,7 +58,7 @@ describe('dateLocale ライブラリ', () => {
       const locale1 = await getDateFnsLocale('ja')
       // 2回目の呼び出し（キャッシュされているはず）
       const locale2 = await getDateFnsLocale('ja')
-      
+
       expect(locale1).toBe(mockJaLocale)
       expect(locale2).toBe(mockJaLocale)
       expect(locale1).toBe(locale2) // 同じインスタンス
@@ -60,7 +67,7 @@ describe('dateLocale ライブラリ', () => {
     it('異なるロケールのキャッシュが独立している', async () => {
       const jaLocale = await getDateFnsLocale('ja')
       const enLocale = await getDateFnsLocale('en')
-      
+
       expect(jaLocale).toBe(mockJaLocale)
       expect(enLocale).toBe(mockEnLocale)
       expect(jaLocale).not.toBe(enLocale)
@@ -76,9 +83,9 @@ describe('dateLocale ライブラリ', () => {
       const results = await Promise.all([
         getDateFnsLocale('ja'),
         getDateFnsLocale('ja'),
-        getDateFnsLocale('ja')
+        getDateFnsLocale('ja'),
       ])
-      
+
       // すべて同じインスタンス
       expect(results[0]).toBe(mockJaLocale)
       expect(results[1]).toBe(mockJaLocale)
@@ -92,9 +99,9 @@ describe('dateLocale ライブラリ', () => {
       const [jaLocale, enLocale, frLocale] = await Promise.all([
         getDateFnsLocale('ja'),
         getDateFnsLocale('en'),
-        getDateFnsLocale('fr')
+        getDateFnsLocale('fr'),
       ])
-      
+
       expect(jaLocale).toBe(mockJaLocale)
       expect(enLocale).toBe(mockEnLocale)
       expect(frLocale).toBe(mockFrLocale)
@@ -103,10 +110,10 @@ describe('dateLocale ライブラリ', () => {
 
   describe('SupportedLocale 型', () => {
     it('サポートされているロケールコードが正しく定義されている', () => {
-      const supportedLocales: SupportedLocale[] = ['ja', 'en', 'fr', 'zh', 'ko']
-      
+      const supportedLocales: SupportedLocale[] = ['ja', 'en', 'th', 'fr', 'zh', 'ko']
+
       // すべてのロケールが有効な文字列
-      supportedLocales.forEach(locale => {
+      supportedLocales.forEach((locale) => {
         expect(typeof locale).toBe('string')
         expect(locale.length).toBeGreaterThan(0)
       })

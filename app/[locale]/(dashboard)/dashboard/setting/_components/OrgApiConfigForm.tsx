@@ -196,7 +196,7 @@ const ApiSettingsCard = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 p-3 bg-background border border-accent-5/20 rounded-md">
+                  <div className="mt-4 p-3 bg-background border border-accent-2/20 rounded-md">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-primary text-lg">💬</span>
                       <p className="font-semibold text-primary">お申し込み・ご相談方法</p>

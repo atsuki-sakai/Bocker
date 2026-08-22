@@ -1,13 +1,13 @@
-export const LANGUAGES = ['ja', 'en'] as const
-export type Languages = typeof LANGUAGES[number]
+export { SUPPORTED_LOCALES as LANGUAGES } from '@/i18n/config'
+export type { AppLocale as Languages } from '@/i18n/config'
 
-import { getAppUrl, getEnv } from './env-config';
+import { getAppUrl, getEnv } from './env-config'
 
 // 環境変数が設定されていない場合のデフォルト値を追加
 export const BASE_URL = getAppUrl()
 
 // ✅ ここで許可リストを定義
-export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp', 'bocker-project.vercel.app'];
+export const ALLOWED_DOMAINS = ['localhost', 'bocker.jp', 'bocker-project.vercel.app']
 
 /**
  * サロンの営業時間（24時間表記）を格納する配列。
@@ -37,7 +37,7 @@ export const SCHEDULE_HOURS = [
   '21:00',
   '22:00',
   '23:00',
-];
+]
 /**
  * 予約キャンセル可能期限（日数）選択肢。
  */
@@ -72,22 +72,16 @@ export const RESERVATION_CANCEL_LIMIT_DAYS = [
   '28',
   '29',
   '30',
-];
+]
 /**
  * 予約可能期限（日数）選択肢。
  */
-export const RESERVATION_LIMIT_DAYS = [
-  '7',
-  '14',
-  '30',
-  '60',
-  '90'
-];
+export const RESERVATION_LIMIT_DAYS = ['7', '14', '30', '60', '90']
 
 // トライアル期間
 export const PLAN_TRIAL_DAYS = 30
 // --- 設定 ---
-export const PLAN_CHARGE_MONTHS_YEARLY = 10   // 年額プランで請求する月数
+export const PLAN_CHARGE_MONTHS_YEARLY = 10 // 年額プランで請求する月数
 
 /**
  * プラン期間（月数）定義。
@@ -107,29 +101,29 @@ export const PLAN_MONTHLY_PRICES = {
 export const PLAN_YEARLY_PRICES = {
   MICRO: {
     price: PLAN_MONTHLY_PRICES.MICRO * PLAN_DURATION_MONTHS.YEARLY,
-    savingPercent:
-      (((PLAN_MONTHLY_PRICES.MICRO * 12 -
-        PLAN_MONTHLY_PRICES.MICRO * PLAN_DURATION_MONTHS.YEARLY) /
+    savingPercent: (
+      ((PLAN_MONTHLY_PRICES.MICRO * 12 - PLAN_MONTHLY_PRICES.MICRO * PLAN_DURATION_MONTHS.YEARLY) /
         (PLAN_MONTHLY_PRICES.MICRO * 12)) *
-      100).toFixed(0),
+      100
+    ).toFixed(0),
   },
   LITE: {
     // 実際に請求する月数分を掛ける
     price: PLAN_MONTHLY_PRICES.LITE * PLAN_DURATION_MONTHS.YEARLY,
     // 割引率 = (本来の年間総額 − 請求額) ÷ 本来の年間総額 × 100
-    savingPercent:
-      (((PLAN_MONTHLY_PRICES.LITE * 12 -
-        PLAN_MONTHLY_PRICES.LITE * PLAN_DURATION_MONTHS.YEARLY) /
+    savingPercent: (
+      ((PLAN_MONTHLY_PRICES.LITE * 12 - PLAN_MONTHLY_PRICES.LITE * PLAN_DURATION_MONTHS.YEARLY) /
         (PLAN_MONTHLY_PRICES.LITE * 12)) *
-      100).toFixed(0),
+      100
+    ).toFixed(0),
   },
   PRO: {
     price: PLAN_MONTHLY_PRICES.PRO * PLAN_DURATION_MONTHS.YEARLY,
-    savingPercent:
-      (((PLAN_MONTHLY_PRICES.PRO * 12 -
-        PLAN_MONTHLY_PRICES.PRO * PLAN_DURATION_MONTHS.YEARLY) /
+    savingPercent: (
+      ((PLAN_MONTHLY_PRICES.PRO * 12 - PLAN_MONTHLY_PRICES.PRO * PLAN_DURATION_MONTHS.YEARLY) /
         (PLAN_MONTHLY_PRICES.PRO * 12)) *
-      100).toFixed(0),
+      100
+    ).toFixed(0),
   },
 }
 
@@ -190,14 +184,14 @@ export const SUBSCRIPTION_PLANS = {
 }
 
 // Cookieの有効期限（日数）
-export const COOKIE_EXPIRES_DAYS = 7;
+export const COOKIE_EXPIRES_DAYS = 7
 
 // UI
 export const POINT_EXPIRATION_DAYS = [
   { value: 365, label: '1年' },
   { value: 730, label: '2年' },
   { value: 1095, label: '3年' },
-];
+]
 
 // Referral Discount
 export const BASE_REFERRAL_DISCOUNT_AMOUNT = 4000

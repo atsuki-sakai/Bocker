@@ -122,34 +122,11 @@ export const useSpeechRecognition = ({
       console.error('音声認識エラー:', event.error)
       setIsListening(false)
 
-      let errorMessage = '音声認識でエラーが発生しました'
-      
-      switch (event.error) {
-        case 'network':
-          errorMessage = 'ネットワークエラーです。インターネット接続を確認してください'
-          break
-        case 'not-allowed':
-          errorMessage = 'マイクへのアクセスが許可されていません'
-          break
-        case 'no-speech':
-          errorMessage = '音声が検出されませんでした'
-          break
-        case 'audio-capture':
-          errorMessage = 'マイクが利用できません'
-          break
-        case 'service-not-allowed':
-          errorMessage =
-            '現在スマートフォンでの音声認識はサポートしていません。ご不便ですがPCでのご利用をお願いします。'
-          break
-        default:
-          errorMessage = `音声認識エラー: ${event.error}`
-      }
-
       if (onError) {
-        onError(errorMessage)
+        onError(event.error)
       }
     }
-  }, [onResult, onError, language])
+  }, [continuous, isIOS, language, onError, onResult])
 
   // 音声認識開始
   const startListening = useCallback(() => {

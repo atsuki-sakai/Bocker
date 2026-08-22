@@ -1,6 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Noto_Sans_JP, Allerta_Stencil } from 'next/font/google'
+import { Noto_Sans_JP, Noto_Sans_Thai, Allerta_Stencil } from 'next/font/google'
+import { getLocale } from 'next-intl/server'
+import { getLocaleMetadata } from '@/i18n/config'
 
 // フォントの読み込み（パフォーマンス最適化）
 const notoJP = Noto_Sans_JP({
@@ -19,6 +21,14 @@ const allertaStencil = Allerta_Stencil({
   preload: false,
 })
 
+const notoThai = Noto_Sans_Thai({
+  weight: ['400', '500', '700'],
+  subsets: ['thai'],
+  variable: '--font-noto-sans-thai',
+  display: 'swap',
+  preload: true,
+})
+
 export const metadata: Metadata = {
   title: 'Bocker - 予約管理システム',
   description:
@@ -29,25 +39,28 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
   other: {
-    'theme-color': '#ffffff',
+    'theme-color': '#f8faf8',
     'color-scheme': 'light dark',
   },
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale()
+
   return (
-    <html lang="ja" suppressHydrationWarning>
-      {/* NOTE: lang 属性はロケールレイアウトで上書きされる */}
+    <html lang={getLocaleMetadata(locale).htmlLang} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="Bocker" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#f8faf8" />
         <meta name="color-scheme" content="light dark" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="dns-prefetch" href="https://bocker.jp" />
       </head>
-      <body className={`${notoJP.variable} ${allertaStencil.variable} antialiased`}>
+      <body
+        className={`${notoJP.variable} ${notoThai.variable} ${allertaStencil.variable} antialiased`}
+      >
         {children}
       </body>
     </html>

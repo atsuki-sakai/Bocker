@@ -1,0 +1,3843 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "หน้าเข้าสู่ระบบ",
+      "email": "ที่อยู่อีเมล",
+      "password": "รหัสผ่าน",
+      "submit": "เข้าสู่ระบบ",
+      "signUp": "ลงทะเบียน",
+      "forgotPassword": "ลืมรหัสผ่าน?",
+      "resetPassword": "รีเซ็ตรหัสผ่าน",
+      "loading": "กำลังลงชื่อเข้าใช้...",
+      "success": "ลงชื่อเข้าใช้เรียบร้อยแล้ว",
+      "emailPlaceholder": "ป้อนที่อยู่อีเมลของคุณ",
+      "passwordPlaceholder": "ใส่รหัสผ่านของคุณ",
+      "subtitle": "ลงชื่อเข้าใช้บัญชีของคุณเพื่อดำเนินการต่อ",
+      "showPassword": "แสดงรหัสผ่าน",
+      "hidePassword": "ซ่อนรหัสผ่าน",
+      "staffSignIn": "เจ้าหน้าที่เข้าสู่ระบบที่นี่"
+    },
+    "signUp": {
+      "title": "หน้าลงทะเบียน",
+      "orgNameRequired": "ต้องระบุชื่อองค์กร",
+      "organizationName": "ชื่อองค์กร",
+      "firstName": "ชื่อ",
+      "lastName": "นามสกุล",
+      "email": "ที่อยู่อีเมล",
+      "password": "รหัสผ่าน",
+      "confirmPassword": "ยืนยันรหัสผ่าน",
+      "submit": "สร้างบัญชี",
+      "signIn": "เข้าสู่ระบบ",
+      "loading": "กำลังสร้างบัญชี...",
+      "organizationNamePlaceholder": "ป้อนชื่อองค์กร",
+      "firstNamePlaceholder": "กรอกชื่อของคุณ",
+      "lastNamePlaceholder": "กรอกนามสกุลของคุณ",
+      "emailPlaceholder": "ป้อนที่อยู่อีเมลของคุณ",
+      "passwordPlaceholder": "ใส่รหัสผ่านของคุณ",
+      "confirmPasswordPlaceholder": "ป้อนรหัสผ่านของคุณอีกครั้ง",
+      "ownerAccountTitle": "สร้างบัญชีเจ้าของ",
+      "subtitle": "สร้างบัญชีเพื่อเริ่มต้น",
+      "storeName": "ชื่อร้านค้า",
+      "processing": "กำลังประมวลผล...",
+      "register": "ลงทะเบียน",
+      "showPassword": "แสดงรหัสผ่าน",
+      "hidePassword": "ซ่อนรหัสผ่าน",
+      "storeNamePlaceholder": "ป้อนชื่อร้านค้า",
+      "passwordStrength": "ความยากของรหัสผ่าน:",
+      "passwordWeak": "อ่อนแอ",
+      "passwordFair": "ยุติธรรม",
+      "passwordGood": "แข็งแรง",
+      "passwordStrong": "แข็งแกร่งมาก",
+      "passwordRequirements": {
+        "length": "อย่างน้อย 8 ตัวอักษร",
+        "uppercase": "รวมตัวอักษรตัวพิมพ์ใหญ่",
+        "lowercase": "รวมตัวอักษรพิมพ์เล็ก",
+        "number": "รวมตัวเลข",
+        "special": "รวมอักขระพิเศษ",
+        "maxLength": "ภายใน 100 ตัวอักษร"
+      },
+      "passwordConfirmationError": "รหัสผ่านไม่ตรงกัน",
+      "useReferralCode": "ใช้รหัสอ้างอิง",
+      "referralCode": "รหัสอ้างอิง",
+      "referralCodePlaceholder": "รหัสอ้างอิง (ไม่บังคับ)",
+      "accountCreated": "สร้างบัญชีแล้ว กรุณาตรวจสอบอีเมลของคุณ",
+      "signedOutFromSession": "ออกจากระบบจากเซสชันที่มีอยู่",
+      "verification": {
+        "title": "การยืนยันอีเมล",
+        "instruction": "กรอกรหัสยืนยัน 6 หลักที่ส่งไปยังที่อยู่อีเมลที่คุณลงทะเบียนไว้",
+        "codeLabel": "รหัสยืนยัน",
+        "codePlaceholder": "000000",
+        "verify": "ตรวจสอบ",
+        "processing": "กำลังยืนยัน...",
+        "resendCode": "ส่งรหัสยืนยันอีกครั้ง",
+        "resending": "กำลังส่ง...",
+        "resend": "ส่งอีกครั้ง",
+        "resent": "รหัสยืนยันถูกส่งอีกครั้ง",
+        "resendError": "ไม่สามารถส่งรหัสยืนยันได้",
+        "invalidCode": "รหัสยืนยันไม่ถูกต้อง",
+        "verificationError": "การยืนยันล้มเหลว"
+      },
+      "alreadyHaveAccount": "มีบัญชีอยู่แล้ว?",
+      "signInHere": "เข้าสู่ระบบที่นี่",
+      "validation": {
+        "orgNameRequired": "ต้องระบุชื่อองค์กร",
+        "orgNameMaxLength": "ชื่อองค์กรต้องมีความยาวน้อยกว่า 40 อักขระ",
+        "emailRequired": "ที่อยู่อีเมลเป็นสิ่งจำเป็น",
+        "emailInvalid": "กรุณากรอกที่อยู่อีเมลที่ถูกต้อง",
+        "passwordMinLength": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+        "passwordMaxLength": "รหัสผ่านต้องมีความยาวไม่เกิน 100 ตัวอักษร",
+        "passwordRequired": "ต้องใช้รหัสผ่าน",
+        "passwordConfirmationError": "รหัสผ่านไม่ตรงกัน",
+        "passwordLowercase": "รหัสผ่านจะต้องมีตัวอักษรพิมพ์เล็ก",
+        "passwordUppercase": "รหัสผ่านจะต้องมีตัวพิมพ์ใหญ่",
+        "passwordNumber": "รหัสผ่านต้องมีตัวเลข"
+      }
+    },
+    "resetPassword": {
+      "title": "รีเซ็ตรหัสผ่าน",
+      "newPasswordTitle": "ตั้งรหัสผ่านใหม่",
+      "subtitle": "กรุณาตั้งรหัสผ่านใหม่",
+      "email": "ที่อยู่อีเมล",
+      "accountEmail": "ที่อยู่อีเมลของบัญชี",
+      "newPassword": "รหัสผ่านใหม่",
+      "confirmPassword": "ยืนยันรหัสผ่าน",
+      "code": "รหัสยืนยัน",
+      "submit": "ส่งอีเมล์รีเซ็ต",
+      "resetPassword": "รีเซ็ตรหัสผ่าน",
+      "backToSignIn": "กลับไปที่ลงชื่อเข้าใช้",
+      "emailPlaceholder": "ป้อนที่อยู่อีเมลของคุณ",
+      "newPasswordPlaceholder": "ป้อนรหัสผ่านใหม่",
+      "confirmPasswordPlaceholder": "ป้อนรหัสผ่านเดิมอีกครั้ง",
+      "codePlaceholder": "000000",
+      "loading": "กำลังโหลด...",
+      "processing": "กำลังประมวลผล...",
+      "resetting": "กำลังรีเซ็ต...",
+      "sendingCode": "กำลังส่ง...",
+      "resetSuccess": "รีเซ็ตรหัสผ่านสำเร็จแล้ว",
+      "resetEmailSent": "ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว",
+      "resetEmailInstruction": "เราได้ส่งคำแนะนำในการรีเซ็ตรหัสผ่านไปยังอีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมายของคุณ",
+      "codeInstruction": "กรุณากรอกรหัสยืนยันที่ส่งไปยังที่อยู่อีเมลของคุณ",
+      "sendVerificationCode": "ส่งรหัสยืนยัน",
+      "confirmPasswordRequired": "จำเป็นต้องยืนยันรหัสผ่าน",
+      "codeRequired": "ต้องมีรหัสยืนยัน",
+      "invalidCode": "รหัสยืนยันไม่ถูกต้อง",
+      "codeSendSuccess": "รหัสยืนยันถูกส่งไปแล้ว กรุณาตรวจสอบอีเมลของคุณ",
+      "codeSendError": "ไม่สามารถส่งรหัสยืนยันได้",
+      "resetError": "ไม่สามารถรีเซ็ตรหัสผ่านได้",
+      "emailSentSubtitle": "ป้อนที่อยู่อีเมลของคุณเพื่อรับรหัสยืนยัน",
+      "newPasswordSubtitle": "กรุณาตั้งรหัสผ่านใหม่",
+      "newPasswordRequired": "กรุณากรอกรหัสผ่านใหม่",
+      "confirmPasswordPlaceholderNew": "ป้อนรหัสผ่านเดิมอีกครั้ง"
+    },
+    "validation": {
+      "emailRequired": "ที่อยู่อีเมลเป็นสิ่งจำเป็น",
+      "emailInvalid": "กรุณากรอกที่อยู่อีเมลที่ถูกต้อง",
+      "passwordRequired": "ต้องใช้รหัสผ่าน",
+      "passwordMinLength": "รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร",
+      "newPasswordRequired": "จำเป็นต้องมีรหัสผ่านใหม่",
+      "confirmPasswordRequired": "จำเป็นต้องยืนยันรหัสผ่าน",
+      "passwordMismatch": "รหัสผ่านและรหัสผ่านยืนยันไม่ตรงกัน",
+      "organizationNameRequired": "ต้องระบุชื่อองค์กร",
+      "firstNameRequired": "จำเป็นต้องระบุชื่อ",
+      "lastNameRequired": "ต้องระบุนามสกุล",
+      "passwordRequirements": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษรและประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก ตัวเลข และอักขระพิเศษ",
+      "passwordUppercase": "รหัสผ่านจะต้องมีตัวพิมพ์ใหญ่",
+      "passwordLowercase": "รหัสผ่านจะต้องมีตัวอักษรพิมพ์เล็ก",
+      "passwordNumber": "รหัสผ่านต้องมีตัวเลข",
+      "passwordSpecial": "รหัสผ่านต้องมีอักขระพิเศษ",
+      "organizationNameMinLength": "กรุณากรอกชื่อองค์กร",
+      "firstNameMinLength": "กรุณากรอกชื่อ",
+      "lastNameMinLength": "กรุณากรอกนามสกุล",
+      "invalidCredentials": "ที่อยู่อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+      "signUpFailed": "ไม่สามารถสร้างบัญชีได้",
+      "signInFailed": "ลงชื่อเข้าใช้ไม่สำเร็จ",
+      "passwordResetFailed": "ไม่สามารถรีเซ็ตรหัสผ่านได้",
+      "emailAlreadyExists": "ที่อยู่อีเมลนี้มีการใช้งานแล้ว",
+      "invalidResetToken": "โทเค็นการรีเซ็ตรหัสผ่านไม่ถูกต้อง",
+      "tokenExpired": "โทเค็นการรีเซ็ตรหัสผ่านหมดอายุแล้ว"
+    },
+    "staffInvite": {
+      "title": "คำเชิญพนักงาน",
+      "loading": "กำลังโหลด...",
+      "aboutAccountCreation": "เกี่ยวกับการสร้างบัญชี",
+      "instructions": "หากต้องการสร้างบัญชีในฐานะพนักงานที่ได้รับเชิญ โปรดเข้าถึงโดยใช้ลิงก์คำเชิญที่ผู้ดูแลระบบแชร์ คุณไม่สามารถสร้างบัญชีพนักงานโดยการเข้าถึงหน้านี้โดยตรง"
+    },
+    "customerResetPassword": {
+      "notFound": "หน้ารีเซ็ตไม่ถูกต้อง",
+      "notFoundToken": "ไม่พบโทเค็น",
+      "title": "คำขอรีเซ็ตรหัสผ่าน",
+      "subtitle": "กรุณารีเซ็ตรหัสผ่านของคุณ",
+      "email": "ที่อยู่อีเมล",
+      "newPassword": "รหัสผ่านใหม่",
+      "confirmPassword": "ยืนยันรหัสผ่าน",
+      "submit": "ส่งอีเมลรีเซ็ต",
+      "loading": "กำลังโหลด...",
+      "emailInvalid": "กรุณากรอกที่อยู่อีเมลที่ถูกต้อง",
+      "processing": "กำลังประมวลผล...",
+      "resetPassword": "รีเซ็ตรหัสผ่าน",
+      "emailSentSubtitle": "ป้อนที่อยู่อีเมลของคุณเพื่อรับรหัสยืนยัน",
+      "newPasswordSubtitle": "ตั้งรหัสผ่านใหม่",
+      "newPasswordRequired": "กรุณากรอกรหัสผ่านใหม่",
+      "newPasswordPlaceholder": "ป้อนรหัสผ่านใหม่",
+      "confirmPasswordPlaceholderNew": "ป้อนรหัสผ่านเดิมอีกครั้ง",
+      "message": {
+        "resetPassword": "ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว",
+        "resetPasswordFailed": "ไม่สามารถส่งอีเมลรีเซ็ตรหัสผ่านได้",
+        "resetPasswordError": "เกิดข้อผิดพลาดภายใน"
+      },
+      "validation": {
+        "emailRequired": "ที่อยู่อีเมลเป็นสิ่งจำเป็น",
+        "emailInvalid": "กรุณากรอกที่อยู่อีเมลที่ถูกต้อง",
+        "passwordMinLength": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+        "passwordMaxLength": "รหัสผ่านต้องมีความยาวไม่เกิน 100 ตัวอักษร",
+        "passwordRequired": "ต้องใช้รหัสผ่าน",
+        "passwordConfirmationError": "รหัสผ่านไม่ตรงกัน"
+      },
+      "resetPasswordFailed": "ไม่สามารถเปลี่ยนรหัสผ่าน",
+      "resetPasswordError": "เกิดข้อผิดพลาดขณะเปลี่ยนรหัสผ่าน"
+    }
+  },
+  "common": {
+    "loading": "กำลังโหลด...",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "add": "เพิ่ม",
+    "update": "อัปเดต",
+    "confirm": "ยืนยัน",
+    "back": "กลับ",
+    "next": "ถัดไป",
+    "previous": "ก่อนหน้า",
+    "submit": "ส่ง",
+    "close": "ปิด",
+    "clear": "ชัดเจน",
+    "loadMore": "โหลดเพิ่ม",
+    "enable": "เปิดใช้งาน",
+    "disable": "ปิดการใช้งาน",
+    "gender": "เพศ",
+    "unselected": "ไม่ได้เลือก",
+    "birthday": "วันเกิด",
+    "tags": "แท็ก",
+    "notes": "หมายเหตุ",
+    "placeholder": "กรุณาเข้า",
+    "selectPlaceholder": "กรุณาเลือก",
+    "minus": "ลดลง",
+    "plus": "เพิ่ม",
+    "minutes": "นาที",
+    "hours": "ชั่วโมง",
+    "point": {
+      "points": "{count} แต้ม"
+    },
+    "schedule": "กำหนดการพนักงาน",
+    "search": "ค้นหา",
+    "filter": "ตัวกรอง",
+    "reset": "รีเซ็ต",
+    "export": "ส่งออก",
+    "import": "นำเข้า",
+    "print": "พิมพ์",
+    "share": "แบ่งปัน",
+    "copy": "คัดลอก",
+    "paste": "วาง",
+    "cut": "ตัด",
+    "selectAll": "เลือกทั้งหมด",
+    "deselectAll": "ยกเลิกการเลือกทั้งหมด",
+    "required": "จำเป็น",
+    "optional": "ไม่จำเป็น",
+    "yes": "ใช่",
+    "no": "ไม่",
+    "on": "เปิด",
+    "off": "ปิด",
+    "enabled": "เปิดใช้งานแล้ว",
+    "disabled": "ปิดการใช้งาน",
+    "active": "ใช้งานอยู่",
+    "inactive": "ไม่ได้ใช้งาน",
+    "new": "ใหม่",
+    "all": "ทั้งหมด",
+    "none": "ไม่มี",
+    "select": "เลือก",
+    "selected": "เลือกแล้ว",
+    "sort": "จัดเรียง",
+    "sortBy": "เรียงตาม",
+    "ascending": "จากน้อยไปมาก",
+    "descending": "จากมากไปน้อย",
+    "from": "จาก",
+    "to": "ถึง",
+    "between": "ระหว่าง",
+    "birthdayPlaceholder": "เลือกวันเกิด",
+    "customerNotes": "หมายเหตุลูกค้า",
+    "backToDashboard": "กลับไปที่แดชบอร์ด",
+    "and": "และ",
+    "or": "หรือ",
+    "not": "ไม่",
+    "contains": "ประกอบด้วย",
+    "startsWith": "เริ่มต้นด้วย",
+    "endsWith": "ปิดท้ายด้วย",
+    "equals": "เท่ากับ",
+    "notEquals": "ไม่เท่ากัน",
+    "greaterThan": "มากกว่า",
+    "lessThan": "น้อยกว่า",
+    "greaterThanOrEqual": "มากกว่าหรือเท่ากับ",
+    "lessThanOrEqual": "น้อยกว่าหรือเท่ากับ",
+    "empty": "ว่างเปล่า",
+    "notEmpty": "ไม่ว่างเปล่า",
+    "error": "เกิดข้อผิดพลาด",
+    "success": "ความสำเร็จ",
+    "warning": "คำเตือน",
+    "info": "ข้อมูล",
+    "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบ",
+    "deleteSuccess": "ลบเรียบร้อยแล้ว",
+    "deleteError": "ลบไม่สำเร็จ",
+    "saveSuccess": "บันทึกเรียบร้อยแล้ว",
+    "saveError": "บันทึกไม่สำเร็จ",
+    "updateSuccess": "อัปเดตเรียบร้อยแล้ว",
+    "updateError": "อัปเดตไม่สำเร็จ",
+    "loadingError": "โหลดไม่สำเร็จ",
+    "noResults": "ไม่พบผลลัพธ์",
+    "noData": "ไม่มีข้อมูล",
+    "showMore": "แสดงเพิ่มเติม",
+    "showLess": "แสดงน้อยลง",
+    "page": "หน้า",
+    "of": "ของ",
+    "total": "รวม",
+    "items": "รายการ",
+    "perPage": "ต่อหน้า",
+    "first": "อันดับแรก",
+    "last": "สุดท้าย",
+    "goToPage": "ไปที่หน้า",
+    "currencySymbol": "¥",
+    "timeUnit": "นาที",
+    "openMenu": "เปิดเมนู",
+    "detail": "รายละเอียด",
+    "datePicker": {
+      "selectDate": "เลือกวันที่",
+      "today": "วันนี้",
+      "yesterday": "เมื่อวาน",
+      "tomorrow": "พรุ่งนี้",
+      "thisWeek": "สัปดาห์นี้",
+      "lastWeek": "สัปดาห์ที่แล้ว",
+      "nextWeek": "สัปดาห์หน้า",
+      "thisMonth": "เดือนนี้",
+      "lastMonth": "เดือนที่แล้ว",
+      "nextMonth": "เดือนหน้า",
+      "thisYear": "ปีนี้",
+      "lastYear": "ปีที่แล้ว",
+      "nextYear": "ปีหน้า",
+      "startDate": "วันที่เริ่มต้น",
+      "endDate": "วันที่สิ้นสุด",
+      "from": "จาก",
+      "to": "ถึง",
+      "apply": "สมัคร",
+      "cancel": "ยกเลิก",
+      "clear": "ชัดเจน",
+      "invalidDate": "วันที่ไม่ถูกต้อง",
+      "invalidRange": "ช่วงวันที่ไม่ถูกต้อง",
+      "startDateRequired": "ต้องระบุวันที่เริ่มต้น",
+      "endDateRequired": "ต้องระบุวันที่สิ้นสุด",
+      "endDateAfterStart": "วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มต้น",
+      "months": {
+        "january": "มกราคม",
+        "february": "กุมภาพันธ์",
+        "march": "มีนาคม",
+        "april": "เมษายน",
+        "may": "พฤษภาคม",
+        "june": "มิถุนายน",
+        "july": "กรกฎาคม",
+        "august": "สิงหาคม",
+        "september": "กันยายน",
+        "october": "ตุลาคม",
+        "november": "พฤศจิกายน",
+        "december": "ธันวาคม"
+      },
+      "weekdays": {
+        "sunday": "อาทิตย์",
+        "monday": "จันทร์",
+        "tuesday": "อ",
+        "wednesday": "พ",
+        "thursday": "พฤ",
+        "friday": "ศุกร์",
+        "saturday": "ส"
+      },
+      "weekdaysFull": {
+        "sunday": "วันอาทิตย์",
+        "monday": "วันจันทร์",
+        "tuesday": "วันอังคาร",
+        "wednesday": "วันพุธ",
+        "thursday": "วันพฤหัสบดี",
+        "friday": "วันศุกร์",
+        "saturday": "วันเสาร์"
+      }
+    },
+    "tutorial": {
+      "setupGuide": {
+        "title": "คู่มือการตั้งค่าเบื้องต้น",
+        "subtitle": "ตั้งค่าเบื้องต้นให้เสร็จสิ้นเพื่อเริ่มรับการจอง 🚀",
+        "subtitle2": "ใช้เวลาประมาณ 10 นาทีในการเริ่มรับการจอง โปรดแชร์ลิงก์การจองกับลูกค้าของคุณโดยแชร์หน้าการจอง URL ใต้ \"การตั้งค่า\" → \"การตั้งค่าการจอง\""
+      },
+      "completed": "เสร็จสิ้น",
+      "stepCompleted": "ขั้นตอนที่ {step} / เสร็จสิ้น",
+      "stepIncomplete": "ขั้นตอนที่ {step} / ไม่ได้ตั้งค่า",
+      "checkSettings": "ตรวจสอบการตั้งค่า",
+      "configure": "กำหนดค่า",
+      "urlCopied": "คัดลอกแล้ว URL",
+      "steps": {
+        "storeInfo": {
+          "title": "ข้อมูลร้านค้า",
+          "description": "ตั้งค่าข้อมูลพื้นฐาน เช่น ชื่อร้านค้า ที่อยู่ หมายเลขโทรศัพท์ และอีเมล ข้อมูลนี้จะแสดงอยู่บนประกาศของลูกค้าและหน้าการจอง",
+          "checkLabel": "การตั้งค่าชื่อร้านค้าและที่อยู่"
+        },
+        "businessHours": {
+          "title": "เวลาทำการ",
+          "description": "กำหนดเวลาทำการและวันปิดทำการในแต่ละวันในสัปดาห์ ลูกค้าสามารถจองได้ภายในเวลาดังกล่าวเท่านั้น",
+          "checkLabel": "การตั้งค่าเวลาทำการ"
+        },
+        "reservationSettings": {
+          "title": "การตั้งค่าการจอง",
+          "description": "ตั้งกฎพื้นฐาน เช่น สามารถจองล่วงหน้าได้กี่วัน เวลาปิดรับการจอง และกำหนดเวลาการยกเลิก",
+          "checkLabel": "การตั้งค่าการยอมรับการจอง"
+        },
+        "lineIntegration": {
+          "title": "LINE บูรณาการ",
+          "description": "ลูกค้าสามารถจองผ่าน LINE ได้อย่างง่ายดาย สามารถจองได้ตลอด 24 ชั่วโมง",
+          "checkLabel": "การตั้งค่าการรวม LINE"
+        },
+        "menuRegistration": {
+          "title": "การลงทะเบียนเมนู",
+          "description": "ลงทะเบียนเมนูบริการ เช่น ตัดผม ทำสี และดัดผม คุณยังกำหนดราคา ระยะเวลา และคำอธิบายได้ด้วย",
+          "checkLabel": "การลงทะเบียนเมนู (อย่างน้อย 1)"
+        },
+        "staffRegistration": {
+          "title": "การลงทะเบียนพนักงาน",
+          "description": "ลงทะเบียนพนักงานที่จะให้บริการ ลูกค้าสามารถกำหนดพนักงานเฉพาะเมื่อทำการจอง",
+          "checkLabel": "ทะเบียนพนักงาน (อย่างน้อย 1)"
+        },
+        "staffSchedule": {
+          "title": "ตารางการทำงานของพนักงาน",
+          "description": "กำหนดเวลาทำงานและวันหยุดของพนักงานแต่ละคน รับจองเฉพาะในช่วงเวลาที่กำหนดเท่านั้น",
+          "checkLabel": "การตั้งค่าตารางการทำงานของพนักงาน"
+        }
+      },
+      "missingItems": {
+        "title": "มีรายการที่ไม่ได้กำหนดค่าอยู่!",
+        "description": "กรุณาตั้งค่าต่อไปนี้ให้เสร็จสิ้นเพื่อเริ่มรับการจอง!"
+      },
+      "completion": {
+        "title": "การตั้งค่าเริ่มต้นเสร็จสมบูรณ์!",
+        "description": "คุณพร้อมที่จะรับการจองแล้ว โปรดแชร์ URL ด้านล่างให้กับลูกค้าของคุณ",
+        "reservationUrlLabel": "หน้าการจอง URL",
+        "customerUrlLabel": "หน้าลูกค้า URL"
+      },
+      "nextSteps": {
+        "title": "ขั้นตอนต่อไป",
+        "items": {
+          "closedDays": "การตั้งค่าวันปิดร้าน",
+          "optionMenu": "เมนูตัวเลือก",
+          "pointFeature": "ระบบคะแนนสะสม",
+          "couponFeature": "คุณสมบัติคูปอง"
+        }
+      },
+      "customerGuidance": {
+        "title": "วิธีการแนะนำลูกค้า",
+        "items": {
+          "website": "โพสต์ลิงค์บนเว็บไซต์",
+          "sns": "ประกาศเริ่มการจองบน SNS",
+          "qrCode": "แสดงรหัส QR ในร้านค้า"
+        }
+      }
+    },
+    "theme": {
+      "toggle": "สลับธีม",
+      "light": "โหมดแสง",
+      "dark": "โหมดมืด"
+    },
+    "imageDrop": {
+      "placeholder": "ลากและวางรูปภาพหรือคลิกเพื่อเลือก",
+      "dropHere": "วางไฟล์ที่นี่",
+      "notImage": "ไฟล์ \"{fileName}\" ไม่ใช่รูปภาพ",
+      "tooLarge": "ไฟล์ \"{fileName}\" มีขนาดใหญ่เกินไป โปรดเก็บไว้ต่ำกว่า {maxSize}MB",
+      "limitReached": "สูงสุด {limitFiles} ไฟล์ คุณเพิ่มอีก {available} ได้",
+      "formats": "JPG, PNG ฯลฯ / สูงสุด {maxSize}MB",
+      "formatsWithLimit": "JPG, PNG ฯลฯ / สูงสุด {maxSize}MB (สูงสุด {limitFiles} ไฟล์)",
+      "selectFile": "เลือกไฟล์",
+      "addFile": "เพิ่มไฟล์",
+      "clearAll": "เคลียร์ทุกภาพ",
+      "changeImage": "เปลี่ยนภาพ",
+      "deleteImage": "ลบภาพ",
+      "fileName": "ชื่อไฟล์:",
+      "fileSize": "ขนาด:",
+      "recommendedSquare": "อัตราส่วนภาพที่แนะนำคือ 1:1 สี่เหลี่ยมจัตุรัส",
+      "recommendedLandscape": "อัตราส่วนภาพที่แนะนำคือ 16:9 แนวนอน",
+      "recommendedPortrait": "อัตราส่วนภาพที่แนะนำคือแนวตั้ง 2:3",
+      "noImages": "ไม่มีภาพ"
+    },
+    "tagInput": {
+      "title": "แท็ก",
+      "titleWithLimit": "แท็ก (สูงสุด 5)",
+      "placeholder": "ป้อนแท็ก (คั่นหลายรายการด้วยเครื่องหมายจุลภาค)",
+      "addButton": "เพิ่ม",
+      "example": "ตัวอย่าง",
+      "maxTags": "อนุญาตสูงสุด 5 แท็ก",
+      "maxTagsWarning": "คุณสามารถเพิ่มได้สูงสุด 5 แท็กเท่านั้น",
+      "defaultExample": "ตัดผม ดัดผม ทรีทเม้นท์"
+    },
+    "exclusionMenu": {
+      "title": "เมนูที่ไม่รวม",
+      "noSelection": "ไม่มีการเลือก",
+      "selectAll": "เลือกทั้งหมดในมุมมอง",
+      "selectedCount": "เลือก {count} แล้ว",
+      "noMenus": "ไม่มีเมนูที่ลงทะเบียน",
+      "clearAll": "ล้างทั้งหมดที่เลือก",
+      "selectAllButton": "เลือกเมนูทั้งหมดในมุมมอง",
+      "searchPlaceholder": "ค้นหาเมนู...",
+      "loadMore": "โหลดเพิ่ม"
+    },
+    "calendarMultiSelect": {
+      "selectedDates": "วันที่เลือก",
+      "selectedCount": "{count} รายการ",
+      "clearAll": "ลบทั้งหมด",
+      "clearAllTooltip": "ลบวันที่ที่เลือกทั้งหมด",
+      "today": "วันนี้",
+      "emptyStateTitle": "ยังไม่ได้เลือกวันปิดทำการ",
+      "emptyStateDescription": "เลือกวันที่จากปฏิทินทางด้านซ้ายเพื่อตั้งเป็นวันปิดทำการ"
+    },
+    "uploader": {
+      "uploading": "กำลังอัพโหลดภาพ",
+      "uploadComplete": "อัปโหลดเสร็จสมบูรณ์",
+      "processingComplete": "การประมวลผลเสร็จสมบูรณ์",
+      "progressPercent": "เสร็จสมบูรณ์ {progress}%",
+      "start": "เริ่ม",
+      "complete": "เสร็จสมบูรณ์",
+      "importantNote": "ประกาศสำคัญ",
+      "navigationWarning": "การอัปโหลดจะถูกยกเลิกหากคุณนำทางออกไปหรือใช้ปุ่มย้อนกลับ",
+      "uploadSuccess": "การอัปโหลดเสร็จสมบูรณ์"
+    },
+    "zodTextField": {
+      "readOnly": "※อ่านอย่างเดียว"
+    },
+    "optimizedImage": {
+      "loadError": "โหลดรูปภาพไม่สำเร็จ"
+    },
+    "unauthorized": {
+      "title": "การเข้าถึงที่ไม่ได้รับอนุญาต",
+      "description": "คุณไม่ได้รับอนุญาตให้เข้าถึงหน้านี้ โปรดติดต่อผู้ดูแลระบบหากคุณเชื่อว่านี่เป็นข้อผิดพลาด",
+      "backToDashboard": "กลับไปที่แดชบอร์ด"
+    }
+  },
+  "point": {
+    "common": {
+      "enabled": "เปิดใช้งานแล้ว",
+      "disabled": "ปิดการใช้งาน",
+      "points": "คะแนน"
+    },
+    "title": "การตั้งค่าคะแนนสะสม",
+    "tabs": {
+      "basicSettings": "การตั้งค่าพื้นฐาน",
+      "exclusionMenus": "เมนูการยกเว้นคะแนน"
+    },
+    "basicSettings": {
+      "title": "การตั้งค่าคะแนนสะสมพื้นฐาน",
+      "minimumChargePoint": "คะแนนขั้นต่ำที่ใช้ได้",
+      "minimumChargePointDescription": "กำหนดคะแนนขั้นต่ำที่ลูกค้าสามารถใช้ได้ ตัวอย่างเช่น หากตั้งค่า 1,000 ลูกค้าจะใช้คะแนนได้เมื่อมี 1,000 คะแนนขึ้นไป",
+      "minimumChargePointPlaceholder": "เช่น 1,000",
+      "description": "กำหนดค่าวิธีการมอบคะแนนให้กับลูกค้าที่ใช้ร้านเสริมสวย",
+      "pointValue": "1 แต้ม = 1 เยน",
+      "pointStatusActive": "เปิดใช้งานระบบคะแนนสะสมแล้ว",
+      "pointStatusInactive": "ปิดใช้งานระบบคะแนนสะสมแล้ว",
+      "enablePointFeature": "เปิดใช้งานฟีเจอร์แต้ม: {status}",
+      "enableDescription": "เมื่อเปิดใช้งานคุณสมบัติคะแนน คะแนนจะได้รับโดยอัตโนมัติตามอัตราคะแนนที่ตั้งไว้",
+      "pointType": "ประเภทรางวัลคะแนน",
+      "pointTypeDescription": "เลือกว่าจะให้คะแนนตามจำนวนเงินที่ชำระหรือคะแนนคงที่",
+      "fixedPoint": "คะแนนคงที่",
+      "pointRate": "อัตราคะแนน",
+      "pointRateLabel": "อัตราคะแนน (%)",
+      "fixedPointPlaceholder": "เช่น 100",
+      "pointRatePlaceholder": "เช่น 5 (5%)",
+      "expirationPeriod": "ระยะเวลาหมดอายุของคะแนน",
+      "expirationDescription": "คะแนนของลูกค้าจะหมดอายุ {period} หลังจากไปร้านเสริมสวยครั้งล่าสุด",
+      "todayGrantedExpiry": "หากได้รับวันนี้วันหมดอายุคือ"
+    },
+    "summary": {
+      "title": "สรุปการตั้งค่าคะแนนสะสม",
+      "description": "ตรวจสอบว่าการตั้งค่าปัจจุบันของคุณจะถูกนำไปใช้อย่างไร",
+      "fixedPointLabel": "คะแนนคงที่:",
+      "pointRateLabel": "อัตราคะแนน:",
+      "expirationLabel": "วันหมดอายุของคะแนน:",
+      "pointsGranted": "ได้รับ {amount} แต้ม",
+      "forPayment": "สำหรับการชำระเงิน {amount} เยน"
+    },
+    "exclusionMenu": {
+      "title": "เมนูที่ไม่ให้คะแนนเมื่อซื้อ"
+    },
+    "saveButton": "บันทึกการตั้งค่า",
+    "saving": "กำลังบันทึก...",
+    "accordion": {
+      "grantMechanism": "กลไกการให้คะแนน",
+      "grantDate": "วันที่ให้ทุน:",
+      "grantDateDesc": "การรักษาที่เสร็จสมบูรณ์จะถูกคำนวณร่วมกันและ",
+      "nextMonth15": "วันที่ 15 ของเดือนถัดไป",
+      "autoGrant": "คะแนนจะได้รับโดยอัตโนมัติ",
+      "example": "ตัวอย่าง: การเยี่ยมชมเดือนเมษายน → ได้รับเมื่อวันที่ 15 พฤษภาคม",
+      "grantMethod": "วิธีการให้ทุน:",
+      "pointRateMethod": "อัตราคะแนน: จำนวนเงินที่ชำระ × อัตราที่กำหนด (%) ทศนิยมจะถูกปัดเศษลง",
+      "fixedPointMethod": "คะแนนคงที่: คะแนนสม่ำเสมอที่ได้รับโดยไม่คำนึงถึงเมนูการรักษา",
+      "exchangeRate": "อัตราแลกเปลี่ยน:",
+      "exchangeRateDesc": "1 คะแนน = เทียบเท่า 1 เยน เพื่อใช้เมื่อชำระเงิน",
+      "expirationTiming": "ระยะเวลาหมดอายุของคะแนน",
+      "expirationDesc": "คะแนนหมดอายุ",
+      "expirationAfter": "หลังจากการเยี่ยมชมร้านทำผมครั้งล่าสุด",
+      "expirationManagement": "ระบบจะจัดการวันหมดอายุของคะแนนแต่ละรายการและหักออกจากยอดคงเหลือโดยอัตโนมัติ",
+      "reminderEffect": "การส่งการแจ้งเตือน 7-14 วันก่อนวันหมดอายุจะช่วยเพิ่มประสิทธิภาพในการส่งเสริมการเยี่ยมชม",
+      "cautions": "การใช้คะแนนและข้อควรระวังในการให้สิทธิ์",
+      "cautionNoDouble": "คะแนนจะไม่ได้รับจากจำนวนเงินที่ชำระโดยใช้คะแนน (การป้องกันการให้สิทธิ์สองเท่า)",
+      "cautionSameStore": "สามารถใช้คะแนนได้ที่",
+      "cautionSameStoreOnly": "ร้านค้าที่มอบให้พวกเขา",
+      "cautionSameStoreEnd": ".",
+      "usageFlow": "ขั้นตอนการใช้คะแนน:",
+      "usageStep1": "ลูกค้าเข้าและยืนยันคะแนนเพื่อใช้ระหว่างการจอง",
+      "usageStep2": "หลังจากยืนยันการจองแล้ว",
+      "usageCode": "รหัสการใช้งาน",
+      "usageStep2End": "จะถูกออกโดยอัตโนมัติ",
+      "usageStep3": "ลูกค้าแสดงรหัสเมื่อเยี่ยมชม พนักงานจะเข้าสู่แผงผู้ดูแลระบบเพื่อยืนยัน",
+      "cautionStaffConfirm": "คะแนนจะไม่ถูกใช้จนกว่าเจ้าหน้าที่จะยืนยันเสร็จสิ้น (ป้องกันการฉ้อโกง)",
+      "cautionRounding": "แนะนำให้ปัดทศนิยมลงเพื่อคำนวณอัตรา",
+      "cautionAccounting": "คะแนนที่ไม่ได้ใช้ควรบันทึกเป็นความรับผิดชอบ \"คะแนนสำรอง\" ในการบัญชี",
+      "cautionNoCash": "คะแนนไม่สามารถแลกเปลี่ยนเป็นเงินสดหรือคะแนนอื่นๆ ของบริษัทได้",
+      "cautionCancellation": "เมื่อการจองถูกยกเลิก",
+      "cautionInvalidate": "คะแนนที่ค้างอยู่ถือเป็นโมฆะ",
+      "cautionRefund": "และคะแนนที่ใช้จะได้รับคืนโดยอัตโนมัติหากมี"
+    },
+    "validation": {
+      "pointRateMax": "อัตราคะแนนต้องเป็น 100% หรือน้อยกว่า",
+      "fixedPointMax": "คะแนนคงที่ต้องเป็น 99999 หรือน้อยกว่า",
+      "pointRateRequired": "อัตราคะแนนจำเป็นเมื่อเลือกประเภทเปอร์เซ็นต์และเปิดใช้งานคะแนน",
+      "fixedPointRequired": "กรุณากำหนดคะแนนคงที่เมื่อเลือกประเภทคะแนนคงที่และเปิดใช้งานระบบคะแนนสะสม"
+    },
+    "messages": {
+      "settingsSaved": "บันทึกการตั้งค่าเรียบร้อยแล้ว"
+    },
+    "errors": {
+      "tenantOrOrgNotFound": "ไม่พบผู้เช่าหรือร้านค้า"
+    }
+  },
+  "language": {
+    "japanese": "日本語",
+    "english": "English",
+    "thai": "ไทย",
+    "switchLanguage": "เปลี่ยนภาษา"
+  },
+  "voiceInput": {
+    "label": "การป้อนข้อมูลด้วยเสียง",
+    "stop": "หยุด",
+    "startTitle": "เริ่มการป้อนข้อมูลด้วยเสียง",
+    "stopTitle": "หยุดการป้อนข้อมูลด้วยเสียง",
+    "unsupported": "เบราว์เซอร์ของคุณไม่รองรับการป้อนข้อมูลด้วยเสียง",
+    "started": "เริ่มการป้อนข้อมูลด้วยเสียงแล้ว กรุณาพูด",
+    "stopped": "หยุดการป้อนข้อมูลด้วยเสียงแล้ว",
+    "errors": {
+      "network": "เกิดข้อผิดพลาดของเครือข่าย กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต",
+      "notAllowed": "ไม่ได้รับอนุญาตให้เข้าถึงไมโครโฟน",
+      "noSpeech": "ไม่พบเสียงพูด",
+      "audioCapture": "ไม่สามารถใช้ไมโครโฟนได้",
+      "serviceNotAllowed": "อุปกรณ์นี้ไม่รองรับการรู้จำเสียง กรุณาลองใช้บนคอมพิวเตอร์",
+      "unknown": "ข้อผิดพลาดในการรู้จำเสียง: {error}"
+    }
+  },
+  "navigation": {
+    "dashboard": "แดชบอร์ด",
+    "reservationCreate": "สร้างการจอง",
+    "reservationList": "รายการจอง",
+    "dailyAnalytics": "การวิเคราะห์รายวัน",
+    "staffAnalytics": "การวิเคราะห์พนักงาน",
+    "menuAnalytics": "การวิเคราะห์เมนู",
+    "trackingAnalytics": "การติดตามการวิเคราะห์",
+    "reservationTimeline": "ไทม์ไลน์การจอง",
+    "staffSchedule": "กำหนดการพนักงาน",
+    "staffWorkTime": "เวลาทำงานของพนักงาน",
+    "reservationCollection": "รายการจอง",
+    "staff": "การจัดการพนักงาน",
+    "menu": "การจัดการเมนู",
+    "customers": "การจัดการลูกค้า",
+    "customerCarte": "บันทึกลูกค้า",
+    "options": "การจัดการตัวเลือก",
+    "coupons": "การจัดการคูปอง",
+    "pointSettings": "การตั้งค่าคะแนนสะสม",
+    "settings": "การตั้งค่า",
+    "document": "เอกสาร",
+    "subscription": "สมัครสมาชิก",
+    "myPage": "หน้าของฉัน",
+    "signOut": "ออกจากระบบ",
+    "profile": "โปรไฟล์"
+  },
+  "navigationGroups": {
+    "overview": "ภาพรวม",
+    "reservations": "การจอง",
+    "analytics": "การวิเคราะห์",
+    "customerManagement": "การจัดการลูกค้า",
+    "serviceManagement": "การจัดการบริการ",
+    "staffOrganization": "พนักงานและองค์กร",
+    "systemSupport": "ระบบและการสนับสนุน"
+  },
+  "sidebar": {
+    "tagline": "ทำให้การจัดการร้านเสริมสวยง่ายขึ้น",
+    "openSidebar": "เปิดแถบด้านข้าง",
+    "closeSidebar": "ปิด",
+    "subscriptionRequired": "กรุณาสมัครสมาชิกแผน",
+    "subscriptionRequiredDetail": "หลังจากสมัครผ่านลิงก์ด้านล่าง คุณจะสามารถใช้ฟีเจอร์ต่างๆ ตามแผนของคุณได้",
+    "goToSubscription": "ไปที่หน้าสมัครสมาชิก",
+    "subscriptionExpired": "การสมัครสมาชิกหมดอายุแล้ว"
+  },
+  "reservationLink": {
+    "selectLinkDestination": "เลือกปลายทางลิงค์",
+    "aboutReservationLink": "เกี่ยวกับลิงค์การจอง",
+    "trackingDescription": "การเพิ่มพารามิเตอร์การติดตามลงในลิงก์การจองจะช่วยวัดการเข้าชมจากช่องทางต่างๆ",
+    "lineDescription": "ใช้สำหรับวัดการเข้าชมจากเมนูที่หลากหลายของบัญชีอย่างเป็นทางการของ LINE ฯลฯ",
+    "webDescription": "ใช้สำหรับการฝังในบล็อกหรือเว็บไซต์เพื่อวัดปริมาณการเข้าชมเว็บ",
+    "instagramDescription": "ใช้สำหรับลิงก์โปรไฟล์ Instagram เรื่องราว หรือโพสต์เพื่อวัดปริมาณการเข้าชม Instagram",
+    "twitterDescription": "ใช้สำหรับทวีตหรือลิงก์โปรไฟล์เพื่อวัดปริมาณการเข้าชม X (Twitter)",
+    "facebookDescription": "ใช้สำหรับโพสต์บนเพจ Facebook หรือโปรไฟล์เพื่อวัดปริมาณการเข้าชม Facebook",
+    "youtubeDescription": "ใช้สำหรับคำอธิบายวิดีโอหรือแท็บชุมชนเพื่อวัดการเข้าชม YouTube",
+    "tiktokDescription": "ใช้สำหรับลิงก์โปรไฟล์หรือคำอธิบายวิดีโอเพื่อวัดปริมาณการเข้าชม TikTok",
+    "googleMapDescription": "ใช้สำหรับข้อมูลธุรกิจแผนที่ของ Google เพื่อวัดปริมาณการเข้าชมแผนที่ของ Google",
+    "copyInstruction": "คัดลอกลิงก์ไปยังคลิปบอร์ดด้วยไอคอนคัดลอกและวางลงในแต่ละช่อง",
+    "lineConnectionRequired": "โปรดดำเนินการผสานรวม LINE ให้เสร็จสมบูรณ์",
+    "lineConnectionDescription": "ป้อนข้อมูลที่จำเป็นสำหรับการรวม LINE จากการตั้งค่าบริการภายนอก ดูวิธีใช้ที่ด้านล่างของหน้าจอเพื่อดูวิธีการขอรับ",
+    "connectWithLine": "เชื่อมต่อกับ LINE"
+  },
+  "referralCard": {
+    "yourReferralCode": "รหัสอ้างอิงของคุณ",
+    "copyCode": "คัดลอกรหัส",
+    "shareReferralLink": "แบ่งปันลิงค์อ้างอิง",
+    "shareReferralLinkCopy": "คัดลอกลิงก์ผู้อ้างอิง",
+    "referralBenefit": "สิทธิประโยชน์การอ้างอิง 🎁",
+    "maxDiscount": "ขึ้นไป",
+    "receiveDiscount": "ส่วนลดเยน",
+    "referralExplanation": "สำหรับแต่ละบุคคลที่คุณแนะนำ คุณจะได้รับ",
+    "discountApplied": "เยนจากค่าธรรมเนียมการสมัครสมาชิกของคุณในเดือนหน้า (วันที่ 25) (สูงสุด",
+    "timesMax": "ครั้ง)",
+    "checkStatusAt": "สามารถตรวจสอบสถานะสิทธิประโยชน์ได้ที่",
+    "subscriptionPage": "หน้าการจัดการการสมัครสมาชิก",
+    "canCheckAnytime": "ได้ตลอดเวลา",
+    "bothPartyBenefit": "ทั้งลูกค้าที่ได้รับการแนะนำและผู้แนะนำจะได้รับ",
+    "oneTimeDiscount": "เยนส่วนลดเดือนละครั้ง มีการใช้ส่วนลดการแนะนำรายเดือน โดยส่วนเกินจะยกยอดไปสูงสุดที่",
+    "carryOverNext": "ครั้งในเดือนถัดไป",
+    "discountApplyDate": "ส่วนลดจะนำไปใช้กับการสมัครใช้งานของคุณในวันที่ 25 ของแต่ละเดือน",
+    "earnedDiscount": "ส่วนลดที่ได้รับคือ",
+    "yenIs": "เยน",
+    "copied": "คัดลอกแล้ว",
+    "copiedDescription": "คัดลอกรหัสอ้างอิงไปยังคลิปบอร์ดแล้ว",
+    "shareTitle": "แนะนำเพื่อนมาที่ Bocker และรับส่วนลดสูงสุดถึง 12,000 เยน!",
+    "shareText": "ลงทะเบียนตอนนี้ด้วยรหัสอ้างอิง ทั้งคุณและเพื่อนของคุณจะได้รับส่วนลด 2,000 เยนต่อเดือน แต่ละคนสามารถรับสิทธิประโยชน์การแนะนำได้สูงสุดถึง 6 เท่า!",
+    "inviteLinkCopied": "คัดลอกลิงก์คำเชิญแล้ว",
+    "inviteLinkCopiedDescription": "คัดลอกลิงก์คำเชิญไปยังคลิปบอร์ดแล้ว",
+    "openLink": "เปิดลิงก์"
+  },
+  "dashboard": {
+    "title": "แดชบอร์ด",
+    "welcome": "ยินดีต้อนรับ",
+    "todayReservations": "ยอดจองวันนี้",
+    "monthlyRevenue": "รายได้ต่อเดือน",
+    "totalCustomers": "ลูกค้าทั้งหมด",
+    "newCustomers": "ลูกค้าใหม่",
+    "cancelRate": "อัตราการยกเลิก",
+    "averageRevenue": "รายได้เฉลี่ย",
+    "newReservation": "การจองใหม่",
+    "viewAll": "ดูทั้งหมด",
+    "recentReservations": "การจองล่าสุด",
+    "salesTrend": "แนวโน้มการขาย",
+    "popularMenus": "เมนูยอดนิยม",
+    "staffPerformance": "ประสิทธิภาพของพนักงาน",
+    "noData": "ไม่มีข้อมูล",
+    "thisMonth": "เดือนนี้",
+    "lastMonth": "เดือนที่แล้ว",
+    "thisWeek": "สัปดาห์นี้",
+    "today": "วันนี้",
+    "yesterday": "เมื่อวาน",
+    "carte": {
+      "title": "การจัดการบันทึกลูกค้า",
+      "backToDashboard": "กลับไปที่แดชบอร์ด",
+      "customerSearch": "การค้นหาลูกค้า",
+      "searchPlaceholder": "ค้นหาตามชื่อลูกค้า",
+      "searchResults": "ผลการค้นหา: {term}",
+      "noResults": "ไม่มีผลการค้นหา",
+      "noCustomers": "ไม่พบลูกค้า",
+      "fetchError": "ดึงข้อมูลลูกค้าไม่สำเร็จ",
+      "searchError": "ไม่สามารถค้นหาลูกค้าได้",
+      "table": {
+        "customerName": "ชื่อลูกค้า",
+        "contact": "ติดต่อ",
+        "visitCount": "เยี่ยมชมการนับ",
+        "lastVisit": "การเข้าชมครั้งล่าสุด",
+        "tags": "แท็ก"
+      },
+      "unregistered": "ไม่ได้ลงทะเบียน",
+      "noReservation": "ไม่มีการจอง",
+      "visitCountBadge": "{count} ครั้ง",
+      "viewDetails": "ดูบันทึกลูกค้า",
+      "detail": {
+        "title": "บันทึกลูกค้า",
+        "backToSearch": "กลับไปที่การค้นหาลูกค้า",
+        "customerNotFound": "ไม่พบข้อมูลลูกค้า",
+        "edit": "แก้ไข",
+        "totalReservationCount": "จำนวนการจองทั้งหมด",
+        "customerInfo": "ข้อมูลลูกค้า",
+        "customerEdit": "แก้ไขข้อมูลลูกค้า",
+        "name": "ชื่อ",
+        "age": "อายุ {age} ปี",
+        "totalPoints": "คะแนนรวม",
+        "pointsUnit": "{points} คะแนน",
+        "skinType": "ประเภทผิว",
+        "hairType": "ประเภทผม",
+        "allergy": "โรคภูมิแพ้",
+        "medicalHistory": "ประวัติทางการแพทย์",
+        "none": "ไม่มี",
+        "birthday": "วันเกิด/อายุ",
+        "ltv": "LTV (ยอดขายรวม)",
+        "staffFree": "ไม่มีการตั้งค่าพนักงาน",
+        "totalReservations": "ยอดจองทั้งหมด",
+        "totalSales": "ยอดขายรวม",
+        "email": "อีเมล",
+        "phone": "หมายเลขโทรศัพท์",
+        "more": "ดูรายละเอียดการรักษา",
+        "reservationHistory": "ประวัติการจอง",
+        "noReservationHistory": "ไม่มีประวัติการจอง",
+        "assignedStaff": "เจ้าหน้าที่: {staffName}",
+        "menu": "เมนู:",
+        "option": "ตัวเลือก:",
+        "paymentMethod": {
+          "cash": "เงินสด",
+          "card": "บัตรเครดิต"
+        },
+        "notes": "หมายเหตุ: {notes}",
+        "status": {
+          "confirmed": "ยืนยันแล้ว",
+          "completed": "เสร็จสิ้น",
+          "cancelled": "ยกเลิกแล้ว",
+          "pending": "รอดำเนินการ"
+        },
+        "notSet": "ไม่ได้ตั้งค่า"
+      },
+      "edit": {
+        "title": "แก้ไขบันทึกลูกค้า",
+        "createTitle": "สร้างบันทึกลูกค้า",
+        "customerNotFound": "ไม่พบข้อมูลลูกค้า",
+        "fetchError": "ดึงข้อมูลไม่สำเร็จ",
+        "updateSuccess": "อัปเดตบันทึกลูกค้าสำเร็จแล้ว",
+        "createSuccess": "สร้างบันทึกลูกค้าสำเร็จแล้ว",
+        "saveError": "ไม่สามารถบันทึกบันทึกลูกค้าได้",
+        "tabs": {
+          "basic": "ข้อมูลพื้นฐาน",
+          "customer": "ข้อมูลลูกค้า",
+          "store": "จัดเก็บอินพุต",
+          "shared": "แบ่งปันแล้ว",
+          "medical": "ข้อมูลทางการแพทย์"
+        },
+        "basicInfo": {
+          "title": "ข้อมูลลูกค้าเบื้องต้น",
+          "customerName": "ชื่อลูกค้า",
+          "skinType": "ประเภทผิว",
+          "hairType": "ประเภทผม",
+          "totalReservationCount": "จำนวนการจองทั้งหมด",
+          "skinTypePlaceholder": "เลือกประเภทผิว",
+          "hairTypePlaceholder": "เลือกประเภทเส้นผม",
+          "notSet": "ไม่ได้ตั้งค่า",
+          "phone": "โทรศัพท์",
+          "phoneNotSet": "ไม่ได้ตั้งค่าโทรศัพท์",
+          "email": "อีเมล",
+          "emailNotSet": "ไม่ได้ตั้งค่าอีเมล",
+          "birthday": "วันเกิด/อายุ",
+          "birthdayNotSet": "วันเกิด/อายุ ไม่ได้กำหนด",
+          "gender": "เพศ",
+          "genderNotSet": "ไม่ได้กำหนดเพศ"
+        },
+        "customerPrefs": {
+          "title": "การตั้งค่าของลูกค้า",
+          "preferSilence": "ชอบที่จะเงียบ",
+          "avoidChemicals": "สารเคมี/ส่วนผสมที่ควรหลีกเลี่ยง",
+          "avoidChemicalsPlaceholder": "ใส่สารเคมีหรือส่วนผสมใดๆ ที่ควรหลีกเลี่ยง",
+          "avoidSalesTalk": "ชอบพูดคุยเรื่องการขายน้อยลง",
+          "avoidPrivateTopics": "ต้องการหลีกเลี่ยงหัวข้อส่วนตัว",
+          "allowPhotoSns": "อนุญาตให้โพสต์รูปภาพและโซเชียลมีเดียหลังการรักษา",
+          "dailyStylingTime": "เวลาจัดแต่งทรงผมทุกวัน",
+          "minutes": "นาที"
+        },
+        "storeAssessment": {
+          "title": "การประเมินร้านค้า",
+          "hairThickness": "ความหนาของเส้นผม",
+          "hairVolume": "ปริมาณเส้นผม",
+          "hairWaveLevel": "ระดับคลื่นเส้นผม",
+          "hairDamageTendency": "ผมมีแนวโน้มที่จะเกิดความเสียหาย",
+          "poorDyePerm": "สีหรือดัดผมหลุดร่วงง่าย",
+          "quickColorFade": "สีซีดจางอย่างรวดเร็ว",
+          "hairDryness": "ผมมีแนวโน้มที่จะแห้งกร้าน",
+          "scalpCondition": "สภาพหนังศีรษะ",
+          "scalpTroubleDetail": "รายละเอียดปัญหาหนังศีรษะ",
+          "scalpTroublePlaceholder": "เข้าสู่ปัญหาหนังศีรษะเฉพาะ"
+        },
+        "sharedPrefs": {
+          "title": "การตั้งค่าที่ใช้ร่วมกัน",
+          "preferHairStyling": "ต้องการจัดแต่งทรงผมหลังการรักษา",
+          "useStylingProduct": "อนุญาตให้ใช้ผลิตภัณฑ์จัดแต่งทรงผม",
+          "sensitivitySection": "ผิวแพ้ง่ายและภูมิแพ้",
+          "hasSensitiveSkin": "มีผิวแพ้ง่าย",
+          "sensitiveSkinDetail": "รายละเอียดผิวแพ้ง่าย",
+          "sensitiveSkinPlaceholder": "เช่น เมื่อมันกลายเป็นเรื่องละเอียดอ่อน",
+          "fragranceSensitivity": "มีความไวต่อน้ำหอม",
+          "useContactLenses": "ใช้คอนแทคเลนส์"
+        },
+        "medicalInfo": {
+          "title": "ข้อมูลทางการแพทย์",
+          "allergyHistory": "ประวัติภูมิแพ้",
+          "allergyPlaceholder": "เช่น แพ้โลหะ แพ้เครื่องสำอาง เป็นต้น",
+          "medicalHistory": "ประวัติทางการแพทย์และเงื่อนไข",
+          "medicalPlaceholder": "เช่น โรคผิวหนังภูมิแพ้ ความดันโลหิตสูง เป็นต้น"
+        },
+        "buttons": {
+          "back": "กลับ",
+          "updating": "กำลังอัปเดต...",
+          "creating": "กำลังสร้าง...",
+          "update": "อัปเดต",
+          "create": "สร้าง"
+        },
+        "validation": {
+          "maxLength": "กรุณากรอกไม่เกิน 1,000 ตัวอักษร"
+        },
+        "skinTypes": {
+          "normal": "ปกติ",
+          "dry": "แห้ง",
+          "oily": "มันเยิ้ม",
+          "combination": "การรวมกัน",
+          "sensitive": "ละเอียดอ่อน"
+        },
+        "hairTypes": {
+          "straight": "ตรง",
+          "wavy": "หยัก",
+          "curly": "หยิก",
+          "coily": "คอยลี่",
+          "fine": "ก็ได้",
+          "thick": "หนา"
+        },
+        "hairThickness": {
+          "fine": "ก็ได้",
+          "medium": "ปานกลาง",
+          "coarse": "หยาบ"
+        },
+        "hairVolume": {
+          "low": "ต่ำ",
+          "medium": "ปานกลาง",
+          "high": "สูง"
+        },
+        "hairWaveLevel": {
+          "straight": "ตรง",
+          "slight": "เล็กน้อย",
+          "moderate": "ปานกลาง",
+          "strong": "แข็งแรง"
+        },
+        "scalpCondition": {
+          "normal": "ปกติ",
+          "dry": "แห้ง",
+          "oily": "มันเยิ้ม",
+          "sensitive": "ละเอียดอ่อน"
+        }
+      }
+    }
+  },
+  "reservations": {
+    "title": "การจัดการการจอง",
+    "list": "รายการจองที่ใช้งานอยู่",
+    "calendar": "ปฏิทิน",
+    "timeline": "ไทม์ไลน์",
+    "timelineTitle": "ไทม์ไลน์การจอง",
+    "timelineDescription": "ตรวจสอบการจองที่ใช้งานอยู่และอัปเดตสถานะเมื่อการรักษาเสร็จสิ้น แสดงเฉพาะการจองที่ยืนยันแล้วเท่านั้น",
+    "newReservation": "การจองใหม่",
+    "editReservation": "แก้ไขการจอง",
+    "reservationDetails": "รายละเอียดการจอง",
+    "customerName": "ชื่อลูกค้า",
+    "date": "วันที่",
+    "time": "เวลา",
+    "startTime": "เวลาเริ่มต้น",
+    "endTime": "เวลาสิ้นสุด",
+    "service": "บริการ",
+    "menu": "เมนู",
+    "staff": "พนักงาน",
+    "status": "สถานะ",
+    "confirmed": "ยืนยันแล้ว",
+    "pending": "รอดำเนินการ",
+    "cancelled": "ยกเลิกแล้ว",
+    "completed": "เสร็จสิ้น",
+    "noShow": "ไม่แสดง",
+    "search": "ค้นหา",
+    "filter": "ตัวกรอง",
+    "total": "รวม",
+    "notes": "หมายเหตุ",
+    "coupon": "คูปอง",
+    "point": "คะแนน",
+    "payment": "การชำระเงิน",
+    "paid": "ชำระเงินแล้ว",
+    "unpaid": "ค้างชำระ",
+    "paymentMethod": "วิธีการชำระเงิน",
+    "cash": "เงินสด",
+    "card": "การ์ด",
+    "digitalPayment": "การชำระเงินแบบดิจิทัล",
+    "options": "ตัวเลือก",
+    "cancelReservation": "ยกเลิกการจอง",
+    "confirmCancel": "คุณแน่ใจหรือไม่ว่าต้องการยกเลิก",
+    "reservationCreated": "สร้างการจองแล้ว",
+    "reservationUpdated": "อัพเดตการจองแล้ว",
+    "reservationCancelled": "การจองถูกยกเลิก",
+    "selectCustomer": "เลือกลูกค้า",
+    "selectMenu": "เลือกเมนู",
+    "selectStaff": "เลือกพนักงาน",
+    "selectDate": "เลือกวันที่",
+    "selectTime": "เลือก เวลา",
+    "duration": "ระยะเวลา",
+    "minutes": "นาที",
+    "hours": "ชั่วโมง",
+    "reservationCount": "การจอง",
+    "noReservations": "ไม่มีการจอง",
+    "reservationTimeline": "ไทม์ไลน์การจอง",
+    "nameNotSet": "ไม่ได้ตั้งชื่อ",
+    "weekend": "วันหยุดสุดสัปดาห์",
+    "weekday": "วันธรรมดา",
+    "showAllReservations": "แสดงการจองทั้งหมด",
+    "listView": "มุมมองรายการ",
+    "timelineView": "มุมมองไทม์ไลน์",
+    "todayButton": "วันนี้",
+    "previousDay": "วันก่อนหน้า",
+    "nextDay": "วันถัดไป",
+    "reservationInfo": "ข้อมูลการจอง",
+    "close": "ปิด",
+    "today": "วันนี้",
+    "detail": "รายละเอียดการจอง",
+    "dateTime": "วันที่และเวลา",
+    "totalReservations": "ยอดจองทั้งหมด",
+    "count": "รายการ",
+    "assignedStaff": "พนักงานที่ได้รับมอบหมาย",
+    "moreDetail": "ดูรายละเอียด",
+    "statuses": {
+      "confirmed": "ยืนยันแล้ว",
+      "pending": "รอดำเนินการ",
+      "cancelled": "ยกเลิกแล้ว",
+      "completed": "เสร็จสิ้น",
+      "noShow": "ไม่แสดง"
+    },
+    "createReservation": "สร้างการจอง",
+    "backToDashboard": "กลับไปที่แดชบอร์ด",
+    "customerType": "การเลือกประเภทลูกค้า",
+    "existingCustomer": "การจองของลูกค้าที่มีอยู่",
+    "newCustomer": "การจองลูกค้าใหม่",
+    "customerSearch": "การค้นหาลูกค้า",
+    "searchCustomer": "ค้นหาลูกค้า",
+    "customerOptional": "คุณสามารถสร้างการจองได้โดยไม่ต้องเลือกลูกค้า",
+    "searching": "กำลังค้นหาลูกค้า...",
+    "searchResults": "ผลการค้นหา",
+    "selectMatchingCustomer": "เลือกลูกค้าที่ตรงกัน",
+    "noCustomersFound": "ไม่พบลูกค้า",
+    "searchCustomerPlaceholder": "กรุณาค้นหาลูกค้า.",
+    "reservationCustomer": "ลูกค้าสำรองห้องพัก",
+    "customerInfo": "ข้อมูลลูกค้า",
+    "lastName": "นามสกุล",
+    "firstName": "ชื่อ",
+    "tel": "หมายเลขโทรศัพท์",
+    "reservationMenus": "เมนูสำรอง",
+    "menuSelectionLimit": "※คุณสามารถเลือกได้ถึง 5 เมนู",
+    "selectMenus": "เลือกเมนู",
+    "selectedMenus": "เมนูที่เลือก",
+    "staffForTreatment": "เจ้าหน้าที่รักษา",
+    "searchingStaff": "กำลังค้นหาเจ้าหน้าที่...",
+    "selectedStaff": "พนักงานที่ได้รับการคัดเลือก",
+    "designationFee": "ค่าธรรมเนียมการกำหนด",
+    "noAvailableStaff": "ไม่มีพนักงานให้บริการทุกเมนูที่เลือก กรุณาเปลี่ยนชุดเมนู",
+    "optionsOptional": "ตัวเลือก (ไม่บังคับ)",
+    "selectOptions": "เลือกตัวเลือก",
+    "selectedOptions": "ตัวเลือกที่เลือก",
+    "reservationDate": "วันที่จอง",
+    "selectReservationDate": "เลือกวันที่จอง",
+    "availableTimeSlots": "ช่วงเวลาที่มีอยู่",
+    "noAvailableSlots": "ไม่มีช่องว่างสำหรับวันที่และเวลาที่เลือก",
+    "notesPlaceholder": "เช่น ลูกค้าผมหยิกและขอทรงที่จัดทรงง่าย",
+    "creating": "กำลังสร้าง...",
+    "createReservationButton": "สร้างการจอง",
+    "totalAmount": "จำนวนเงินทั้งหมด",
+    "totalTreatmentTime": "เวลาการรักษาทั้งหมด",
+    "maxMenuError": "คุณสามารถเลือกเมนูได้สูงสุด {max}",
+    "maxOptionError": "คุณสามารถเลือกตัวเลือกได้สูงสุด {max} รายการ",
+    "staffUnavailableWarning": "พนักงานที่เลือกไม่สามารถจัดการเมนูใหม่ได้ กรุณาเลือกพนักงานอีกครั้ง",
+    "newCustomerValidation": "สำหรับลูกค้าใหม่ จะต้องระบุนามสกุล ชื่อ และหมายเลขโทรศัพท์",
+    "customerRequired": "จำเป็นต้องเลือกลูกค้าหรือป้อนข้อมูลลูกค้าใหม่",
+    "reservationCompleted": "การจองเสร็จสมบูรณ์",
+    "noOptionsSelected": "ไม่ได้เลือกตัวเลือก",
+    "selectMenusFirst": "กรุณาเลือกเมนูก่อน",
+    "staffSchedule": "กำหนดการพนักงาน",
+    "prevWeek": "สัปดาห์ก่อน",
+    "nextWeek": "สัปดาห์หน้า",
+    "prevDay": "วันก่อนหน้า",
+    "weekView": "มุมมองรายสัปดาห์",
+    "dayView": "มุมมองรายวัน",
+    "openMenu": "เปิดเมนู",
+    "goToToday": "ไปที่วันนี้",
+    "switchToWeekView": "สลับไปที่มุมมองสัปดาห์",
+    "switchToDayView": "สลับไปที่มุมมองวัน",
+    "allDay": "ทั้งวัน",
+    "schedule": "กำหนดการ",
+    "fullDay": "เต็มวัน",
+    "weekdayHeader": "หัวเรื่องวันธรรมดา",
+    "hasReservations": "มียอดจอง",
+    "selectStaffToShow": "โปรดเลือกพนักงานจากเมนูแบบเลื่อนลงเพื่อแสดงการจอง",
+    "am": "เช้า",
+    "pm": "น",
+    "oclock": "โมง",
+    "from": "จาก",
+    "weekdays": {
+      "monday": "จันทร์",
+      "tuesday": "อ",
+      "wednesday": "พ",
+      "thursday": "พฤ",
+      "friday": "ศุกร์",
+      "saturday": "ส",
+      "sunday": "อาทิตย์"
+    },
+    "weekdaysFull": {
+      "monday": "วันจันทร์",
+      "tuesday": "วันอังคาร",
+      "wednesday": "วันพุธ",
+      "thursday": "วันพฤหัสบดี",
+      "friday": "วันศุกร์",
+      "saturday": "วันเสาร์",
+      "sunday": "วันอาทิตย์"
+    },
+    "subscriptionRequired": "หากต้องการใช้ฟังก์ชันการจอง คุณต้องสมัครสมาชิก",
+    "goToSubscription": "ไปที่การสมัครสมาชิก"
+  },
+  "customers": {
+    "title": "การจัดการลูกค้า",
+    "list": "รายชื่อลูกค้า",
+    "addCustomer": "เพิ่มลูกค้า",
+    "editCustomer": "แก้ไขลูกค้า",
+    "customerDetails": "รายละเอียดลูกค้า",
+    "firstName": "ชื่อ",
+    "lastName": "นามสกุล",
+    "email": "อีเมล",
+    "phone": "โทรศัพท์",
+    "birthday": "วันเกิด",
+    "birthdayPlaceholder": "เลือกวันเกิด",
+    "customerNotes": "หมายเหตุลูกค้า",
+    "address": "ที่อยู่",
+    "notes": "หมายเหตุ",
+    "visitHistory": "เยี่ยมชมประวัติศาสตร์",
+    "totalVisits": "การเข้าชมทั้งหมด",
+    "lastVisit": "การเข้าชมครั้งล่าสุด",
+    "totalSpent": "การใช้จ่ายทั้งหมด",
+    "averageSpent": "การใช้จ่ายเฉลี่ย",
+    "tags": "แท็ก",
+    "searchPlaceholder": "ค้นหาตามชื่อ อีเมล หรือโทรศัพท์",
+    "noCustomers": "ไม่พบลูกค้า",
+    "customerCreated": "สร้างลูกค้าเรียบร้อยแล้ว",
+    "customerUpdated": "อัปเดตลูกค้าเรียบร้อยแล้ว",
+    "customerDeleted": "ลบลูกค้าเรียบร้อยแล้ว",
+    "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบลูกค้ารายนี้",
+    "registrationDate": "วันที่ลงทะเบียน",
+    "membershipType": "ประเภทสมาชิก",
+    "regular": "ปกติ",
+    "vip": "วีไอพี",
+    "points": "คะแนน",
+    "carte": "บันทึกลูกค้า",
+    "customerNameLineUser": "ชื่อลูกค้า/ผู้ใช้ LINE",
+    "contact": "ติดต่อ",
+    "visitCount": "เยี่ยมชมการนับ",
+    "searchResultsFor": "ผลการค้นหาสำหรับ \"{term}\"",
+    "noSearchResults": "ไม่พบลูกค้าที่ตรงกับเกณฑ์การค้นหา",
+    "notRegistered": "ไม่ได้ลงทะเบียน",
+    "times": "ครั้ง",
+    "noTags": "ไม่มีแท็ก",
+    "details": "รายละเอียด",
+    "noReservation": "ไม่มีการจอง",
+    "fetchError": "ดึงข้อมูลลูกค้าไม่สำเร็จ",
+    "searchError": "ไม่สามารถค้นหาลูกค้าได้",
+    "deleteError": "ลบลูกค้าไม่สำเร็จ",
+    "deleteWarning": "การดำเนินการนี้ไม่สามารถยกเลิกได้ ข้อมูลทั้งหมดที่เกี่ยวข้องกับลูกค้ารายนี้จะถูกลบ",
+    "lineId": "รหัส LINE",
+    "lineUserName": "ชื่อผู้ใช้ LINE",
+    "unselected": "ไม่ได้ถูกเลือก",
+    "customerInfo": "ข้อมูลลูกค้า",
+    "customerInfoDesc": "กรุณาป้อนข้อมูลพื้นฐานที่จำเป็นสำหรับการจอง",
+    "marketingInfo": "ข้อมูลการตลาด",
+    "marketingInfoDesc": "ใช้ข้อมูลนี้เพื่อจัดหมวดหมู่ลูกค้าออกเป็นกลุ่มเฉพาะเพื่อวัตถุประสงค์ทางการตลาด",
+    "memoPlaceholder": "ใส่บันทึก",
+    "pointNote": "* หากคุณกรอกคะแนนเมื่อลงทะเบียน คะแนนเหล่านั้นจะถูกเพิ่มเข้าไปในคะแนนของลูกค้า",
+    "tagExample": "ตัวอย่าง: ลูกค้าทำซ้ำ, ใหม่, บริการทำสี, บริการดัดผม",
+    "selectGender": "เลือกเพศ",
+    "addCustomerButton": "เพิ่มลูกค้า",
+    "tenantOrOrgNotFound": "ไม่พบรหัสผู้เช่าหรือรหัสองค์กร",
+    "addSuccess": "เพิ่มลูกค้าเรียบร้อยแล้ว",
+    "addError": "สร้างลูกค้าไม่สำเร็จ",
+    "male": "ชาย",
+    "female": "หญิง",
+    "gender": "เพศ",
+    "age": "อายุ",
+    "age_suffix": "อายุปี",
+    "validation": {
+      "lineIdMaxLength": "รหัส LINE ต้องมีความยาวไม่เกิน {max} อักขระ",
+      "lineUserNameMaxLength": "ชื่อผู้ใช้ LINE ต้องมีความยาวไม่เกิน {max} อักขระ",
+      "phoneMinLength": "หมายเลขโทรศัพท์ต้องมีอย่างน้อย 6 ตัวอักษร",
+      "phoneMaxLength": "หมายเลขโทรศัพท์ต้องมีความยาวไม่เกิน {max} อักขระ",
+      "phoneFormat": "หมายเลขโทรศัพท์ต้องมีเฉพาะตัวเลขเท่านั้น",
+      "emailMaxLength": "อีเมลต้องมีความยาวไม่เกิน 100 ตัวอักษร",
+      "emailInvalid": "รูปแบบอีเมลไม่ถูกต้อง",
+      "firstNameRequired": "ชื่อต้องมีอย่างน้อย 1 ตัวอักษร",
+      "firstNameMaxLength": "ชื่อต้องมีอักขระไม่เกิน {max} ตัว",
+      "lastNameRequired": "นามสกุลต้องมีอย่างน้อย 1 ตัวอักษร",
+      "lastNameMaxLength": "นามสกุลต้องมีความยาวไม่เกิน {max} อักขระ",
+      "visitCountMax": "จำนวนการเข้าชมต้องอยู่ภายใน {max}",
+      "lastVisitMax": "วันที่เข้าชมครั้งล่าสุดต้องอยู่ภายใน {max}",
+      "tagsMaxCount": "อนุญาตแท็กสูงสุด {max}",
+      "ageMax": "อายุต้องไม่เกิน {max}",
+      "birthdayMaxLength": "วันเกิดต้องมีความยาวไม่เกิน 100 อักขระ",
+      "notesMaxLength": "หมายเหตุต้องมีความยาวไม่เกิน {max} อักขระ",
+      "pointsMax": "คะแนนต้องมี {max} หรือน้อยกว่า",
+      "pointsMinValue": "คะแนนต้องเป็น 0 หรือมากกว่า",
+      "tagMaxLength": "แท็กต้องมีความยาวไม่เกิน {max} อักขระ"
+    },
+    "editTitle": "แก้ไขข้อมูลลูกค้า",
+    "dataNotLoaded": "ข้อมูลลูกค้ายังไม่ได้โหลด",
+    "updateError": "ไม่สามารถอัปเดตข้อมูลลูกค้าได้",
+    "yearsOld": "อายุปี",
+    "totalPoints": "คะแนนรวม",
+    "pointsChangeWarning": "กรุณาแก้ไขคะแนนอย่างระมัดระวัง",
+    "updating": "กำลังอัปเดต...",
+    "updateButton": "อัปเดต",
+    "placeholder": {
+      "lastName": "ใส่นามสกุล",
+      "firstName": "ป้อนชื่อ",
+      "phone": "ป้อนหมายเลขโทรศัพท์",
+      "email": "ป้อนที่อยู่อีเมล",
+      "totalPoints": "ป้อนคะแนนรวม"
+    },
+    "edit": "แก้ไข",
+    "honorific": "",
+    "unknown": "ไม่ทราบ",
+    "noReservationHistory": "ไม่มีประวัติการจอง",
+    "customerNotFound": "ไม่พบลูกค้า",
+    "basicInfo": "ข้อมูลพื้นฐาน",
+    "delete": "ลบ",
+    "additionalInfo": "ข้อมูลเพิ่มเติม",
+    "usageInfo": "ข้อมูลการใช้งาน",
+    "ageValue": "อายุ {age} ปี",
+    "noNotes": "ไม่มีบันทึกย่อ",
+    "visitCountValue": "{count} ครั้ง",
+    "noTagsRegistered": "ไม่มีแท็กที่ลงทะเบียน",
+    "customerId": "รหัสลูกค้า",
+    "pointHistory": "ประวัติคะแนน",
+    "showHistory": "แสดงประวัติ",
+    "hideHistory": "ซ่อนประวัติ",
+    "loadingTransactions": "กำลังโหลดประวัติการทำธุรกรรม...",
+    "noTransactions": "ไม่มีประวัติการทำธุรกรรม",
+    "transactionDate": "วันที่ทำธุรกรรม",
+    "transactionType": "ประเภท",
+    "description": "คำอธิบาย",
+    "earned": "ได้รับ",
+    "used": "ใช้แล้ว",
+    "manualSubtract": "การลบด้วยตนเอง",
+    "fetchTransactionError": "ดึงข้อมูลประวัติการทำธุรกรรมของคะแนนไม่สำเร็จ"
+  },
+  "menu": {
+    "title": "การจัดการเมนู",
+    "list": {
+      "title": "รายการเมนู",
+      "addNew": "เพิ่มเมนูใหม่",
+      "search": "เมนูค้นหา",
+      "filter": "ตัวกรอง",
+      "allCategories": "ทุกหมวดหมู่",
+      "active": "ใช้งานอยู่",
+      "inactive": "ไม่ได้ใช้งาน",
+      "noMenus": "ไม่พบเมนู",
+      "messages": {
+        "noMenusInCategory": "ไม่มีเมนูในหมวดหมู่ที่เลือก",
+        "noMenus": "ไม่มีเมนู",
+        "deleteConfirmation": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "filterByCategory": "กรองตามหมวดหมู่",
+        "selectCategory": "เลือกหมวดหมู่",
+        "categoryNotFound": "ไม่พบหมวดหมู่",
+        "viewMode": "โหมดดู",
+        "gridView": "กริด",
+        "listView": "รายการ",
+        "loadMore": "โหลดเพิ่ม",
+        "deleteMenu": "ลบเมนู",
+        "active": "ใช้งานอยู่",
+        "inactive": "ไม่ได้ใช้งาน",
+        "paymentMethods": {
+          "online": "ชำระเงินออนไลน์",
+          "inStore": "ชำระเงินภายในร้าน",
+          "both": "มีทั้ง"
+        }
+      }
+    },
+    "add": {
+      "title": "เพิ่มเมนู",
+      "description": "เพิ่มรายการเมนูใหม่"
+    },
+    "edit": {
+      "title": "แก้ไขเมนู",
+      "saving": "กำลังบันทึก...",
+      "updating": "กำลังอัปเดต...",
+      "success": "อัปเดตเมนูเรียบร้อยแล้ว",
+      "error": "ไม่สามารถอัปเดตเมนูได้"
+    },
+    "detail": {
+      "title": "รายละเอียดเมนู",
+      "edit": "แก้ไข",
+      "delete": "ลบ",
+      "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบเมนูนี้",
+      "tabs": {
+        "basic": "ข้อมูลพื้นฐาน",
+        "details": "รายละเอียด"
+      },
+      "labels": {
+        "gender": {
+          "all": "ทุกเพศ",
+          "male": "สำหรับผู้ชาย",
+          "female": "สำหรับผู้หญิง"
+        },
+        "targetType": {
+          "repeat": "สำหรับลูกค้าซื้อซ้ำ",
+          "first": "สำหรับลูกค้าใหม่",
+          "all": "สำหรับลูกค้าทุกท่าน"
+        },
+        "paymentMethod": {
+          "credit_card": "การชำระเงินออนไลน์",
+          "cash": "ชำระเงินภายในร้าน",
+          "all": "ชำระเงินในร้านค้าและออนไลน์"
+        }
+      },
+      "fields": {
+        "price": "ราคา",
+        "totalDuration": "เวลาการรักษาทั้งหมด",
+        "target": "เป้าหมาย",
+        "targetType": "ประเภทเป้าหมาย",
+        "paymentMethod": "วิธีการชำระเงิน",
+        "description": "คำอธิบาย",
+        "tags": "แท็ก",
+        "systemInfo": "ข้อมูลระบบ",
+        "createdAt": "สร้างเมื่อ",
+        "noTags": "ไม่มีแท็ก",
+        "minutes": "นาที"
+      },
+      "image": {
+        "noImage": "ไม่มีภาพ",
+        "alt": "รูปภาพเมนู",
+        "thumbnail": "ภาพขนาดย่อ",
+        "show": "แสดงภาพ {index}"
+      },
+      "confirmDeleteDialog": {
+        "title": "ลบเมนู?",
+        "description": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "cancel": "ยกเลิก",
+        "delete": "ลบ"
+      },
+      "messages": {
+        "notFound": "ไม่พบเมนู",
+        "deleteSuccess": "ลบเมนูเรียบร้อยแล้ว",
+        "imageDeleteSuccess": "ลบรูปภาพสำเร็จแล้ว: {url}",
+        "imageDeleteFailed": "ไม่สามารถลบรูปภาพ: {url}",
+        "imageDeleteError": "ไม่สามารถลบรูปภาพ: {status} {statusText} - {error}",
+        "deleteConfirmation": "การดำเนินการนี้ไม่สามารถยกเลิกได้"
+      },
+      "showMore": "แสดงเพิ่มเติม",
+      "showLess": "แสดงน้อยลง"
+    },
+    "form": {
+      "basicInfo": "ข้อมูลพื้นฐาน",
+      "menuImage": "รูปภาพเมนู",
+      "menuName": "ชื่อเมนู",
+      "menuNamePlaceholder": "กรอกชื่อเมนู",
+      "category": "หมวดหมู่",
+      "categoryPlaceholder": "เลือกหมวดหมู่เมนู",
+      "categoryNotFound": "ไม่พบหมวดหมู่",
+      "categoryRequest": "หากไม่มีหมวดหมู่ที่คุณต้องการ โปรด",
+      "categoryRequestLink": "คลิกที่นี่",
+      "categoryRequestSuffix": "เพื่อขอเพิ่ม",
+      "price": "ราคาปกติ",
+      "pricePlaceholder": "เช่น 5,000",
+      "salePrice": "ราคาขาย",
+      "salePricePlaceholder": "เช่น 4000",
+      "duration": "เวลาทำงานของพนักงาน",
+      "durationPlaceholder": "เลือกเวลาทำงานของพนักงาน",
+      "durationHelp": "ป้อนเวลาทำงานจริงสำหรับเมนูนี้",
+      "minutes": "นาที",
+      "target": "เป้าหมาย",
+      "targetHelp": "เลือกคุณลักษณะของลูกค้าที่สามารถใช้เมนูนี้ได้",
+      "targetPlaceholder": "เลือกเป้าหมาย",
+      "targetAll": "ทุกคน",
+      "targetFirst": "ครั้งแรก",
+      "targetRepeat": "ทำซ้ำ",
+      "gender": "เพศ",
+      "genderHelp": "เลือกเพศเป้าหมายสำหรับเมนูนี้",
+      "genderPlaceholder": "เลือกเพศ",
+      "genderAll": "ชายและหญิง",
+      "genderMale": "ชาย",
+      "genderFemale": "หญิง",
+      "tags": "แท็ก",
+      "tagsPlaceholder": "พิมพ์แท็กแล้วกด Enter",
+      "paymentMethod": "วิธีการชำระเงิน",
+      "paymentCash": "ชำระเงินภายในร้านเท่านั้น",
+      "paymentOnline": "ชำระเงินออนไลน์เท่านั้น",
+      "paymentBoth": "มีทั้ง",
+      "paymentOfflineOnly": "ขณะนี้ใช้ได้เฉพาะการชำระเงินในร้านค้าเท่านั้น",
+      "paymentSetupRequired": "หากต้องการใช้การชำระเงินออนไลน์ กรุณากรอกให้ครบถ้วน",
+      "paymentSetupLink": "การตั้งค่าการชำระเงิน",
+      "paymentSetupSuffix": ".",
+      "paymentFeeNotice": "การชำระเงินออนไลน์ต้องเสียค่าธรรมเนียม",
+      "paymentFeeDetail": "ค่าธรรมเนียมการชำระเงินออนไลน์: 4% + 40 เยน/รายการ",
+      "description": "คำอธิบายเมนู",
+      "descriptionPlaceholder": "ป้อนคำอธิบายเมนูโดยละเอียด",
+      "warningMessage": "ข้อความเตือน",
+      "warningMessagePlaceholder": "เช่น เมนูนี้สำหรับคนผมยาว",
+      "publish": "เมนูเผยแพร่",
+      "publishHelp": "เมื่อปิดแล้ว เมนูนี้จะไม่ปรากฏให้ลูกค้าเห็น",
+      "back": "กลับ",
+      "save": "บันทึกเมนู",
+      "update": "อัพเดทเมนู"
+    },
+    "validation": {
+      "nameRequired": "ต้องระบุชื่อเมนู",
+      "nameMaxLength": "ชื่อเมนูต้องมีความยาวไม่เกิน 100 ตัวอักษร",
+      "categoryRequired": "ต้องระบุหมวดหมู่",
+      "priceRequired": "ต้องระบุราคา",
+      "priceMin": "ต้องระบุราคา",
+      "priceMax": "ราคาต้องไม่เกิน {max} เยน",
+      "salePriceMax": "ราคาลดต้องไม่เกิน {max} เยน",
+      "salePriceLower": "ราคาขายจะต้องต่ำกว่าราคาปกติ",
+      "durationRequired": "ต้องใช้เวลาทำงานของพนักงาน",
+      "descriptionRequired": "จำเป็นต้องมีคำอธิบาย",
+      "descriptionMax": "คำอธิบายต้องมีความยาวไม่เกิน {max} อักขระ",
+      "genderRequired": "ต้องระบุเพศ",
+      "tagMaxLength": "แท็กต้องมีอักขระไม่เกิน {max} ตัว",
+      "targetTypeRequired": "ต้องระบุประเภทเป้าหมาย",
+      "tagsMax": "อนุญาตสูงสุด 5 แท็ก",
+      "tagsLengthMax": "แท็กต้องมีความยาวไม่เกิน {max} อักขระ",
+      "paymentMethodRequired": "ต้องระบุวิธีการชำระเงิน",
+      "isActiveRequired": "จำเป็นต้องมีการตั้งค่าสถานะใช้งาน/ไม่ใช้งาน",
+      "nameInvalid": "ชื่อเมนูต้องเป็นสตริง",
+      "categoryNotFound": "ไม่พบหมวดหมู่",
+      "categoryMaxCount": "หมวดหมู่ต้องมีค่าสูงสุด 5",
+      "priceInvalid": "ราคาต้องเป็นตัวเลข",
+      "descriptionInvalid": "คำอธิบายต้องเป็นสตริง",
+      "descriptionMaxLength": "คำอธิบายต้องมีความยาวไม่เกิน {max} อักขระ",
+      "tagsMaxLength": "แท็กต้องมีความยาวไม่เกิน {max} อักขระ",
+      "tagsMaxCount": "อนุญาตสูงสุด 5 แท็ก"
+    },
+    "messages": {
+      "salonNotFound": "ไม่พบข้อมูลร้านหรือข้อมูลเมนูที่มีอยู่",
+      "uploadingImages": "กำลังอัพโหลดภาพ...",
+      "deletingImages": "ลบรูปภาพเก่า {count} ออกจากพื้นที่เก็บข้อมูล",
+      "deleteImageError": "เกิดข้อผิดพลาดขณะลบภาพเก่า: {error}",
+      "updateSuccess": "อัปเดตเมนูเรียบร้อยแล้ว",
+      "updateError": "ไม่สามารถอัปเดตเมนูได้",
+      "noMenus": "ไม่มีเมนู",
+      "noMenusInCategory": "ไม่มีเมนูในหมวดนี้",
+      "categoryNotFound": "ไม่พบหมวดหมู่"
+    },
+    "addMenu": "เพิ่มเมนู",
+    "editMenu": "แก้ไขเมนู",
+    "menuDetails": "รายละเอียดเมนู",
+    "menuName": "ชื่อเมนู",
+    "category": "หมวดหมู่",
+    "categories": "หมวดหมู่",
+    "price": "ราคา",
+    "unitPrice": "ราคาปกติ",
+    "salePrice": "ราคาขาย",
+    "duration": "ระยะเวลา",
+    "durationMinutes": "เวลาการรักษา",
+    "description": "คำอธิบาย",
+    "warningMessage": "ข้อความเตือน",
+    "menuDescription": "คำอธิบายเมนู",
+    "shortDescription": "คำอธิบายสั้น ๆ",
+    "detailedDescription": "คำอธิบายโดยละเอียด",
+    "image": "รูปภาพ",
+    "images": "รูปภาพเมนู",
+    "uploadImage": "อัพโหลดรูปภาพ",
+    "imagesLimit": "(สูงสุด 3 ภาพ)",
+    "active": "ใช้งานอยู่",
+    "inactive": "ไม่ได้ใช้งาน",
+    "displayOrder": "แสดงลำดับ",
+    "taxIncluded": "รวมภาษีแล้ว",
+    "taxExcluded": "ไม่รวมภาษี",
+    "requiredStaff": "พนักงานที่จำเป็น",
+    "availableStaff": "พนักงานพร้อมให้บริการ",
+    "options": "ตัวเลือก",
+    "relatedMenus": "เมนูที่เกี่ยวข้อง",
+    "menuCreated": "เมนูที่ลงทะเบียนแล้ว",
+    "menuUpdated": "อัปเดตเมนูแล้ว",
+    "menuDeleted": "ลบเมนูแล้ว",
+    "popularMenu": "เมนูยอดนิยม",
+    "newMenu": "เมนูใหม่",
+    "recommendedMenu": "เมนูแนะนำ",
+    "generateDescription": "สร้างคำอธิบาย",
+    "generating": "กำลังสร้าง...",
+    "generationFailed": "การสร้างล้มเหลว",
+    "target": "เป้าหมาย",
+    "targetCustomer": "ลูกค้าเป้าหมาย",
+    "gender": "เพศ",
+    "allGenders": "ทุกเพศ",
+    "male": "ชาย",
+    "female": "หญิง",
+    "allCustomers": "ลูกค้าทุกท่าน",
+    "firstTime": "ครั้งแรก",
+    "repeat": "ทำซ้ำ",
+    "paymentMethod": "วิธีการชำระเงิน",
+    "storePaymentOnly": "ชำระเงินภายในร้านเท่านั้น",
+    "onlinePaymentOnly": "ชำระเงินออนไลน์เท่านั้น",
+    "bothPayments": "มีจำหน่ายทั้งคู่",
+    "onlinePaymentNotAvailable": "ขณะนี้ใช้ได้เฉพาะการชำระเงินในร้านค้าเท่านั้น",
+    "onlinePaymentSetupRequired": "หากต้องการใช้การชำระเงินออนไลน์",
+    "paymentSettings": "การตั้งค่าการชำระเงิน",
+    "completeSetup": "กรุณาตั้งค่าให้เสร็จสิ้น",
+    "onlinePaymentFee": "การชำระเงินออนไลน์มีค่าธรรมเนียม",
+    "onlinePaymentFeeDetails": "ค่าธรรมเนียมการชำระเงินออนไลน์: 4% + 40 เยน/รายการ",
+    "publishMenu": "เมนูเผยแพร่",
+    "publishMenuDescription": "หากปิด เมนูนี้จะไม่ปรากฏให้ลูกค้าเห็น",
+    "backButton": "กลับ",
+    "addMenuButton": "เพิ่มเมนู",
+    "adding": "กำลังเพิ่ม...",
+    "placeholder": {
+      "menuName": "กรุณากรอกชื่อเมนู",
+      "selectCategory": "เลือกหมวดหมู่เมนู",
+      "unitPrice": "เช่น 5,000",
+      "salePrice": "เช่น 4000",
+      "selectDuration": "เลือกเวลาการรักษา",
+      "warningMessage": "เช่น เมนูนี้สำหรับคนผมยาว",
+      "menuDescription": "ป้อนคำอธิบายเมนูโดยละเอียด",
+      "tags": "เช่น ดัดดิจิตอล สไตล์ซัมเมอร์ สำหรับคนหน้ายาว"
+    },
+    "help": {
+      "multipleCategories": "หากคุณเลือกหลายหมวดหมู่ จะถือเป็นเมนูชุด เมนูยอดนิยมจะแสดงที่ด้านบนของเมนูการจอง",
+      "durationTotal": "ตั้งเวลาการรักษาทั้งหมดสำหรับเมนู",
+      "targetCustomer": "คุณสามารถเลือกคุณสมบัติลูกค้าหลักสำหรับเมนูนี้ได้",
+      "targetGender": "เลือกเพศเป้าหมายสำหรับเมนูนี้",
+      "durationInfo": "ความแตกต่างระหว่างเวลาทำงานจริงกับเวลาการรักษาทั้งหมดรวมทั้งเวลารอด้วย",
+      "actualWorkTime": "เวลาทำงานจริง",
+      "actualWorkTimeDesc": "เจ้าหน้าที่กำลังดำเนินการรักษาตามเวลาจริง",
+      "actualWorkTimeExample": "เช่น ใช้น้ำยาดัดผม ตัดผม สระผม ฯลฯ",
+      "totalDuration": "ระยะเวลาการรักษาทั้งหมด (รวมการรอคอย)",
+      "totalDurationDesc": "เวลาที่นั่งเต็มแต่พนักงานสามารถทำงานกับลูกค้ารายอื่นได้",
+      "totalDurationExample": "เช่น รอสารเคมี ไดร์ผม ฯลฯ",
+      "algorithmExplanation": "อัลกอริธึมช่องการจองจะคำนวณเวลาที่ว่างตามเวลาทำงานจริง และถือว่าเวลาการรักษาทั้งหมดเป็นการรอ ทำให้สามารถหมุนเวียนที่นั่งได้อย่างมีประสิทธิภาพ",
+      "requiredNote": "* ต้องทำทั้งสองครั้ง",
+      "inputExample": "* ตัวอย่าง: ดัดผม 90 นาที (งานจริง 45 นาที + สงวนไว้ 45 นาที) ให้พนักงานให้บริการลูกค้ารายอื่นระหว่างนั้น 45 นาที"
+    },
+    "errors": {
+      "tenantOrOrgRequired": "ต้องระบุข้อมูลผู้เช่าหรือร้านค้า"
+    },
+    "minutes": "นาที",
+    "filterByCategory": "กรองตามหมวดหมู่",
+    "selectCategory": "เลือกหมวดหมู่",
+    "selectedCategoriesCount": "เลือก {count} แล้ว",
+    "categoryNotFound": "ไม่พบหมวดหมู่",
+    "paymentMethods": {
+      "both": "มีจำหน่ายทั้งคู่",
+      "online": "การชำระเงินออนไลน์",
+      "inStore": "ชำระเงินภายในร้าน"
+    }
+  },
+  "options": {
+    "title": "การจัดการตัวเลือก",
+    "list": {
+      "title": "รายการตัวเลือก",
+      "description": "สามารถใช้ตัวเลือกในการขายต่อยอดได้ เช่น ผลิตภัณฑ์จัดแต่งทรงผม ทรีตเมนต์ และสินค้าขายปลีก",
+      "addNew": "สร้างตัวเลือก",
+      "noOptions": "ไม่มีตัวเลือกให้เลือก",
+      "dashboard": "แดชบอร์ด",
+      "table": {
+        "status": "สถานะ",
+        "image": "รูปภาพ",
+        "name": "ชื่อเมนู",
+        "price": "ราคาต่อหน่วย/ราคาขาย",
+        "orderLimit": "ปริมาณการสั่งซื้อสูงสุด",
+        "totalDuration": "เวลาการรักษาทั้งหมด",
+        "tags": "แท็ก",
+        "edit": "แก้ไข",
+        "delete": "ลบ",
+        "statusActive": "ใช้งานอยู่",
+        "statusDeleted": "ลบแล้ว",
+        "notSet": "ไม่ได้ตั้งค่า",
+        "pieces": "ชิ้น",
+        "minutes": "นาที",
+        "confirm": "ยืนยัน",
+        "loadMore": "โหลดเพิ่มเติม"
+      },
+      "confirmDialog": {
+        "title": "ลบตัวเลือก?",
+        "description": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "cancel": "ยกเลิก",
+        "delete": "ลบ"
+      }
+    },
+    "add": {
+      "title": "เพิ่มตัวเลือก",
+      "description": "เพิ่มตัวเลือกใหม่"
+    },
+    "detail": {
+      "list": {
+        "title": "รายการตัวเลือก"
+      },
+      "title": "รายละเอียดตัวเลือก",
+      "edit": "แก้ไข",
+      "delete": "ลบ",
+      "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบตัวเลือกนี้",
+      "tabs": {
+        "basic": "ข้อมูลพื้นฐาน",
+        "details": "รายละเอียด"
+      },
+      "fields": {
+        "price": "ราคา",
+        "totalDuration": "เวลาทำงานของพนักงาน",
+        "orderLimit": "ปริมาณการสั่งซื้อสูงสุด",
+        "stock": "ปริมาณสต็อค",
+        "description": "คำอธิบาย",
+        "tags": "แท็ก",
+        "systemInfo": "ข้อมูลระบบ",
+        "createdAt": "วันที่สร้าง",
+        "noTags": "ไม่มีแท็ก",
+        "minutes": "นาที",
+        "pieces": "ชิ้น",
+        "noCategory": "ไม่มีหมวดหมู่"
+      },
+      "image": {
+        "noImage": "ไม่มีภาพ",
+        "alt": "รูปภาพตัวเลือก",
+        "thumbnail": "ภาพขนาดย่อ",
+        "show": "แสดงภาพ {index}"
+      },
+      "confirmDeleteDialog": {
+        "title": "ลบตัวเลือก?",
+        "description": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "cancel": "ยกเลิก",
+        "delete": "ลบ"
+      },
+      "messages": {
+        "notFound": "ไม่พบตัวเลือก",
+        "deleteSuccess": "ลบตัวเลือกเรียบร้อยแล้ว",
+        "imageDeleteError": "ไม่สามารถลบรูปภาพ: {status} {statusText} - {error}",
+        "optionNotFound": "ไม่พบตัวเลือก"
+      },
+      "showMore": "แสดงเพิ่มเติม",
+      "showLess": "แสดงน้อยลง"
+    },
+    "edit": {
+      "title": "แก้ไขตัวเลือก",
+      "success": "อัปเดตตัวเลือกเรียบร้อยแล้ว",
+      "error": "ไม่สามารถอัปเดตตัวเลือกได้",
+      "updating": "กำลังอัปเดต..."
+    },
+    "validation": {
+      "nameRequired": "ต้องระบุชื่อตัวเลือก",
+      "nameMaxLength": "ชื่อตัวเลือกต้องมีความยาวไม่เกิน 100 อักขระ",
+      "descriptionRequired": "จำเป็นต้องมีคำอธิบาย",
+      "descriptionMax": "คำอธิบายต้องมีความยาวไม่เกิน 2,000 ตัวอักษร",
+      "unitPriceRequired": "ต้องระบุราคาต่อหน่วย",
+      "unitPriceMax": "ราคาต่อหน่วยจะต้องไม่เกิน {max} เยน",
+      "salePriceMax": "ราคาลดต้องไม่เกิน {max} เยน",
+      "priceRequired": "ต้องระบุราคา",
+      "priceMin": "ราคาจะต้องเป็น 1 เยนขึ้นไป",
+      "priceMax": "ราคาต้องไม่เกิน {max} เยน",
+      "orderLimitMin": "ปริมาณการสั่งซื้อสูงสุดต้องเป็น 1 หรือมากกว่า",
+      "orderLimitMax": "จำนวนสั่งซื้อสูงสุดต้องเป็น 99 ชิ้นหรือน้อยกว่า",
+      "targetMenusRequired": "จำเป็นต้องมีเมนูเป้าหมาย",
+      "durationRequired": "ต้องใช้เวลารักษาของพนักงานที่ทำงาน",
+      "durationMax": "เวลาการรักษาของพนักงานที่ทำงานต้องอยู่ภายใน 5 ตัวอักษร",
+      "inStockMax": "ปริมาณในสต็อคต้องมีจำนวน {max} ชิ้นหรือน้อยกว่า",
+      "tagMax": "แท็กต้องมีอักขระไม่เกิน 100 ตัว",
+      "tagMaxCount": "อนุญาตสูงสุด 5 แท็ก",
+      "salePriceLower": "ราคาขายจะต้องต่ำกว่าราคาปกติ"
+    },
+    "messages": {
+      "createSuccess": "สร้างตัวเลือกสำเร็จแล้ว",
+      "updateSuccess": "อัปเดตตัวเลือกเรียบร้อยแล้ว",
+      "deleteSuccess": "ลบตัวเลือกเรียบร้อยแล้ว",
+      "notFound": "ไม่พบตัวเลือก"
+    },
+    "form": {
+      "optionImage": "รูปภาพเมนูตัวเลือก",
+      "optionName": "ชื่อเมนูตัวเลือก",
+      "optionNamePlaceholder": "ชื่อเมนูตัวเลือก",
+      "maxOrder": "ปริมาณการสั่งซื้อสูงสุด",
+      "orderLimit": "ปริมาณการสั่งซื้อสูงสุด",
+      "orderLimitPlaceholder": "เช่น: 5",
+      "stock": "ปริมาณสต็อค",
+      "stockPlaceholder": "เช่น: 100",
+      "unitPrice": "ราคาปกติ",
+      "salePrice": "ราคาขาย",
+      "durationTitle": "ระยะเวลาการรักษาการทำงานของพนักงาน",
+      "durationPlaceholder": "เลือกเวลาการรักษาของพนักงานที่ทำงาน",
+      "minutes": "นาที",
+      "timeHelp": "ตั้งเวลาการทำงานจริงสำหรับเมนู",
+      "tags": "แท็ก",
+      "tagsPlaceholder": "เช่น: มีเวลาจำกัด การขาย วันที่ ฯลฯ",
+      "description": "เมนูตัวเลือก คำอธิบาย",
+      "descriptionPlaceholder": "ป้อนคำอธิบายโดยละเอียดของเมนูตัวเลือก",
+      "publishToggle": "เผยแพร่เมนูตัวเลือก",
+      "publishHelp": "เมื่อปิดแล้ว เมนูตัวเลือกนี้จะไม่แสดงให้ลูกค้าเห็น",
+      "adding": "กำลังเพิ่ม...",
+      "addButton": "เพิ่มตัวเลือก",
+      "updating": "กำลังอัปเดต...",
+      "updateButton": "อัปเดตตัวเลือก",
+      "back": "กลับ",
+      "deleteImageTitle": "ลบรูปภาพใช่ไหม",
+      "deleteImageDescription": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+      "deleteImageButton": "ลบรูปภาพ",
+      "cancel": "ยกเลิก",
+      "deleting": "กำลังลบ..."
+    }
+  },
+  "coupons": {
+    "title": "การจัดการคูปอง",
+    "list": "รายการคูปอง",
+    "addCoupon": "สร้างคูปอง",
+    "editCoupon": "แก้ไขคูปอง",
+    "couponDetails": "รายละเอียดคูปอง",
+    "createTitle": "สร้างคูปอง",
+    "createDescription": "คุณสามารถสร้างคูปองใหม่ได้โดยป้อนข้อมูลที่จำเป็น โปรดทำตามขั้นตอนเพื่อเสร็จสิ้นกระบวนการ",
+    "backToList": "กลับไปที่รายการคูปอง",
+    "basicSettings": "การตั้งค่าพื้นฐาน",
+    "exclusionMenu": "เมนูยกเว้น",
+    "exclusionMenuTitle": "เมนูยกเว้น",
+    "basicInfo": "ข้อมูลพื้นฐาน",
+    "couponName": "ชื่อคูปอง",
+    "couponNamePlaceholder": "เช่น ครั้งแรกลด 20%",
+    "couponCode": "รหัสคูปอง",
+    "couponCodePlaceholder": "เช่น CODE12345",
+    "couponCodeHelp": "ลูกค้าสามารถใช้รหัสนี้ระหว่างการจองเพื่อใช้ส่วนลดในการชำระเงิน",
+    "discountType": "ประเภทส่วนลด",
+    "discountTypeHelp": "คุณสามารถกำหนดส่วนลดคงที่หรือส่วนลดเป็นเปอร์เซ็นต์ตามจำนวนการใช้งานได้",
+    "percentageDiscount": "อัตราส่วนลด",
+    "fixedDiscount": "ส่วนลดคงที่",
+    "discountRate": "อัตราคิดลด (%)",
+    "discountRatePlaceholder": "เช่น 10",
+    "fixedDiscountAmount": "จำนวนส่วนลดคงที่ (¥)",
+    "fixedDiscountAmountPlaceholder": "เช่น 1,000",
+    "validPeriodAndUsage": "ระยะเวลาที่ถูกต้องและจำนวนการใช้งาน",
+    "startDate": "วันที่เริ่มต้น",
+    "endDate": "วันที่สิ้นสุด",
+    "selectDate": "เลือกวันที่",
+    "validPeriodHelp": "คูปองนี้ใช้ได้ตั้งแต่วันที่เริ่มต้นจนถึงวันที่สิ้นสุด หลังจากหมดระยะเวลา คูปองจะใช้งานไม่ได้โดยอัตโนมัติ",
+    "maxUsageCount": "จำนวนการใช้งานสูงสุด",
+    "maxUsageCountPlaceholder": "เช่น 100",
+    "maxUsageHelp": "หากเกินจำนวนการใช้งานสูงสุด คูปองจะใช้งานไม่ได้โดยอัตโนมัติ",
+    "targetMenuAndStatus": "เมนูเป้าหมายและการตั้งค่าสถานะ",
+    "toggleStatus": "สลับสถานะ",
+    "statusHelp": "หากปิดการใช้งาน คูปองจะใช้งานไม่ได้โดยอัตโนมัติ โปรดเลือกตัวเลือกนี้หากคุณต้องการหยุดการใช้งาน",
+    "targetCustomer": "ลูกค้าเป้าหมาย",
+    "allCustomers": "ลูกค้าทุกท่าน",
+    "firstTimeCustomers": "ลูกค้าครั้งแรก",
+    "repeatCustomers": "ลูกค้าทำซ้ำ",
+    "targetCustomerHelp": "โปรดเลือกคุณลักษณะของลูกค้าที่สามารถใช้คูปองนี้ได้",
+    "createButton": "สร้างคูปอง",
+    "creating": "กำลังเพิ่ม...",
+    "preview": {
+      "title": "ชื่อคูปอง",
+      "validCoupon": "คูปองที่ถูกต้อง",
+      "invalidCoupon": "คูปองไม่ถูกต้อง",
+      "startDate": "วันที่เริ่มต้น:",
+      "endDate": "วันที่สิ้นสุด:",
+      "usageCount": "จำนวนการใช้งาน:",
+      "unlimited": "ไม่จำกัด",
+      "targetMenuCount": "เมนูเป้าหมาย:",
+      "active": "ใช้งานอยู่",
+      "inactive": "ไม่ได้ใช้งาน",
+      "items": "รายการ"
+    },
+    "validation": {
+      "nameRequired": "ต้องระบุชื่อคูปอง",
+      "nameMinLength": "กรุณากรอกชื่อคูปอง",
+      "codeRequired": "ต้องใช้รหัสคูปอง",
+      "codeMinLength": "โปรดป้อนค่าตั้งแต่ 1 ขึ้นไป",
+      "codeMaxLength": "โปรดป้อนค่า 12 อักขระหรือน้อยกว่า",
+      "percentageMin": "โปรดป้อนค่า 1% ขึ้นไป",
+      "percentageMax": "โปรดป้อนค่า 100% หรือน้อยกว่า",
+      "fixedMin": "โปรดป้อนค่าตั้งแต่ 1 เยนขึ้นไป",
+      "fixedMax": "โปรดป้อนค่า 99999 เยนหรือน้อยกว่า",
+      "endDateInvalid": "โปรดเลือกวันที่หลังจากวันที่ปัจจุบัน",
+      "maxUsageRequired": "จำเป็นต้องมีจำนวนการใช้งานสูงสุด",
+      "maxUsageMin": "โปรดป้อนค่าตั้งแต่ 0 ขึ้นไป",
+      "maxUsageMax": "โปรดป้อนค่า 99999 หรือน้อยกว่า",
+      "formError": "มีข้อผิดพลาดในการป้อนข้อมูล กรุณาตรวจสอบแต่ละรายการ"
+    },
+    "messages": {
+      "salonNotFound": "ไม่พบซาลอน",
+      "createSuccess": "สร้างคูปองเรียบร้อยแล้ว",
+      "createError": "ไม่สามารถสร้างเมนูยกเว้นคูปองได้"
+    }
+  },
+  "staff": {
+    "title": "การจัดการพนักงาน",
+    "list": {
+      "title": "รายชื่อพนักงาน",
+      "status": "สถานะ",
+      "image": "รูปภาพ",
+      "name": "ชื่อ",
+      "connectClerk": "เชื่อมต่อ Clerk",
+      "clerkStatus": {
+        "notSet": "ไม่ได้ตั้งค่า",
+        "connect": "เชื่อมต่อแล้ว"
+      },
+      "description": "คำอธิบาย",
+      "details": "รายละเอียด",
+      "edit": "แก้ไข",
+      "noStaff": "ยังไม่มีพนักงานลงทะเบียน",
+      "addFirstStaff": "เพิ่มพนักงานคนแรกของคุณ",
+      "addStaffButton": "เพิ่มพนักงาน",
+      "notSet": "ไม่ได้ตั้งค่า"
+    },
+    "addStaff": "เพิ่มพนักงาน",
+    "addStaffBtn": "เพิ่มพนักงาน",
+    "editStaff": "แก้ไขพนักงาน",
+    "staffDetails": "รายละเอียดพนักงาน",
+    "inviteStaff": "เชิญเจ้าหน้าที่",
+    "workScheduleManagement": "การจัดการตารางการทำงาน",
+    "name": "ชื่อ",
+    "firstName": "ชื่อ",
+    "lastName": "นามสกุล",
+    "email": "ที่อยู่อีเมล",
+    "phone": "หมายเลขโทรศัพท์",
+    "role": "บทบาท",
+    "roles": {
+      "admin": "ผู้ดูแลระบบ",
+      "owner": "เจ้าของ",
+      "manager": "ผู้จัดการ",
+      "staff": "พนักงาน"
+    },
+    "status": "สถานะ",
+    "active": "ใช้งานอยู่",
+    "inactive": "ไม่ได้ใช้งาน",
+    "invited": "เชิญ",
+    "schedule": {
+      "title": "การจัดการกำหนดการพนักงาน",
+      "selectStaffLabel": "เลือกพนักงานเพื่อเพิ่มตารางเวลา",
+      "selectStaffPlaceholder": "เลือกพนักงาน",
+      "noStaff": "ยังไม่มีพนักงานลงทะเบียน",
+      "alertSelectStaff": "กรุณาเลือกพนักงานก่อน",
+      "weekScheduleTab": "การตั้งค่ากำหนดการรายสัปดาห์",
+      "scheduleCreationTab": "สร้างกำหนดการ",
+      "createdSchedules": "กำหนดการที่สร้างขึ้น",
+      "holidayLimitMessage": "คุณสามารถเลือกหยุดได้สูงสุด 30 วัน",
+      "allDay": "ทั้งวัน",
+      "startTime": "เวลาเริ่มต้น",
+      "endTime": "เวลาสิ้นสุด",
+      "notes": "หมายเหตุ",
+      "saveSchedule": "บันทึกกำหนดการ",
+      "scheduleSaved": "บันทึกกำหนดการของพนักงานแล้ว",
+      "timeRequiredError": "โปรดตั้งเวลาเริ่มต้นและสิ้นสุดสำหรับกำหนดการที่ไม่ใช่ทั้งวัน",
+      "weekScheduleAbout": {
+        "title": "เกี่ยวกับกำหนดการประจำสัปดาห์ของพนักงาน",
+        "premise": "วิชาบังคับก่อน: ตรวจสอบวันทำการของร้านเสริมสวย",
+        "premiseDesc": "ลงทะเบียนวันทำการของร้านเสริมสวยก่อน เพื่อให้พนักงานสามารถเลือกได้เฉพาะวันทำการเท่านั้น",
+        "staffCannotWorkOnClosedDays": "ไม่สามารถกำหนดวันที่ร้านเสริมสวยปิดได้",
+        "workDayToggle": "คลิกวันเพื่อตั้งเป็นวันทำการ",
+        "workDayToggleDesc": "สลับระหว่างสีเทา (วันหยุด) → สี (วันทำการ)",
+        "onlyWorkDaysShow": "เฉพาะวันทำการเท่านั้นที่จะปรากฏเป็นตัวเลือกพนักงานในระหว่างการจอง",
+        "commonTimeToggle": "ตัดสินใจว่าจะใช้เวลาทำงานทั่วไปหรือไม่",
+        "commonTimeOnDesc": "เมื่อเปิด \"การตั้งค่าทั่วไป\" เวลาทำงานเดียวกันจะมีผลกับวันทำงานทั้งหมด",
+        "commonTimeOffDesc": "เมื่อปิด การตั้งค่าแต่ละรายการจะเป็นไปได้ในแต่ละวัน",
+        "timeInput": "ป้อน/เลือกเวลา",
+        "timeInputDesc": "หลังจากเลือกเวลาเริ่มต้นแล้ว ตัวเลือกเวลาสิ้นสุดจะเหลือเพียงเวลาต่อๆ ไปเท่านั้น",
+        "conflictRule": "กฎข้อขัดแย้งกับชั่วโมงซาลอน",
+        "conflictRuleDesc": "เวลาเริ่มต้นในภายหลังและเวลาสิ้นสุดก่อนหน้าจะถูกนำมาใช้",
+        "conflictExample": "ตัวอย่าง: ร้านเสริมสวย 09:00-18:00 น. พนักงาน 08:30-19:00 น. → จริง:",
+        "faq": "คำถามที่พบบ่อย",
+        "faqWorkDayChange": "จะเกิดอะไรขึ้นกับชั่วโมงเมื่อเปลี่ยนวันทำงานในภายหลัง?",
+        "faqWorkDayChangeAnswer": "วันที่เปิดใช้งานใหม่จะได้รับ 'ชั่วโมงทั่วไปเมื่อการตั้งค่าทั่วไปเปิด' หรือ 'ค่าเริ่มต้น 09:00-17:00 น. เมื่อปิด'",
+        "faqSalonDayChange": "จะเกิดอะไรขึ้นหากวันทำการของร้านเสริมสวยเปลี่ยนแปลง?",
+        "faqSalonDayChangeAnswer": "วันที่เปลี่ยนเป็นปิดจะปิดวันทำงานของพนักงานโดยอัตโนมัติ",
+        "faqMidnightShift": "แล้วกะที่ข้ามเวลา 24:00 น. ล่ะ?",
+        "faqMidnightShiftAnswer": "เวอร์ชันปัจจุบันรองรับเฉพาะเวลาภายในวันเดียวกันเท่านั้น โปรดรอคุณลักษณะกะเที่ยงคืน"
+      },
+      "scheduleGuide": {
+        "title": "วิธีใช้การตั้งค่ากำหนดการ",
+        "step1": "เลือกพนักงาน",
+        "step1Desc": "เลือกสมาชิกเจ้าหน้าที่จากดรอปดาวน์เพื่อลงทะเบียนกำหนดการ",
+        "step2": "เลือกวันที่ในปฏิทิน",
+        "step2Desc": "คลิกเพื่อเลือกหลายวันพร้อมกัน คลิกอีกครั้งเพื่อยกเลิกการเลือก",
+        "step3": "ตั้งค่าทั้งวันหรือช่วงเวลา",
+        "step3Desc": "สวิตช์เปิด 'ทั้งวัน' หมายถึงการหยุดการจองตลอด 24 ชั่วโมง ปิดช่วยให้ตั้งเวลาเริ่มต้น/สิ้นสุดในช่วงเวลา 10 นาที",
+        "step4": "ป้อนหมายเหตุ (ไม่บังคับ)",
+        "step4Desc": "ฝากเหตุผลหรือบันทึกช่วยจำไว้แบ่งปันกับทีมงาน",
+        "step5": "บันทึก",
+        "step5Desc": "กด 'บันทึกกำหนดการ' เพื่อให้มีผลทันที ช่องที่เกี่ยวข้องจะถูกซ่อนจากปฏิทินการจอง",
+        "faq": "คำถามที่พบบ่อย",
+        "faqMultipleSchedules": "ต้องการลงทะเบียนหลายตารางเวลาต่อวัน",
+        "faqMultipleSchedulesAnswer": "ปัจจุบันสามารถลงทะเบียนได้เพียงตารางเดียวต่อวันเท่านั้น",
+        "faqDeleteSchedule": "ต้องการลบกำหนดการที่สร้างขึ้นโดยไม่ได้ตั้งใจ",
+        "faqDeleteScheduleAnswer": "คลิกไอคอนถังขยะที่ด้านบนขวาของการ์ดเพื่อยกเลิกการเลือกและบันทึกเพื่อลบ"
+      },
+      "weekScheduleForm": {
+        "title": "การตั้งค่าวันและเวลาทำงานของพนักงาน",
+        "salonBusinessDays": "วันทำการร้านเสริมสวย",
+        "businessDay": "วันทำการ",
+        "regularHoliday": "วันหยุดประจำ",
+        "workingDay": "วันทำงาน",
+        "holiday": "วันหยุด",
+        "workingTimeSettings": "การตั้งค่าเวลาทำงาน",
+        "commonSettings": "การตั้งค่าทั่วไป",
+        "daySpecificSettings": "การตั้งค่าเฉพาะวัน",
+        "useCommonHours": "กำหนดเวลาทำงานทั่วไปสำหรับวันทำงานทั้งหมด",
+        "workingTime": "เวลาทำงาน",
+        "startTimePlaceholder": "เวลาเริ่มต้น",
+        "endTimePlaceholder": "เวลาสิ้นสุด",
+        "timeSelectHint": "คุณสามารถเลือกเวลาหลังจากเวลาเริ่มต้นได้",
+        "noWorkingDays": "ไม่มีการกำหนดวันทำงาน",
+        "noWorkingDaysDesc": "การตั้งค่าเวลาจะปรากฏขึ้นเมื่อคุณเลือกวันทำงาน",
+        "saveWorkingHours": "ประหยัดเวลาการทำงาน",
+        "saving": "กำลังบันทึก...",
+        "workingHoursUpdated": "อัปเดตเวลาทำงานแล้ว"
+      }
+    },
+    "weeklySchedule": "กำหนดการรายสัปดาห์",
+    "workingHours": "ชั่วโมงการทำงาน",
+    "breakTime": "เวลาพัก",
+    "dayOff": "วันหยุด",
+    "skills": "ทักษะ",
+    "experience": "ปีแห่งประสบการณ์",
+    "joinDate": "เข้าร่วมวันที่",
+    "profileImage": "รูปโปรไฟล์",
+    "bio": "ไบโอ",
+    "performance": "ประสิทธิภาพ",
+    "monthlyRevenue": "รายได้ต่อเดือน",
+    "customerCount": "จำนวนลูกค้า",
+    "reviewScore": "คะแนนรีวิว",
+    "staffCreated": "ลงทะเบียนพนักงานแล้ว",
+    "staffUpdated": "ข้อมูลพนักงานอัพเดทแล้ว",
+    "staffDeleted": "ลบพนักงานแล้ว",
+    "invitationSent": "ส่งอีเมลคำเชิญแล้ว",
+    "invitationResent": "ส่งอีเมลคำเชิญอีกครั้ง",
+    "invitationCancelled": "คำเชิญถูกยกเลิก",
+    "scheduleUpdated": "กำหนดการอัพเดทแล้ว",
+    "myPage": {
+      "title": "หน้าของฉัน",
+      "active": "ใช้งานอยู่",
+      "inactive": "ไม่ได้ใช้งาน",
+      "authenticatedStaff": "พนักงานรับรองความถูกต้อง",
+      "age": "อายุ {age} ปี",
+      "ageNotSet": "อายุไม่ได้กำหนด",
+      "introduction": "การแนะนำพนักงาน",
+      "noDescription": "ไม่มีคำอธิบาย",
+      "nominationFee": "ค่าบริการเลือกช่าง",
+      "nominationFeeDescription": "ค่าบริการเลือกช่างจะรวมอยู่ในค่าบริการเมื่อทำการจอง",
+      "priority": "ลำดับความสำคัญ",
+      "priorityDescription": "หมายเลขที่สูงกว่าจะแสดงที่ด้านบนของหน้าจอการจอง",
+      "exclusionMenus": "เมนูที่ไม่รวม",
+      "createdDate": "วันที่สร้าง",
+      "edit": "แก้ไข",
+      "tabs": {
+        "weekSchedule": "การตั้งค่ากำหนดการรายสัปดาห์",
+        "exceptionSchedule": "สร้างกำหนดการ"
+      },
+      "weekSchedule": {
+        "title": "การตั้งค่าวันและเวลาทำงานของพนักงาน",
+        "salonBusinessDays": "วันทำการร้านเสริมสวย",
+        "businessDay": "เปิด",
+        "regularHoliday": "วันหยุดประจำ",
+        "workingDay": "วันทำงาน",
+        "dayOff": "วันหยุด",
+        "workTimeSettings": "การตั้งค่าเวลาทำงาน",
+        "commonSettings": "การตั้งค่าทั่วไป",
+        "individualSettings": "การตั้งค่าเฉพาะวัน",
+        "useCommonHours": "กำหนดเวลาทำงานทั่วไปสำหรับวันทำงานทั้งหมด",
+        "workingHours": "ชั่วโมงการทำงาน",
+        "startTime": "เวลาเริ่มต้น",
+        "endTime": "เวลาสิ้นสุด",
+        "noWorkingDays": "ไม่มีการกำหนดวันทำงาน",
+        "selectWorkingDay": "เลือกวันทำงานเพื่อแสดงการตั้งค่าเวลา",
+        "laterThanStartTime": "เลือกเวลาที่ช้ากว่าเวลาเริ่มต้น",
+        "saving": "กำลังบันทึก...",
+        "save": "ประหยัดเวลาการทำงาน",
+        "updated": "อัปเดตเวลาทำงานแล้ว",
+        "monday": "วันจันทร์",
+        "tuesday": "วันอังคาร",
+        "wednesday": "วันพุธ",
+        "thursday": "วันพฤหัสบดี",
+        "friday": "วันศุกร์",
+        "saturday": "วันเสาร์",
+        "sunday": "วันอาทิตย์"
+      },
+      "exceptionSchedule": {
+        "title": "สร้างกำหนดการ",
+        "createdSchedules": "กำหนดการที่สร้างขึ้น",
+        "allDay": "ทั้งวัน",
+        "startTime": "เวลาเริ่มต้น",
+        "endTime": "เวลาสิ้นสุด",
+        "notes": "หมายเหตุ",
+        "save": "บันทึกกำหนดการ",
+        "saved": "บันทึกกำหนดการแล้ว",
+        "maxDaysError": "คุณสามารถเลือกกำหนดเวลาได้สูงสุด 30 วันเท่านั้น",
+        "timeRequiredError": "โปรดตั้งเวลาเริ่มต้นและสิ้นสุดสำหรับกำหนดการที่ไม่ใช่ทั้งวัน"
+      }
+    },
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "emailPreferences": "การตั้งค่าอีเมล",
+    "add": {
+      "title": "เพิ่มพนักงาน",
+      "sendInviteEmail": "ส่งอีเมลคำเชิญเพื่อสร้างบัญชีพนักงาน",
+      "sendInviteEmailDesc": "ด้วยการสร้างบัญชีพนักงาน พนักงานสามารถเข้าสู่ระบบและแก้ไขกำหนดการและบันทึกได้ หลังจากส่งคำเชิญแล้ว เจ้าหน้าที่สามารถเข้าสู่ระบบได้หลังจากยืนยันตัวตนแล้ว",
+      "sendInviteEmailDesc2": "หากคุณลงทะเบียนผู้ดูแลระบบเป็นพนักงาน พวกเขาสามารถเข้าสู่ระบบได้แล้ว จึงไม่จำเป็นต้องมีอีเมลคำเชิญ",
+      "invitePermissionSettings": "การตั้งค่าคำเชิญและการอนุญาต",
+      "inviteEmail": "ที่อยู่อีเมลคำเชิญ",
+      "inviteEmailPlaceholder": "ป้อนที่อยู่อีเมล",
+      "inviteEmailHelp": "อีเมลคำเชิญจะถูกส่งไปยังที่อยู่นี้",
+      "permissionSettings": "การตั้งค่าการอนุญาต",
+      "permissionDetails": "🔐 รายละเอียดการอนุญาต",
+      "ownerRole": "เจ้าของ:",
+      "ownerRoleDesc": "สิทธิ์ของผู้จัดการ + การจัดการพนักงาน การตั้งค่าคะแนน การตั้งค่าระบบ + การจัดการการสมัครสมาชิก",
+      "managerRole": "ผู้จัดการ:",
+      "managerRoleDesc": "สิทธิ์อนุญาตของพนักงาน + กำหนดการของพนักงาน การจัดการเมนู การจัดการลูกค้า การจัดการตัวเลือก การจัดการคูปอง",
+      "staffRole": "พนักงาน:",
+      "staffRoleDesc": "แดชบอร์ด การสร้างการจอง/ไทม์ไลน์ การจัดการบันทึกลูกค้า",
+      "permissionNote": "⚠️ หมายเหตุ: การอนุญาตเป็นแบบลำดับชั้น บทบาทที่สูงกว่ารวมถึงหน้าที่ของบทบาทที่ต่ำกว่าทั้งหมด",
+      "staffImage": "รูปภาพพนักงาน",
+      "namePlaceholder": "ใส่ชื่อ",
+      "gender": "เพศ",
+      "genderPlaceholder": "เลือกเพศ",
+      "male": "ชาย",
+      "female": "หญิง",
+      "unselected": "ไม่ได้เลือก",
+      "age": "อายุ",
+      "agePlaceholder": "กรอกอายุ",
+      "tagsTitle": "แท็กสำหรับพนักงาน",
+      "tagsExample": "ชุดผม, ตัดผม, แต่งหน้า",
+      "reservationAvailable": "สามารถจองได้หากเปิดใช้งานเท่านั้น",
+      "instagramLink": "ลิงค์อินสตาแกรม",
+      "instagramPlaceholder": "กรอกลิงค์อินสตาแกรมของพนักงาน",
+      "staffIntroduction": "การแนะนำพนักงาน",
+      "staffIntroductionPlaceholder": "เข้าสู่การแนะนำพนักงาน",
+      "advancedSettings": "การตั้งค่าขั้นสูง",
+      "nominationFee": "ค่าบริการเลือกช่าง",
+      "nominationFeePlaceholder": "ป้อนค่าบริการเลือกช่าง",
+      "nominationFeeHelp": "กำหนดค่าบริการเพิ่มเติมเมื่อลูกค้าเลือกพนักงานรายนี้",
+      "priority": "ลำดับความสำคัญ",
+      "priorityPlaceholder": "ป้อนลำดับความสำคัญ",
+      "priorityHelp": "ตัวเลขที่สูงกว่าจะปรากฏสูงกว่าในหน้าจอการจอง ฯลฯ",
+      "exclusionMenuSettings": "การตั้งค่าเมนูที่ไม่รวม",
+      "exclusionMenuTitle": "เมนูที่ไม่รวม",
+      "back": "กลับ",
+      "save": "บันทึก",
+      "adding": "กำลังเพิ่ม...",
+      "basicInfo": "ข้อมูลพื้นฐาน",
+      "tabBasicInfo": "ข้อมูลพื้นฐาน",
+      "tabExclusionMenu": "การตั้งค่าเมนูที่ไม่รวม"
+    },
+    "edit": {
+      "title": "แก้ไขพนักงาน",
+      "updating": "กำลังอัปเดต...",
+      "updateStaff": "อัพเดทพนักงาน",
+      "permissionNotice": "ตั้งค่าการอนุญาตของพนักงาน คุณสมบัติที่สามารถเข้าถึงได้แตกต่างกันไปตามบทบาท",
+      "permission": "การอนุญาต",
+      "roleStaffDesc": "การตรวจสอบการจองขั้นพื้นฐานและการจัดการข้อมูลด้วยตนเองเท่านั้น",
+      "roleManagerDesc": "สามารถจัดการพนักงานและเปลี่ยนแปลงการตั้งค่าพื้นฐานได้",
+      "roleOwnerDesc": "เข้าถึงคุณสมบัติทั้งหมด",
+      "nominationFeeTooltip": "ค่าบริการเพิ่มเติมเมื่อลูกค้าเลือกพนักงานรายนี้",
+      "priorityTooltip": "ตัวเลขที่สูงกว่าจะปรากฏสูงกว่าในหน้าจอการจอง ฯลฯ",
+      "priorityHelp": "ตัวเลขที่สูงกว่าจะแสดงก่อนในหน้าจอการจอง ตั้งค่าสูงสำหรับพนักงานที่ต้องการให้แสดงก่อนเมื่อไม่ได้เลือกช่าง",
+      "deleteImageTitle": "ลบรูปภาพพนักงานใช่ไหม",
+      "deleteImageDesc": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+      "cancel": "ยกเลิก",
+      "delete": "ลบ",
+      "deleting": "กำลังลบ...",
+      "imageDeleteSuccess": "ลบรูปภาพแล้ว",
+      "imageDeleteError": "เกิดข้อผิดพลาดขณะลบรูปภาพ"
+    },
+    "details": {
+      "title": "รายละเอียดพนักงาน",
+      "basicInfo": "ข้อมูลพื้นฐาน",
+      "systemInfo": "ข้อมูลระบบ",
+      "createdAt": "สร้างเมื่อ",
+      "lastUpdated": "อัปเดตล่าสุด",
+      "activeStatus": "สถานะใช้งานอยู่",
+      "tags": "แท็ก",
+      "noTags": "ไม่มีแท็ก",
+      "contactInfo": "ข้อมูลการติดต่อ",
+      "socialMedia": "โซเชียลมีเดีย",
+      "workSettings": "การตั้งค่าการทำงาน",
+      "rolePermissions": "บทบาทและการตั้งค่า",
+      "introduction": "บทนำ",
+      "noIntroduction": "ไม่มีการแนะนำตัว",
+      "backToList": "กลับไปที่รายชื่อพนักงาน",
+      "editStaff": "แก้ไขพนักงาน",
+      "manageSchedule": "จัดการกำหนดการ"
+    },
+    "inviteManagement": {
+      "title": "คำเชิญพนักงานที่รอดำเนินการ",
+      "noPendingInvites": "ไม่มีคำเชิญพนักงานที่รอดำเนินการ",
+      "inviteNewStaff": "เชิญพนักงานใหม่",
+      "pendingInvitations": "คำเชิญที่รอดำเนินการ",
+      "pendingCount": "รอดำเนินการ",
+      "resendInvite": "ส่งคำเชิญอีกครั้ง",
+      "cancelInvite": "ยกเลิกคำเชิญ",
+      "invited": "เชิญ",
+      "processing": "กำลังประมวลผล...",
+      "resendSuccess": "ส่งคำเชิญไปยัง {email} อีกครั้ง",
+      "cancelSuccess": "คำเชิญถูกยกเลิก",
+      "cancelConfirmTitle": "ยกเลิกคำเชิญใช่ไหม",
+      "cancelConfirmDesc": "ซึ่งจะทำให้อีเมลคำเชิญเป็นโมฆะและลบข้อมูลพนักงาน สิ่งนี้ไม่สามารถยกเลิกได้",
+      "confirm": "ยืนยัน",
+      "deleteError": "เกิดข้อผิดพลาดขณะลบข้อมูลคำเชิญ"
+    },
+    "validation": {
+      "nameRequired": "ต้องระบุชื่อ",
+      "nameMaxLength": "ชื่อต้องมีความยาวไม่เกิน {max} อักขระ",
+      "emailRequired": "ที่อยู่อีเมลเป็นสิ่งจำเป็น",
+      "emailInvalid": "ที่อยู่อีเมลไม่ถูกต้อง",
+      "pinCodeLength": "รหัส PIN ต้องมีอักขระ {length} ตัว",
+      "pinCodeFormat": "รหัส PIN ต้องมีอักขระ 6 ตัว รวมทั้งตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข",
+      "urlInvalid": "URL ไม่ถูกต้อง",
+      "ageMax": "อายุจะต้องเป็น 99 หรือน้อยกว่า",
+      "descriptionRequired": "จำเป็นต้องมีคำอธิบาย",
+      "nominationFeeMax": "ค่าบริการเลือกช่างต้องไม่เกิน {max} เยน",
+      "priorityMax": "ลำดับความสำคัญต้องเป็น 999 หรือน้อยกว่า",
+      "tagsMaxLength": "แท็กต้องมีทั้งหมดไม่เกิน 100 อักขระ",
+      "tagsMaxCount": "อนุญาตสูงสุด 5 แท็ก"
+    },
+    "common": {
+      "authenticatedStaff": "พนักงานรับรองความถูกต้อง",
+      "ageNotSet": "อายุไม่ได้กำหนด",
+      "deleteStaff": "ลบพนักงาน",
+      "deleteConfirm": "ลบพนักงานรายนี้ใช่ไหม",
+      "deleteConfirmDesc": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+      "monday": "วันจันทร์",
+      "tuesday": "วันอังคาร",
+      "wednesday": "วันพุธ",
+      "thursday": "วันพฤหัสบดี",
+      "friday": "วันศุกร์",
+      "saturday": "วันเสาร์",
+      "sunday": "วันอาทิตย์",
+      "ageValue": "อายุ {age} ปี"
+    },
+    "messages": {
+      "storeNotFound": "ไม่พบร้านค้า",
+      "emailAlreadyRegistered": "ที่อยู่อีเมลนี้มีการลงทะเบียนแล้ว",
+      "adminCannotCreateStaff": "ผู้ดูแลระบบไม่สามารถสร้างบัญชีพนักงานได้ กรุณาสร้างพนักงานโดยไม่มีบัญชี",
+      "inviteEmailSent": "ส่งอีเมลเชิญพนักงานแล้ว",
+      "inviteError": "เกิดข้อผิดพลาดขณะส่งอีเมลคำเชิญ",
+      "emailAlreadyInClerk": "ที่อยู่อีเมลนี้ลงทะเบียนแล้วใน Clerk",
+      "inviteFailed": "ไม่สามารถส่งอีเมลคำเชิญ: {error}",
+      "staffAdded": "เพิ่มพนักงานแล้ว",
+      "staffUpdated": "อัพเดทพนักงานแล้ว",
+      "imageUploadError": "ข้อผิดพลาดในการอัปโหลดรูปภาพ",
+      "formInitializationError": "ไม่สามารถเริ่มต้นแบบฟอร์มได้",
+      "staffDeleteError": "เกิดข้อผิดพลาดขณะลบพนักงาน"
+    }
+  },
+  "settings": {
+    "title": "การตั้งค่าซาลอน",
+    "description": "ป้อนข้อมูลพื้นฐานเกี่ยวกับร้านเสริมสวยของคุณ",
+    "organizationSettings": "การตั้งค่าพื้นฐาน",
+    "organizationName": "ชื่อองค์กร",
+    "businessHours": {
+      "title": "การตั้งค่าวันและเวลาทำการ",
+      "description": "กำหนดวันและเวลาทำการสำหรับร้านเสริมสวยของคุณ ไม่รับจองในช่วงวันหยุดปกติ",
+      "businessDay": "วันทำการ",
+      "regularHoliday": "วันหยุดประจำ",
+      "commonSettings": "การตั้งค่าทั่วไป",
+      "daySpecificSettings": "การตั้งค่าเฉพาะวัน",
+      "useCommonHours": "กำหนดเวลาทำการทั่วไปสำหรับวันทำการทั้งหมด",
+      "commonBusinessHours": "เวลาทำการทั่วไป",
+      "openTime": "เวลาเปิดทำการ",
+      "closeTime": "เวลาปิดทำการ",
+      "settingsTitle": "การตั้งค่าเวลาทำการ",
+      "businessDayNotSet": "ไม่ได้กำหนดวันทำการ",
+      "selectBusinessDay": "เลือกวันทำการ",
+      "savingSettings": "กำลังบันทึก...",
+      "saveBusinessHours": "บันทึกวันและเวลาทำการ",
+      "settingsSaved": "อัปเดตเวลาทำการแล้ว",
+      "laterThanOpenTime": "เลือกเวลาที่ช้ากว่าเวลาเปิดทำการ",
+      "days": {
+        "monday": "วันจันทร์",
+        "tuesday": "วันอังคาร",
+        "wednesday": "วันพุธ",
+        "thursday": "วันพฤหัสบดี",
+        "friday": "วันศุกร์",
+        "saturday": "วันเสาร์",
+        "sunday": "วันอาทิตย์"
+      }
+    },
+    "regularHolidays": "วันหยุดประจำ",
+    "specialHolidays": "วันหยุดพิเศษ",
+    "reservationSettings": "การตั้งค่าการจอง",
+    "acceptReservationDays": "วันที่รับจอง",
+    "cancelDeadline": "กำหนดเวลาการยกเลิก",
+    "simultaneousReservations": "การจองพร้อมกันสูงสุด",
+    "reservationInterval": "ระยะเวลาการจอง",
+    "paymentSettings": "การตั้งค่าการชำระเงิน",
+    "stripeConnect": {
+      "title": "Stripe บูรณาการการชำระเงิน",
+      "description": "เชื่อมต่อบัญชี Stripe ของคุณเพื่อรับการชำระเงินด้วยบัตรเครดิตจากลูกค้า",
+      "connectButton": "เชื่อมต่อกับ Stripe",
+      "processing": "กำลังประมวลผล...",
+      "redirecting": "กำลังเปลี่ยนเส้นทาง...",
+      "viewDashboard": "เปิดแดชบอร์ด Stripe",
+      "completeSetting": "ตั้งค่าให้เสร็จสมบูรณ์",
+      "liftRestrictions": "ข้อจำกัดในการยก",
+      "reconnect": "เชื่อมต่อบัญชีอีกครั้ง",
+      "reconnectConfirm": "การดำเนินการนี้จะยกเลิกการเชื่อมต่อปัจจุบันและสร้างบัญชีใหม่\n*การตั้งค่าที่มีอยู่จะสูญหายไป",
+      "status": {
+        "not_connected": "ไม่ได้เชื่อมต่อ",
+        "pending": "การเชื่อมต่อที่รอดำเนินการ",
+        "incomplete": "การลงทะเบียนไม่สมบูรณ์",
+        "restricted": "ถูกจำกัด",
+        "active": "ใช้งานอยู่",
+        "payouts_disabled": "การจ่ายเงินถูกปิดใช้งาน",
+        "external_account_removed": "บัญชีธนาคารถูกลบออก",
+        "bank_account_missing": "บัญชีธนาคารหายไป",
+        "deauthorized": "ตัดการเชื่อมต่อแล้ว"
+      },
+      "statusDescription": {
+        "not_connected": "บัญชี Stripe ของคุณยังไม่ได้เชื่อมต่อ เริ่มกระบวนการลงทะเบียนข้อมูลธุรกิจโดยคลิกปุ่ม \"เชื่อมต่อกับ Stripe\" ด้านบน",
+        "pending": "ยังไม่ได้ส่งแบบฟอร์มการตั้งค่าบัญชี Stripe โปรดกรอกขั้นตอนการป้อนข้อมูลพื้นฐานและส่งข้อมูลโดยคลิก \"ตั้งค่าต่อด้วย Stripe\"",
+        "incomplete": "Stripe ต้องการเอกสารหรือข้อมูลเพิ่มเติม กรุณาส่งสิ่งของที่ขาดภายในกำหนดเวลา หากไม่ได้รับการแก้ไข ฟังก์ชันการชำระเงินและการจ่ายเงินอาจถูกจำกัด",
+        "restricted": "ฟังก์ชั่นบางอย่าง (การจ่ายเงิน การฝากเงิน) ถูกจำกัดเนื่องจากยังไม่ได้ส่งเอกสารที่จำเป็นก่อนหน้านี้ โปรดส่งเอกสารที่จำเป็นตามคำแนะนำในแดชบอร์ด Stripe",
+        "payouts_disabled": "ฟังก์ชันการชำระเงินด้วยบัตรเครดิตเปิดใช้งานอยู่ แต่การจ่ายเงิน (เงินฝาก) ถูกปิดใช้งานชั่วคราว โปรดตรวจสอบสถานะการลงทะเบียนบัญชีธนาคารของคุณและเอกสารเพิ่มเติมที่จำเป็น",
+        "external_account_removed": "บัญชีธนาคารที่ลงทะเบียนไว้ถูกลบออกแล้ว ดังนั้นจึงไม่สามารถชำระเงินได้ โปรดลงทะเบียนบัญชีธนาคารใหม่ในแดชบอร์ด Stripe",
+        "bank_account_missing": "ข้อมูลบัญชีธนาคารไม่ได้ลงทะเบียน หากต้องการรับรายได้ โปรดลงทะเบียนบัญชีธนาคารในแดชบอร์ด Stripe",
+        "active": "การตรวจสอบบัญชี Stripe และการตั้งค่าทั้งหมดเสร็จสมบูรณ์แล้ว และได้เปิดใช้งานฟังก์ชันการชำระเงินและการจ่ายเงินแล้ว คุณสามารถตรวจสอบรายได้และสถานะเงินฝากได้ในแดชบอร์ด",
+        "deauthorized": "การเชื่อมต่อกับ Stripe ถูกตัดการเชื่อมต่อ หากต้องการเชื่อมต่อใหม่ โปรดเริ่มกระบวนการตั้งค่าใหม่โดยคลิกปุ่ม \"เชื่อมต่อกับ Stripe\""
+      },
+      "setupRequired": {
+        "title": "Stripe ต้องมีการตั้งค่าบัญชี",
+        "incompleteTitle": "ข้อมูลเพิ่มเติมที่จำเป็น",
+        "restrictedTitle": "ฟังก์ชั่นการถอนถูกจำกัด",
+        "step1": {
+          "title": "ป้อนข้อมูลพื้นฐาน",
+          "description": "กรอกชื่อธุรกิจ ที่อยู่ ประเภทอุตสาหกรรม ฯลฯ"
+        },
+        "step2": {
+          "title": "ลงทะเบียนบัญชีธนาคาร",
+          "description": "ป้อนข้อมูลบัญชีธนาคารสำหรับการจ่ายเงิน"
+        },
+        "step3": {
+          "title": "ยืนยันตัวตนให้เสร็จสมบูรณ์",
+          "description": "อัปโหลดเอกสารยืนยันตัวตนเพื่อยืนยันตัวตนให้เสร็จสิ้น"
+        },
+        "incompleteMessage": "ข้อมูลต่อไปนี้หายไป โปรดคลิกปุ่ม \"ตั้งค่าให้เสร็จสิ้น\" เพื่อทำตามขั้นตอนที่เหลือให้เสร็จสิ้น",
+        "incompleteItems": {
+          "item1": "ป้อนข้อมูลที่ขาดหายไป",
+          "item2": "ส่งเอกสารยืนยันเพิ่มเติม"
+        },
+        "restrictedMessage": "การประมวลผลการชำระเงินเป็นไปได้ แต่ฟังก์ชันการถอนเงินถูกจำกัด",
+        "restrictedItems": {
+          "item1": "ให้ข้อมูลทางธุรกิจเพิ่มเติม",
+          "item2": "ตรวจสอบข้อมูลบัญชีธนาคาร"
+        },
+        "continueButton": "ตั้งค่าต่อด้วย Stripe"
+      },
+      "fee": {
+        "title": "ค่าธรรมเนียมการชำระเงิน: 4% + 40 เยน/รายการ",
+        "description": "* รายได้จะจ่ายเข้าบัญชีธนาคารที่คุณกำหนดไว้ในวันที่ 25 ของทุกเดือน"
+      },
+      "messages": {
+        "connectSuccess": "การเชื่อมต่อบัญชี Stripe เสร็จสมบูรณ์",
+        "continueSetup": "โปรดดำเนินการตั้งค่าบัญชี Stripe ต่อไป",
+        "error": "เกิดข้อผิดพลาด ({status})"
+      },
+      "accordion": {
+        "whatIsStripe": {
+          "title": "Stripe คืออะไร?",
+          "content": {
+            "intro": "<strong>Stripe</strong> เป็นบริการชำระเงินออนไลน์ที่มีการใช้งานในกว่า 120 ประเทศและธุรกิจหลายล้านแห่งทั่วโลก ด้วยการเลือก <strong>Stripe</strong> เราจะมอบสภาพแวดล้อมที่คุณสามารถใช้ชำระเงินด้วยบัตรเครดิตได้อย่างรวดเร็วโดยไม่ต้องมีสัญญาหรือการพัฒนาระบบที่ซับซ้อนสำหรับทั้ง Bocker และร้านเสริมสวยของคุณ",
+            "benefits": "การสร้างบัญชี Stripe หมายความว่าการชำระเงิน การจัดการรายได้ และการจัดการการจ่ายเงินทั้งหมดได้รับการจัดการโดย Stripe คุณสามารถลดความซับซ้อนของการดำเนินการได้เพียงแค่ \"ตรวจสอบรายได้\" และ \"ยืนยันวันที่ฝากเงิน\"",
+            "keyPoints": {
+              "title": "<strong>ประเด็นสำคัญ</strong>",
+              "point1": "· ทั้ง Bocker และร้านเสริมสวยของคุณไม่มีหมายเลขบัตร ซึ่งช่วยลดความเสี่ยงในการรั่วไหลของข้อมูล",
+              "point2": "· รองรับบัตรแบรนด์หลักๆ (Visa/Mastercard/JCB ฯลฯ) ทั่วโลก",
+              "point3": "· การขยายวิธีการชำระเงินในอนาคต (Apple จ่าย, Google จ่าย ฯลฯ) เป็นไปได้"
+            }
+          }
+        },
+        "requirements": {
+          "title": "ข้อกำหนดและผังกระบวนการ",
+          "requirements": {
+            "title": "ข้อกำหนด",
+            "item1": "ชื่ออย่างเป็นทางการของร้าน ที่อยู่ หมายเลขโทรศัพท์",
+            "item2": "ชื่อ วันเกิด ที่อยู่ของผู้รับผิดชอบ (ตัวแทน)",
+            "item3": "รูปภาพเอกสารยืนยันตัวตน (ใบขับขี่ หนังสือเดินทาง ฯลฯ)",
+            "item4": "ข้อมูลบัญชีธนาคารในประเทศญี่ปุ่นสำหรับการชำระรายได้",
+            "item5": "ที่อยู่อีเมลติดต่อและหมายเลขโทรศัพท์มือถือสำหรับการแจ้งเตือนทาง SMS"
+          },
+          "flow": {
+            "title": "ผังกระบวนการ (ประมาณ 10-15 นาที)",
+            "step1": "คลิก <strong>\"เชื่อมต่อกับ Stripe\"</strong> ใน Bocker",
+            "step2": "หน้าจอเริ่มต้นใช้งาน Stripe เปิดขึ้น",
+            "step3": "ป้อนข้อมูลทางธุรกิจ (ชื่อ ที่อยู่ อุตสาหกรรม ฯลฯ)",
+            "step4": "ป้อนข้อมูลผู้รับผิดชอบและอัปโหลดเอกสารยืนยันตัวตน",
+            "step5": "ป้อนข้อมูลบัญชีธนาคาร",
+            "step6": "ตรวจสอบและ <strong>ส่ง</strong>",
+            "step7": "หลังจากได้รับอีเมลอนุมัติ คุณสามารถชำระเงินด้วยบัตรเครดิตได้"
+          },
+          "note": "หากมีปัญหาใดๆ เกี่ยวกับข้อมูล Stripe จะขอส่งเพิ่มเติมทางอีเมล"
+        },
+        "security": {
+          "title": "ความปลอดภัยและความปลอดภัย",
+          "points": {
+            "item1": "บรรลุมาตรฐานสากล <strong>PCI-DSS&nbsp;1</strong> สูงสุด",
+            "item2": "การสื่อสารทั้งหมดได้รับการเข้ารหัสด้วย <strong>256 บิต&nbsp;TLS</strong>",
+            "item3": "ระบบตรวจจับการฉ้อโกงของ AI จะตรวจสอบ <strong>24&nbsp;ชั่วโมง&nbsp;365&nbsp;วัน</strong>"
+          },
+          "description": "กลไกเหล่านี้ช่วยลดความเสี่ยงของการโจรกรรมข้อมูลบัตรหรือการใช้ในทางที่ผิดได้อย่างมาก เนื่องจากทั้ง Bocker และร้านเสริมสวยของคุณไม่จัดการข้อมูลการชำระเงิน จึงไม่จำเป็นต้องตรวจสอบความปลอดภัยที่มีค่าใช้จ่ายสูงเพิ่มเติม"
+        },
+        "liability": {
+          "title": "เหตุผลที่ปราศจากความเสี่ยง: การแบ่งปันความรับผิด",
+          "content": {
+            "intro": "Bocker และร้านเสริมสวยของคุณจ้าง <strong>การประมวลผลการชำระเงิน</strong> ไปยัง Stripe ซึ่งหมายความว่า Stripe จะจัดการพื้นที่เก็บข้อมูลที่ปลอดภัย การตรวจสอบการฉ้อโกง และการตอบกลับการปฏิเสธการชำระเงินสำหรับข้อมูลบัตร สิ่งนี้ทำให้คุณเป็นอิสระจากการจัดการความปลอดภัยระดับสูง",
+            "points": {
+              "item1": "หมายเลขบัตร <strong>ไม่ได้จัดเก็บไว้ใน Bocker หรือเซิร์ฟเวอร์ร้านทำผมของคุณ</strong>",
+              "item2": "หากมีการปฏิเสธการชำระเงินเกิดขึ้น Stripe จะทำหน้าที่เป็นจุดติดต่อแรกกับบริษัทบัตร และ Bocker อาจอำนวยความสะดวกในการสื่อสารตามความจำเป็น",
+              "item3": "Stripe จัดการ<strong>การปฏิบัติตาม</strong>ด้วย PCI-DSS, กฎหมายการขายผ่อนชำระฉบับแก้ไข และกฎหมายการโอนเงิน ฯลฯ",
+              "item4": "ในกรณีที่ระบบการชำระเงินล้มเหลว Stripe จะให้การกู้คืนตลอด 24 ชั่วโมงและขั้นตอนการคืนเงินอัตโนมัติ"
+            },
+            "conclusion": "วิธีนี้ช่วยให้คุณ<strong>ปลดปล่อยตัวเองจากความเสี่ยงทางกฎหมายและทางเทคนิค</strong>ที่เกี่ยวข้องกับการชำระเงินด้วยบัตรเครดิตและมุ่งเน้นไปที่ธุรกิจหลักของคุณ"
+          }
+        },
+        "payoutFlow": {
+          "title": "รอบการฝากเงินรายได้",
+          "steps": {
+            "step1": "ลูกค้าชำระเงินด้วยบัตรเครดิตใน Bocker",
+            "step2": "จำนวนเงินที่ชำระจะปรากฏในยอดคงเหลือ Stripe ทันที",
+            "step3": "ในวันที่ <strong>25</strong> ของแต่ละเดือน จะมีการจ่ายรายได้รวมตั้งแต่วันที่ 1 ถึงวันสุดท้ายของเดือนก่อนหน้า",
+            "step4": "เงินจะเข้าบัญชีที่ลงทะเบียนภายใน <strong>1-2 วันทำการ</strong>"
+          },
+          "note": "คุณสามารถตรวจสอบกำหนดการจ่ายเงินได้ในแดชบอร์ด Stripe ตลอดเวลา ทำให้ง่ายต่อการดูกระแสเงินสดของคุณ"
+        },
+        "fees": {
+          "title": "เกี่ยวกับค่าธรรมเนียม",
+          "items": {
+            "processingFee": "ค่าธรรมเนียมการดำเนินการ: <strong>4%</strong> + <strong>40 เยน</strong> / ธุรกรรม",
+            "transferFee": "ค่าธรรมเนียมการโอน: 0 เยน (Bocker ครอบคลุม)",
+            "monthlyFee": "ค่าธรรมเนียมรายเดือน: 0 เยน (ครอบคลุม Bocker)"
+          },
+          "example": "ตัวอย่าง: สำหรับใบเรียกเก็บเงิน 12,000 เยน 12,000 × 4% + 40 = <strong>480 เยน</strong> คือค่าธรรมเนียม และ <strong>11,520 เยน</strong> คือจำนวนเงินที่จ่าย",
+          "note": "หมายเหตุ: บัตรแบรนด์ต่างประเทศบางใบอาจมีค่าธรรมเนียมเพิ่มเติม 1.5%"
+        },
+        "faq": {
+          "title": "คำถามที่พบบ่อย",
+          "questions": {
+            "paymentFailed": {
+              "question": "จะเกิดอะไรขึ้นหากการชำระเงินด้วยบัตรเครดิตล้มเหลว?",
+              "answer": "Stripe จะลองอีกครั้งโดยอัตโนมัติ และหากล้มเหลวอีกครั้ง Bocker จะแจ้งให้ลูกค้าทราบทางอีเมล คุณสามารถเรียกเก็บเงินทีละรายการได้"
+            },
+            "refund": {
+              "question": "ฉันจะคืนเงินได้อย่างไร?",
+              "answer": "คุณสามารถคืนเงินได้ทันทีจากแดชบอร์ด Stripe ได้ด้วยคลิกเดียว ค่าธรรมเนียมการคืนเงิน<strong>ฟรี</strong> อย่างไรก็ตาม จะไม่มีการคืนเงินค่าธรรมเนียมการดำเนินการ 4% ณ เวลาที่ชำระเงิน"
+            },
+            "setupTime": {
+              "question": "ใช้เวลานานแค่ไหนในการตั้งค่า?",
+              "answer": "คุณสามารถเริ่มใช้งานได้ใน <strong>เพียง 10 นาที</strong> สำหรับการสมัครออนไลน์เท่านั้น คุณสามารถตรวจสอบสถานะการส่งเอกสารได้แบบเรียลไทม์บนแดชบอร์ด"
+            }
+          }
+        }
+      }
+    },
+    "connected": "เชื่อมต่อแล้ว",
+    "notConnected": "ไม่ได้เชื่อมต่อ",
+    "connectStripe": "เชื่อมต่อกับ Stripe",
+    "disconnectStripe": "ยกเลิกการเชื่อมต่อ Stripe",
+    "apiSettings": "API การตั้งค่า",
+    "lineMessaging": "LINE ส่งข้อความ",
+    "lineChannelAccessToken": "โทเค็นการเข้าถึงช่อง",
+    "lineChannelSecret": "ความลับของช่อง",
+    "notificationSettings": "การตั้งค่าการแจ้งเตือน",
+    "emailNotifications": "การแจ้งเตือนทางอีเมล",
+    "reservationConfirmation": "การยืนยันการจอง",
+    "reservationReminder": "การแจ้งเตือนการจอง",
+    "cancelNotification": "แจ้งยกเลิก",
+    "settingsUpdated": "อัปเดตการตั้งค่าแล้ว",
+    "monday": "วันจันทร์",
+    "tuesday": "วันอังคาร",
+    "wednesday": "วันพุธ",
+    "thursday": "วันพฤหัสบดี",
+    "friday": "วันศุกร์",
+    "saturday": "วันเสาร์",
+    "sunday": "วันอาทิตย์",
+    "open": "เปิด",
+    "closed": "ปิดแล้ว",
+    "openTime": "เวลาเปิดทำการ",
+    "closeTime": "เวลาปิดทำการ",
+    "timezone": "เขตเวลา",
+    "fields": {
+      "salonName": "ชื่อร้าน",
+      "email": "ที่อยู่อีเมล",
+      "phone": "หมายเลขโทรศัพท์",
+      "postalCode": "รหัสไปรษณีย์",
+      "address": "ที่อยู่",
+      "storeImage": "รูปภาพซาลอน",
+      "description": "คำอธิบายของซาลอน",
+      "reservationRules": "กฎการจอง"
+    },
+    "placeholders": {
+      "salonName": "ป้อนชื่อร้านเสริมสวย",
+      "email": "ป้อนที่อยู่อีเมล",
+      "phone": "ป้อนหมายเลขโทรศัพท์",
+      "postalCode": "000-0000",
+      "address": "กรอกที่อยู่",
+      "storeImage": "อัพโหลดรูปภาพร้านเสริมสวย",
+      "description": "ป้อนคำอธิบายร้านเสริมสวย",
+      "reservationRules": "กรอกกฎการจองและหมายเหตุ"
+    },
+    "buttons": {
+      "save": "บันทึก",
+      "saving": "กำลังบันทึก...",
+      "saveImage": "บันทึกภาพ",
+      "uploading": "กำลังอัปโหลด...",
+      "searching": "กำลังค้นหา...",
+      "searchAddress": "ค้นหาที่อยู่"
+    },
+    "validation": {
+      "salonNameMax": "ชื่อร้านทำผมต้องมีความยาว 120 อักขระหรือน้อยกว่า",
+      "emailInvalid": "กรุณากรอกที่อยู่อีเมลที่ถูกต้อง",
+      "phoneFormat": "กรุณากรอกหมายเลขโทรศัพท์ที่มีตัวเลข 8 ถึง 11 หลัก",
+      "postalCodeFormat": "กรุณากรอกรหัสไปรษณีย์ 7 หลัก (เช่น 1234567)",
+      "addressMax": "ที่อยู่ต้องมีอักขระไม่เกิน 200 ตัว",
+      "reservationRulesMax": "กฎการจองต้องมีอักขระไม่เกิน 2,000 ตัว",
+      "descriptionMax": "คำอธิบายต้องมีอักขระไม่เกิน 2,000 ตัว"
+    },
+    "messages": {
+      "settingsSaved": "บันทึกการตั้งค่าแล้ว",
+      "imageUploadFailed": "การอัปโหลดรูปภาพล้มเหลว",
+      "imageSaved": "บันทึกรูปภาพแล้ว",
+      "enterPostalCode": "กรุณากรอกรหัสไปรษณีย์",
+      "addressFound": "พบที่อยู่"
+    },
+    "changeEmail": {
+      "title": "เปลี่ยนที่อยู่อีเมล",
+      "subtitle": "เปลี่ยนที่อยู่อีเมลที่เชื่อมโยงกับบัญชีของคุณ",
+      "newEmail": "ที่อยู่อีเมลใหม่",
+      "newEmailPlaceholder": "ป้อนที่อยู่อีเมลใหม่",
+      "confirmEmail": "ยืนยันที่อยู่อีเมล",
+      "confirmEmailPlaceholder": "ป้อนที่อยู่อีเมลใหม่อีกครั้ง",
+      "submit": "เปลี่ยนที่อยู่อีเมล",
+      "submitting": "กำลังเปลี่ยน...",
+      "success": "เปลี่ยนที่อยู่อีเมลเรียบร้อยแล้ว",
+      "error": "ไม่สามารถเปลี่ยนที่อยู่อีเมล",
+      "validationErrors": {
+        "emailRequired": "ที่อยู่อีเมลเป็นสิ่งจำเป็น",
+        "emailInvalid": "กรุณากรอกที่อยู่อีเมลที่ถูกต้อง",
+        "confirmEmailRequired": "จำเป็นต้องมีการยืนยันทางอีเมล",
+        "emailMismatch": "ที่อยู่อีเมลไม่ตรงกัน"
+      },
+      "info": {
+        "verificationRequired": "หลังจากเปลี่ยนแปลง อีเมลยืนยันจะถูกส่งไปยังที่อยู่ใหม่",
+        "currentEmail": "ที่อยู่อีเมลปัจจุบัน: {email}",
+        "changeWarning": "หลังจากเปลี่ยนที่อยู่อีเมล คุณจะต้องใช้ที่อยู่ใหม่ในการเข้าสู่ระบบ"
+      },
+      "tooltip": {
+        "emailFormat": "กรุณากรอกรูปแบบที่อยู่อีเมลที่ถูกต้อง",
+        "confirmMatch": "กรุณากรอกอีเมล์เดียวกันกับข้างบน"
+      }
+    },
+    "emailPreferences": {
+      "title": "ที่อยู่อีเมลที่ลงทะเบียน",
+      "subtitle": "ที่อยู่อีเมลหลักใช้สำหรับเข้าสู่ระบบและแจ้งเตือนระบบ",
+      "loading": "กำลังโหลด...",
+      "authError": {
+        "title": "ข้อผิดพลาดในการรับรองความถูกต้อง",
+        "description": "ไม่สามารถโหลดข้อมูลผู้ใช้ได้"
+      },
+      "noEmails": "ไม่มีที่อยู่อีเมลที่ลงทะเบียน",
+      "emailStatus": {
+        "primary": "ประถมศึกษา",
+        "verified": "ตรวจสอบแล้ว",
+        "unverified": "ไม่ได้รับการยืนยัน"
+      },
+      "buttons": {
+        "setPrimary": "ตั้งค่าหลัก",
+        "delete": "ลบ",
+        "resendVerification": "ส่งอีเมลยืนยันอีกครั้ง",
+        "sending": "กำลังส่ง..."
+      },
+      "messages": {
+        "primaryUpdated": {
+          "title": "ที่อยู่อีเมลหลักมีการเปลี่ยนแปลง",
+          "description": "อัปเดตข้อมูลการเข้าสู่ระบบแล้ว"
+        },
+        "primaryUpdateFailed": {
+          "title": "ไม่สามารถอัปเดตที่อยู่อีเมลได้",
+          "description": "โปรดลองอีกครั้ง"
+        },
+        "cannotDeletePrimary": {
+          "title": "ไม่สามารถลบที่อยู่อีเมลหลักได้",
+          "description": "โปรดตั้งค่าที่อยู่อีเมลอื่นเป็นที่อยู่อีเมลหลักก่อนที่จะลบ"
+        },
+        "cannotDeleteUnverified": {
+          "title": "สามารถลบได้เฉพาะที่อยู่อีเมลที่ยืนยันแล้วเท่านั้น",
+          "description": "กรุณาตรวจสอบอีเมล์ก่อนที่จะลบ"
+        },
+        "emailDeleted": "ลบที่อยู่อีเมลแล้ว",
+        "emailDeleteFailed": {
+          "title": "ไม่สามารถลบที่อยู่อีเมล",
+          "description": "โปรดลองอีกครั้ง"
+        },
+        "verificationSent": {
+          "title": "ส่งอีเมลยืนยันแล้ว",
+          "description": "กรุณาตรวจสอบอีเมลของคุณและทำการยืนยันให้เสร็จสิ้น"
+        },
+        "verificationSendFailed": {
+          "title": "ไม่สามารถส่งอีเมลยืนยันได้",
+          "description": "โปรดลองอีกครั้ง"
+        }
+      },
+      "dialog": {
+        "delete": {
+          "title": "ลบที่อยู่อีเมลใช่ไหม",
+          "description": "คุณจะไม่สามารถเข้าสู่ระบบด้วยที่อยู่อีเมลนี้ได้อีกต่อไป",
+          "cancel": "ยกเลิก",
+          "confirm": "ลบ"
+        }
+      }
+    },
+    "apiConfig": {
+      "title": "API การตั้งค่า",
+      "description": "กำหนดค่าการรวมเข้ากับบริการภายนอก",
+      "lineIntegrationNote": "สามารถรวม Bocker และ LINE เพื่อรับการจองผ่าน LINE ได้",
+      "lineIntegrationNote2": "โปรดดู \"LINE Channel Guide\" ที่ด้านล่างของหน้าการตั้งค่าสำหรับการตั้งค่า API",
+      "fields": {
+        "lineAccessToken": "LINE โทเค็นการเข้าถึง",
+        "lineChannelSecret": "LINE ความลับของช่อง",
+        "lineChannelId": "LINE รหัสช่อง"
+      },
+      "messages": {
+        "settingsSaved": "บันทึกการตั้งค่า API แล้ว",
+        "save": "บันทึกการตั้งค่า API",
+        "saving": "กำลังบันทึก..."
+      }
+    },
+    "reservationConfig": {
+      "title": "การตั้งค่าการยอมรับการจอง",
+      "description": "ในการตั้งค่าการยอมรับการจอง คุณสามารถเปลี่ยนกรอบเวลาในการยอมรับการจองได้",
+      "reservationLimitDays": "เลือกวันรับการจองสูงสุด",
+      "reservationLimitDaysHelp": "กำหนดว่าจะรับจองล่วงหน้าได้กี่วัน",
+      "cancelDays": "เลือกวันที่ยกเลิกได้",
+      "cancelDaysHelp": "กำหนดจำนวนวันก่อนวันที่จองจะอนุญาตให้ยกเลิกได้",
+      "reservationInterval": "เลือกช่วงเวลาการจอง",
+      "reservationIntervalHelp": "กำหนดช่วงเวลาในการสร้างช่องการจอง",
+      "availableSeats": "เลือกที่นั่งว่าง",
+      "availableSeatsHelp": "กำหนดจำนวนที่นั่งว่างในช่วงเวลาเดียวกัน",
+      "shortestReservationTime": "เลือกเวลาเริ่มต้นการจองที่สั้นที่สุด",
+      "shortestReservationTimeHelp": "กำหนดจำนวนนาทีหลังจากเวลาปัจจุบันที่สามารถจองได้ในวันเดียวกันหากมีช่องว่าง",
+      "isMultipleSelectCategory": "อนุญาตให้เลือกหลายเมนูในหมวดหมู่เดียวกัน",
+      "isMultipleSelectCategoryHelp": "ตั้งค่าว่าจะอนุญาตให้เลือกหลายเมนูในหมวดหมู่เดียวกันหรือไม่ หากปิด จะสามารถเลือกได้เพียงเมนูเดียวในหมวดหมู่เดียวกัน",
+      "allowTodayReservation": "อนุญาตการจองในวันเดียวกัน",
+      "allowTodayReservationHelp": "เปิดหรือปิดการจองในวันเดียวกันผ่านทางเว็บอินเตอร์เฟส เมื่อเปิดใช้งาน ลูกค้าสามารถจองสำหรับวันปัจจุบันได้หากมีช่วงเวลาที่ว่าง",
+      "saving": "กำลังบันทึก...",
+      "save": "บันทึกการตั้งค่าการยอมรับการจอง",
+      "saved": "บันทึกการตั้งค่าการยอมรับการจองแล้ว",
+      "daysUnit": "วัน",
+      "minutesUnit": "นาที",
+      "seatsUnit": "ที่นั่ง"
+    },
+    "exceptionSchedule": {
+      "title": "การตั้งค่าวันปิดทำการ",
+      "description": "เลือกวันจากปฏิทินที่คุณไม่ต้องการรับการจอง วันที่เลือกจะถูกกำหนดให้เป็นวันปิดทำการ",
+      "selectHolidays": "เลือกวันปิดทำการ",
+      "saveButton": "บันทึกวันปิดทำการ",
+      "saving": "กำลังบันทึก...",
+      "maxDaysError": "คุณสามารถเลือกวันปิดได้สูงสุด 30 วัน",
+      "saveSuccess": "บันทึกวันปิดทำการแล้ว",
+      "saveDescription": "เพิ่มแล้ว {added} วัน ลบแล้ว {deleted} วัน",
+      "saveError": "ไม่สามารถบันทึกวันปิดทำการได้",
+      "accordion": {
+        "title": "เกี่ยวกับการตั้งค่าวันปิดทำการ",
+        "content": "วันที่กำหนดเป็นวันปิดจะไม่แสดงบนปฏิทิน และการจองจะไม่ได้รับการยอมรับ คุณสามารถกำหนดวันปิดทำการปกติ การปิดชั่วคราว กิจกรรม หรือวันหยุดยาวแยกกันได้ สามารถเลือกวันที่ตั้งแต่ {date} เป็นต้นไปได้"
+      }
+    }
+  },
+  "subscription": {
+    "title": "สมัครสมาชิก",
+    "subtitle": "เลือกแผนที่เหมาะสมกับร้านเสริมสวยของคุณ",
+    "currentPlan": "แผนปัจจุบัน",
+    "planDetails": "รายละเอียดแผน",
+    "changePlan": "เปลี่ยนแผน",
+    "cancelPlan": "ยกเลิกแผน",
+    "upgradePlan": "อัพเกรด",
+    "downgradePlan": "ดาวน์เกรด",
+    "billing": "ข้อมูลการเรียกเก็บเงิน",
+    "nextBillingDate": "วันที่เรียกเก็บเงินครั้งถัดไป",
+    "billingCycle": "รอบการเรียกเก็บเงิน",
+    "monthly": "รายเดือน",
+    "annual": "ประจำปี",
+    "paymentMethod": "วิธีการชำระเงิน",
+    "updatePaymentMethod": "อัพเดตวิธีการชำระเงิน",
+    "invoices": "ใบแจ้งหนี้",
+    "downloadInvoice": "ดาวน์โหลดใบแจ้งหนี้",
+    "usage": "การใช้งาน",
+    "staffLimit": "ขีดจำกัดของพนักงาน",
+    "menuLimit": "ขีดจำกัดเมนู",
+    "customerLimit": "ขีดจำกัดของลูกค้า",
+    "storageLimit": "ขีดจำกัดการจัดเก็บ",
+    "features": {
+      "micro": {
+        "1": "การจัดการการจอง (ลำดับเวลาการจอง การตั้งค่าตารางเวลาของพนักงาน การยืนยัน/การยกเลิก การจองออนไลน์ตลอด 24 ชั่วโมง 365 วัน)",
+        "2": "การจัดการลูกค้า (ข้อมูลพื้นฐาน ประวัติการจองและการซื้อ คะแนน)",
+        "3": "บัตรบันทึกลูกค้า (รายละเอียดการรักษาอัตโนมัติ อาการแพ้ การจัดการคุณภาพเส้นผม)",
+        "4": "การจัดการพนักงาน (การสร้างบัญชี การจองขั้นพื้นฐาน และการจัดการกะ) — สูงสุด 1 คน",
+        "5": "การตั้งค่าเมนู (การลงทะเบียนบริการ การตั้งค่าราคาและระยะเวลา) — สูงสุด 30 รายการ",
+        "6": "ฟังก์ชั่นการขายออปชั่น (เพิ่มออปชั่น, เลือกตัวเลือก) — มากถึง 15 รายการ",
+        "7": "ฟังก์ชั่นคะแนนและคูปอง (ระบบการให้คะแนนที่ปรับแต่งได้ การจัดการคูปอง)",
+        "8": "การแจ้งเตือนและการแจ้งเตือนอัตโนมัติ (อีเมล & LINE)",
+        "9": "จำกัด: พนักงาน (1), เมนู (30), ตัวเลือก (15), คูปอง (15), การจอง (100/เดือน)"
+      },
+      "lite": {
+        "1": "การจัดการการจอง (ลำดับเวลาการจอง การตั้งค่าตารางเวลาของพนักงาน การยืนยัน/การยกเลิกการจอง การจองออนไลน์ตลอด 24 ชั่วโมง 365 วัน)",
+        "2": "การจัดการลูกค้า (ข้อมูลพื้นฐาน ประวัติการจองและการซื้อ คะแนน)",
+        "5": "การจัดการพนักงาน (การสร้างบัญชี การจองขั้นพื้นฐาน และการจัดการกะ) — สูงสุด 3 คน",
+        "6": "การตั้งค่าเมนู (การลงทะเบียนบริการ การตั้งค่าราคาและระยะเวลา) — สูงสุด 10 รายการ",
+        "7": "บัตรบันทึกลูกค้า (บันทึกการรักษาโดยละเอียด ประวัติการใช้สารเคมี แม่แบบบันทึก การส่งมอบพนักงาน) — ไม่มีไฟล์แนบรูปภาพ",
+        "8": "ฟังก์ชั่นการขายออปชั่น (เพิ่มออปชั่น, เลือกตัวเลือก) — มากถึง 5 รายการ",
+        "9": "ฟังก์ชั่นคะแนนและคูปอง (ระบบการให้คะแนนที่ปรับแต่งได้ การจัดการคูปอง)",
+        "10": "การแจ้งเตือนและการแจ้งเตือนอัตโนมัติ (อีเมล & LINE)",
+        "11": "ขีดจำกัด: พนักงาน (3), เมนู (10), ตัวเลือก (5), การจอง (200 ต่อเดือน)"
+      },
+      "pro": {
+        "1": "คุณสมบัติทั้งหมดของแผน LITE",
+        "2": "บัตรบันทึกลูกค้า (บันทึกการรักษาโดยละเอียด ไฟล์แนบรูปภาพ ประวัติการใช้สารเคมี เทมเพลตบันทึก การส่งมอบพนักงาน) — ไม่มีไฟล์แนบรูปภาพ",
+        "3": "ขีดจำกัด: พนักงาน (10) เมนู (20) ตัวเลือก (10) การจอง (1,000 ต่อเดือน)"
+      },
+      "enterprise": {
+        "1": "คุณสมบัติทั้งหมดของแผน PRO",
+        "2": "บัตรบันทึกลูกค้า (บันทึกการรักษาโดยละเอียด แนบรูปภาพ ประวัติการใช้สารเคมี แม่แบบบันทึก การส่งมอบพนักงาน)",
+        "3": "ขีดจำกัด: พนักงาน (20 คน), เมนู (30), ตัวเลือก (15), การจอง (2,000 ต่อเดือน)"
+      }
+    },
+    "basicPlan": "แผนพื้นฐาน",
+    "standardPlan": "แผนมาตรฐาน",
+    "premiumPlan": "แผนระดับพรีเมียม",
+    "enterprisePlan": "แผนองค์กร",
+    "planUpdated": "อัปเดตแผนแล้ว",
+    "planCancelled": "ยกเลิกแผนแล้ว",
+    "confirmCancel": "คุณแน่ใจหรือไม่ว่าต้องการยกเลิก",
+    "cancelReason": "เหตุผลในการยกเลิก",
+    "price": "ราคา",
+    "save": "บันทึก",
+    "mostPopular": "ยอดนิยมที่สุด",
+    "monthlyPayment": "การชำระเงินรายเดือน",
+    "yearlyPayment": "การชำระเงินรายปี",
+    "yearlyDiscount": "ลด {percent}%",
+    "microPlan": "ไมโคร",
+    "microPlanDescription": "แผนพื้นฐานสำหรับเจ้าของคนเดียว",
+    "litePlan": "ไลท์",
+    "litePlanDescription": "แผนพื้นฐานสำหรับร้านเสริมสวยขนาดเล็ก",
+    "proPlan": "โปร",
+    "proPlanDescription": "แผนมาตรฐานสำหรับร้านเสริมสวยขนาดกลาง",
+    "perMonth": "/เดือน",
+    "perYear": "/ปี",
+    "yearlyBenefit": "ลด {percent}% เมื่อสมัครสมาชิกรายปี",
+    "monthlyEquivalent": "(ประมาณ {amount} เยน/เดือน)",
+    "subscriptionManagement": "การจัดการการสมัครสมาชิก",
+    "subscriptionActive": "สัญญาสมัครสมาชิกใช้งานได้",
+    "changeBillingCycle": {
+      "toYearly": "เปลี่ยนเป็นรายปี",
+      "toMonthly": "เปลี่ยนเป็นรายเดือน"
+    },
+    "planAction": {
+      "currentPlan": "แผนปัจจุบัน",
+      "changePlan": "เปลี่ยนแผน",
+      "managePlan": "จัดการแผน",
+      "startNow": "เริ่มเลย"
+    },
+    "trialInfo": {
+      "daysFreeTrial": "รวมการทดลองใช้ฟรี {days} วัน",
+      "allPlansIncludeTrial": "แผนทั้งหมดรวมช่วงทดลองใช้ฟรี {days} วัน",
+      "cancelAnytime": "คุณสามารถยกเลิกหรือเปลี่ยนแผนได้ตลอดเวลา"
+    },
+    "preview": {
+      "title": "ยืนยันการเปลี่ยนแปลงแผน",
+      "changeDetails": "รายละเอียดการเปลี่ยนแปลงการสมัครสมาชิก",
+      "from": "แผนปัจจุบัน",
+      "to": "แผนใหม่",
+      "billingDetails": "รายละเอียดการเรียกเก็บเงิน",
+      "currentPayment": "จำนวนเงินที่ชำระนี้",
+      "nextPayment": "การชำระเงินปกติครั้งถัดไป",
+      "prorationNote": "หมายเหตุ: ปรับจากจำนวนเงินที่ชำระไปแล้วตามสัดส่วน",
+      "immediateEffect": "หมายเหตุ: การเปลี่ยนแปลงแผนจะมีผลทันที",
+      "trialNote": "หมายเหตุ: ไม่มีค่าใช้จ่ายเพิ่มเติมสำหรับการเปลี่ยนแปลงแผน เนื่องจากคุณอยู่ในช่วงทดลองใช้งาน"
+    },
+    "confirmDialog": {
+      "cancel": "ยกเลิก",
+      "confirm": "ยืนยันการเปลี่ยนแปลง"
+    },
+    "processing": "กำลังประมวลผล...",
+    "errors": {
+      "subscriptionIdNotFound": "ไม่พบรหัสการสมัครสมาชิก",
+      "customerIdNotFound": "ไม่พบรหัสลูกค้า Stripe",
+      "previewFetch": "ดูตัวอย่างข้อผิดพลาดในการดึงข้อมูล: {message}",
+      "previewUnexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะดึงข้อมูลตัวอย่าง",
+      "updateFailed": "อัปเดตการสมัครรับข้อมูลไม่สำเร็จ",
+      "updateError": "ข้อผิดพลาดในการอัปเดต: {message}",
+      "updateUnexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะอัปเดตการสมัคร",
+      "checkoutUrlFailed": "ไม่สามารถรับการชำระเงิน URL",
+      "subscriptionError": "ข้อผิดพลาดในการสมัคร: {message}",
+      "subscriptionUnexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะประมวลผลการสมัครสมาชิก",
+      "portalUrlFailed": "ไม่สามารถรับพอร์ทัลการเรียกเก็บเงิน",
+      "portalError": "ข้อผิดพลาดของพอร์ทัลการเรียกเก็บเงิน: {message}",
+      "portalUnexpected": "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะเข้าถึงพอร์ทัลการเรียกเก็บเงิน"
+    },
+    "success": {
+      "planUpdated": "อัปเดตการสมัครสมาชิกแล้ว",
+      "title": "การซื้อการสมัครสมาชิกเสร็จสมบูรณ์",
+      "congratulations": "ขอแสดงความยินดี! การสมัครของคุณได้รับการประมวลผลเรียบร้อยแล้ว",
+      "allFeaturesAvailable": "ตอนนี้คุณสามารถใช้คุณสมบัติทั้งหมดได้แล้ว",
+      "backToDashboard": "กลับไปที่แดชบอร์ด",
+      "billingInfo": "หากต้องการอัพเดตสัญญาหรือเปลี่ยนแปลงข้อมูลการชำระเงิน",
+      "subscriptionPageLink": "หน้าสมัครสมาชิก",
+      "canBeDone": "คุณสามารถทำได้จากที่นั่น"
+    },
+    "cancel": {
+      "title": "การซื้อการสมัครสมาชิกล้มเหลว",
+      "retryPurchase": "ลองสมัครสมาชิกซื้ออีกครั้ง",
+      "retryDescription": "คุณสามารถลองซื้อการสมัครสมาชิกอีกครั้งได้จากลิงก์ด้านล่าง",
+      "goToSubscription": "ไปที่หน้าสมัครสมาชิก",
+      "contactSupport": "ติดต่อฝ่ายสนับสนุน",
+      "supportDescription": "หากคุณมีคำถามใด ๆ โปรดติดต่อเรา",
+      "backToDashboard": "กลับไปที่แดชบอร์ด"
+    }
+  },
+  "coupon": {
+    "title": "การจัดการคูปอง",
+    "list": "รายการคูปอง",
+    "addCoupon": "สร้างคูปอง",
+    "editCoupon": "แก้ไขคูปอง",
+    "couponDetails": "รายละเอียดคูปอง",
+    "couponName": "ชื่อคูปอง",
+    "couponCode": "รหัสคูปอง",
+    "discountType": "ประเภทส่วนลด",
+    "discountValue": "จำนวนส่วนลด",
+    "usedCount": "จำนวนที่ใช้",
+    "percentage": "อัตราส่วนลด",
+    "fixed": "ส่วนลดคงที่",
+    "percentageDiscount": "อัตราส่วนลด",
+    "fixedDiscount": "จำนวนเงินคงที่",
+    "startDate": "วันที่เริ่มต้น",
+    "endDate": "วันที่สิ้นสุด",
+    "validPeriod": "ระยะเวลาที่ถูกต้อง",
+    "maxUseCount": "จำนวนการใช้งานสูงสุด",
+    "currentUseCount": "จำนวนการใช้งานปัจจุบัน",
+    "usageCount": "ใช้การนับ",
+    "unlimited": "ไม่จำกัด",
+    "isActive": "ใช้งานอยู่/ไม่ได้ใช้งาน",
+    "active": "ใช้งานอยู่",
+    "inactive": "ไม่ได้ใช้งาน",
+    "status": "สถานะ",
+    "targetCustomer": "ลูกค้าเป้าหมาย",
+    "allCustomers": "ลูกค้าทุกท่าน",
+    "firstTimeCustomers": "ลูกค้าครั้งแรก",
+    "repeatCustomers": "ลูกค้าทำซ้ำ",
+    "excludedMenus": "เมนูยกเว้นคูปอง",
+    "excludedMenuCount": "เมนูยกเว้นคูปอง",
+    "excludedMenuDescription": "เมนูไม่สามารถใช้คูปองได้",
+    "basicSettings": "การตั้งค่าพื้นฐาน",
+    "basicInfo": "ข้อมูลพื้นฐาน",
+    "periodAndUsage": "ระยะเวลาที่ถูกต้องและจำนวนการใช้งาน",
+    "menuAndStatus": "เมนูเป้าหมายและการตั้งค่าที่ใช้งานอยู่",
+    "preview": "ดูตัวอย่าง",
+    "validCoupon": "คูปองที่ถูกต้อง",
+    "invalidCoupon": "คูปองไม่ถูกต้อง",
+    "selectDate": "เลือกวันที่",
+    "invalidDate": "วันที่ไม่ถูกต้อง",
+    "notSet": "ไม่ได้ตั้งค่า",
+    "createCoupon": "สร้างคูปอง",
+    "updateCoupon": "อัปเดตคูปอง",
+    "deleteCoupon": "ลบคูปอง",
+    "confirmDelete": "ลบคูปองใช่ไหม",
+    "deleteWarning": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+    "couponCreated": "สร้างคูปองแล้ว",
+    "couponUpdated": "อัปเดตคูปองแล้ว",
+    "couponDeleted": "ลบคูปองแล้ว",
+    "couponNotFound": "ไม่พบคูปอง",
+    "noCoupons": "ยังไม่มีคูปอง",
+    "processing": "กำลังประมวลผล...",
+    "adding": "กำลังเพิ่ม...",
+    "hasChanges": "มีการเปลี่ยนแปลง อย่าลืมที่จะบันทึก",
+    "backToList": "กลับไปที่รายการคูปอง",
+    "expired": "หมดอายุแล้ว",
+    "alerts": {
+      "expired": "คูปองหมดอายุแล้ว"
+    },
+    "description": {
+      "intro": "คุณสามารถสร้างคูปองใหม่ได้โดยป้อนข้อมูล กรุณาดำเนินการทีละขั้นตอน",
+      "editIntro": "คุณสามารถแก้ไขข้อมูลคูปองและเปลี่ยนแปลงเนื้อหาได้",
+      "list": "เมื่อกรอกรหัสคูปองเมื่อทำการจอง คุณสามารถใช้ส่วนลดเฉพาะสำหรับแต่ละเมนูได้ นี่เป็นวิธีที่มีประสิทธิภาพในการเพิ่มอัตราการทำซ้ำ",
+      "listSecondary": "กรุณาใช้อย่างมีประสิทธิภาพเพื่อเพิ่มอัตราการทำซ้ำ",
+      "couponCode": "ลูกค้าสามารถใช้รหัสนี้เมื่อทำการจองเพื่อใช้คูปองจากการชำระเงิน",
+      "editCouponCode": "ป้อนรหัสนี้เป็นรหัสคูปองเพื่อใช้ส่วนลด",
+      "discountType": "คุณสามารถกำหนดทั้งส่วนลดคงที่และอัตราคิดลดตามจำนวนการใช้งาน",
+      "editDiscountType": "คุณสามารถเลือกอัตราคิดลดตามจำนวนการใช้งานและจำนวนส่วนลดคงที่",
+      "validPeriod": "ระยะเวลาที่ถูกต้องของคูปองคือตั้งแต่วันที่เริ่มต้นจนถึงวันที่สิ้นสุด",
+      "validPeriodSecondary": "หากพ้นระยะเวลาดังกล่าว คูปองจะไม่สามารถใช้ได้โดยอัตโนมัติ",
+      "maxUseCount": "หากเกินจำนวนการใช้งานสูงสุด คูปองจะไม่สามารถใช้งานได้โดยอัตโนมัติ",
+      "activeStatus": "หากไม่ได้ใช้งาน คูปองจะไม่สามารถใช้ได้ โปรดเลือกตัวเลือกนี้หากคุณต้องการหยุดใช้งาน",
+      "editActiveStatus": "หากไม่ได้ใช้งาน คูปองจะไม่สามารถใช้ได้",
+      "targetCustomer": "โปรดเลือกคุณลักษณะของลูกค้าที่มีสิทธิ์ใช้คูปองนี้"
+    },
+    "placeholder": {
+      "couponName": "เช่น ส่วนลด 20% ครั้งแรก",
+      "couponCode": "เช่น รหัส 12345",
+      "editCouponCode": "เช่น คูปอง-00123",
+      "percentage": "เช่น 10",
+      "fixed": "เช่น 1,000",
+      "maxUseCount": "เช่น 100"
+    },
+    "validation": {
+      "nameRequired": "ต้องระบุชื่อคูปอง",
+      "nameMinLength": "กรุณากรอกชื่อคูปอง",
+      "codeRequired": "ต้องใช้รหัสคูปอง",
+      "codeMinLength": "กรุณากรอกอย่างน้อย 1 ตัวอักษร",
+      "codeMaxLength": "โปรดป้อนอักขระ {max} หรือน้อยกว่า",
+      "percentageMin": "โปรดป้อนอัตราคิดลด 1% ขึ้นไป",
+      "percentageMax": "โปรดป้อนอัตราคิดลด 100% หรือน้อยกว่า",
+      "percentageRequired": "กรุณากรอกอัตราคิดลด",
+      "fixedMin": "กรุณากรอกจำนวนส่วนลดตั้งแต่ 1 เยนขึ้นไป",
+      "fixedMax": "กรุณากรอกส่วนลดจำนวน 99999 เยนหรือน้อยกว่า",
+      "fixedRequired": "กรุณากรอกจำนวนส่วนลด",
+      "endDateFuture": "โปรดเลือกวันที่ในอนาคตสำหรับวันที่สิ้นสุด",
+      "endDateFutureEdit": "โปรดเลือกวันที่ในอนาคตสำหรับวันที่สิ้นสุด",
+      "maxUseCountRequired": "จำเป็น",
+      "maxUseCountMin": "โปรดป้อนค่าตั้งแต่ 0 ขึ้นไป",
+      "maxUseCountMax": "โปรดป้อนค่า 99999 หรือน้อยกว่า",
+      "formError": "มีข้อผิดพลาดในการป้อนข้อมูล กรุณาตรวจสอบแต่ละรายการ"
+    },
+    "error": {
+      "tenantNotFound": "ไม่พบซาลอน",
+      "tenantOrOrgNotFound": "ไม่มีผู้เช่าหรือร้านค้า",
+      "couponConfigNotFound": "ไม่มีการกำหนดค่าคูปอง",
+      "createFailed": "ไม่สามารถสร้างเมนูยกเว้นคูปองได้"
+    }
+  },
+  "reservationDetail": {
+    "title": "รายละเอียดการจอง",
+    "backToDashboard": "กลับไปที่แดชบอร์ด",
+    "selectStatus": "เลือก สถานะ",
+    "changeStatus": "เปลี่ยนสถานะ",
+    "delete": "ลบ",
+    "dateTime": "วันที่และเวลา",
+    "totalAmount": "จำนวนเงินทั้งหมด",
+    "paymentMethod": "วิธีการชำระเงิน",
+    "notes": "หมายเหตุ",
+    "customerInfo": "ข้อมูลลูกค้า",
+    "loadingCustomerData": "กำลังโหลดข้อมูลลูกค้า",
+    "customerName": "ชื่อลูกค้า",
+    "notSet": "ไม่ได้ตั้งค่า",
+    "phoneNumber": "หมายเลขโทรศัพท์",
+    "email": "ที่อยู่อีเมล",
+    "age": "อายุ",
+    "yearsOld": "อายุ {age} ปี",
+    "gender": "เพศ",
+    "points": "คะแนน",
+    "pointsCount": "{count} แต้ม",
+    "noCustomerLinked": "ไม่มีข้อมูลลูกค้าเชื่อมโยงกับการจองนี้",
+    "assignedStaff": "พนักงานที่ได้รับมอบหมาย",
+    "reservationContent": "เนื้อหาการจอง",
+    "quantity": "ปริมาณ",
+    "duration": "ระยะเวลา",
+    "minutes": "นาที",
+    "price": "ราคา",
+    "options": "ตัวเลือก",
+    "noMenuReserved": "ไม่มีเมนูที่สงวนไว้",
+    "statusUpdated": "สถานะมีการเปลี่ยนแปลง",
+    "reservationDeleted": "ลบการจองแล้ว",
+    "changeStatusDialog": {
+      "title": "เปลี่ยนสถานะการจอง"
+    },
+    "deleteDialog": {
+      "title": "ลบการจอง"
+    },
+    "errors": {
+      "fetchCustomerData": "ดึงข้อมูลลูกค้าไม่สำเร็จ"
+    }
+  },
+  "menus": {
+    "title": "การจัดการเมนู",
+    "list": {
+      "title": "รายการเมนู",
+      "addNew": "เพิ่มเมนูใหม่",
+      "search": "เมนูค้นหา",
+      "filter": "ตัวกรอง",
+      "allCategories": "ทุกหมวดหมู่",
+      "active": "ใช้งานอยู่",
+      "inactive": "ไม่ได้ใช้งาน",
+      "noMenus": "ไม่มีเมนู",
+      "messages": {
+        "noMenusInCategory": "ไม่พบเมนูในหมวดหมู่ที่เลือก",
+        "noMenus": "ไม่มีเมนู",
+        "deleteConfirmation": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "filterByCategory": "กรองตามหมวดหมู่",
+        "selectCategory": "เลือกหมวดหมู่",
+        "categoryNotFound": "ไม่พบหมวดหมู่",
+        "viewMode": "โหมดดู",
+        "gridView": "มุมมองตาราง",
+        "listView": "มุมมองรายการ",
+        "loadMore": "โหลดเพิ่มเติม",
+        "deleteMenu": "ลบเมนู",
+        "active": "ใช้งานอยู่",
+        "inactive": "ไม่ได้ใช้งาน"
+      }
+    },
+    "add": {
+      "title": "เพิ่มเมนู",
+      "description": "เพิ่มเมนูใหม่"
+    },
+    "edit": {
+      "title": "แก้ไขเมนู",
+      "saving": "กำลังบันทึก...",
+      "updating": "กำลังอัปเดต...",
+      "success": "อัปเดตเมนูแล้ว",
+      "error": "ไม่สามารถอัปเดตเมนูได้"
+    },
+    "detail": {
+      "title": "รายละเอียดเมนู",
+      "edit": "แก้ไข",
+      "delete": "ลบ",
+      "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบเมนูนี้",
+      "tabs": {
+        "basic": "ข้อมูลพื้นฐาน",
+        "details": "รายละเอียด"
+      },
+      "labels": {
+        "gender": {
+          "all": "ทุกเพศ",
+          "male": "ชาย",
+          "female": "หญิง"
+        },
+        "targetType": {
+          "repeat": "ลูกค้าทำซ้ำ",
+          "first": "ลูกค้าครั้งแรก",
+          "all": "ลูกค้าทุกท่าน"
+        },
+        "paymentMethod": {
+          "credit_card": "การชำระเงินออนไลน์",
+          "cash": "ชำระเงินภายในร้าน",
+          "all": "ทั้งชำระเงินออนไลน์และหน้าร้าน"
+        }
+      },
+      "fields": {
+        "price": "ราคา",
+        "totalDuration": "เวลาการรักษาทั้งหมด",
+        "target": "เป้าหมาย",
+        "targetType": "ประเภทเป้าหมาย",
+        "paymentMethod": "วิธีการชำระเงิน",
+        "description": "คำอธิบาย",
+        "warningMessage": "ข้อความเตือน",
+        "tags": "แท็ก",
+        "systemInfo": "ข้อมูลระบบ",
+        "createdAt": "สร้างเมื่อ",
+        "noTags": "ไม่มีแท็ก",
+        "minutes": "นาที"
+      },
+      "image": {
+        "noImage": "ไม่มีภาพ",
+        "alt": "รูปภาพเมนู",
+        "thumbnail": "ภาพขนาดย่อ",
+        "show": "แสดงรูปภาพ {index}"
+      },
+      "confirmDeleteDialog": {
+        "title": "ลบเมนู?",
+        "description": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "cancel": "ยกเลิก",
+        "delete": "ลบ"
+      },
+      "messages": {
+        "notFound": "ไม่พบเมนู",
+        "deleteConfirmation": "การดำเนินการนี้ไม่สามารถยกเลิกได้",
+        "deleteSuccess": "ลบเมนูแล้ว",
+        "imageDeleteSuccess": "รูปภาพที่ถูกลบ: {url}",
+        "imageDeleteFailed": "ไม่สามารถลบรูปภาพ: {url}",
+        "imageDeleteError": "ไม่สามารถลบรูปภาพ: {status} {statusText} - {error}",
+        "categoryNotFound": "ไม่พบหมวดหมู่"
+      },
+      "showMore": "แสดงเพิ่มเติม",
+      "showLess": "แสดงน้อยลง"
+    },
+    "form": {
+      "basicInfo": "ข้อมูลพื้นฐาน",
+      "menuImage": "รูปภาพเมนู",
+      "menuName": "ชื่อเมนู",
+      "menuNamePlaceholder": "กรอกชื่อเมนู",
+      "category": "หมวดหมู่",
+      "categoryPlaceholder": "เลือกหมวดหมู่เมนู",
+      "categoryNotFound": "ไม่พบหมวดหมู่",
+      "categoryRequest": "หากคุณไม่เห็นหมวดหมู่ที่คุณต้องการ",
+      "categoryRequestLink": "คลิกที่นี่",
+      "categoryRequestSuffix": "เพื่อขอเพิ่ม",
+      "price": "ราคาปกติ",
+      "pricePlaceholder": "เช่น 5,000",
+      "salePrice": "ราคาขาย",
+      "salePricePlaceholder": "เช่น 4000",
+      "duration": "เวลาทำงานจริง",
+      "durationPlaceholder": "เลือกเวลาการรักษา",
+      "durationHelp": "ป้อนเวลาทำงานจริงสำหรับเมนู",
+      "minutes": "นาที",
+      "target": "เป้าหมาย",
+      "targetHelp": "เลือกคุณลักษณะของลูกค้าที่มีสิทธิ์สำหรับเมนูนี้",
+      "targetPlaceholder": "เลือกเป้าหมาย",
+      "targetAll": "ทั้งหมด",
+      "targetFirst": "ครั้งแรก",
+      "targetRepeat": "ทำซ้ำ",
+      "gender": "เพศ",
+      "genderHelp": "เลือกเพศเป้าหมายสำหรับเมนูนี้",
+      "genderPlaceholder": "เลือกเพศ",
+      "genderAll": "ชายและหญิง",
+      "genderMale": "ชาย",
+      "genderFemale": "หญิง",
+      "tags": "แท็ก",
+      "tagsPlaceholder": "ป้อนแท็กแล้วกด Enter",
+      "paymentMethod": "วิธีการชำระเงิน",
+      "paymentCash": "ชำระเงินภายในร้านเท่านั้น",
+      "paymentOnline": "ชำระเงินออนไลน์เท่านั้น",
+      "paymentBoth": "มีจำหน่ายทั้งคู่",
+      "paymentOfflineOnly": "ขณะนี้ใช้ได้เฉพาะการชำระเงินในร้านค้าเท่านั้น",
+      "paymentSetupRequired": "หากต้องการใช้การชำระเงินออนไลน์",
+      "paymentSetupLink": "การตั้งค่าการชำระเงิน",
+      "paymentSetupSuffix": "กรุณาตั้งค่าให้เสร็จสิ้น",
+      "paymentFeeNotice": "การชำระเงินออนไลน์มีค่าธรรมเนียม",
+      "paymentFeeDetail": "ค่าธรรมเนียมการชำระเงินออนไลน์: 4% + 40 เยน/รายการ",
+      "description": "คำอธิบายเมนู",
+      "descriptionPlaceholder": "ป้อนคำอธิบายเมนูโดยละเอียด",
+      "publish": "เมนูเผยแพร่",
+      "publishHelp": "หากปิด เมนูนี้จะไม่ปรากฏให้ลูกค้าเห็น",
+      "back": "กลับ",
+      "save": "บันทึกเมนู",
+      "update": "อัพเดทเมนู"
+    },
+    "validation": {
+      "nameRequired": "ต้องระบุชื่อเมนู",
+      "nameMaxLength": "ชื่อเมนูต้องมีอักขระไม่เกิน 100 ตัว",
+      "categoryRequired": "ต้องระบุหมวดหมู่",
+      "priceRequired": "ต้องระบุราคา",
+      "priceMin": "ต้องระบุราคา",
+      "priceMax": "ราคาต้องไม่เกิน {max} เยน",
+      "salePriceMax": "ราคาลดต้องไม่เกิน {max} เยน",
+      "salePriceLower": "ราคาขายจะต้องต่ำกว่าราคาปกติ",
+      "durationRequired": "ต้องใช้เวลาทำงานจริง",
+      "descriptionRequired": "จำเป็นต้องมีคำอธิบาย",
+      "descriptionMax": "คำอธิบายต้องมีอักขระไม่เกิน {max} ตัว",
+      "genderRequired": "ต้องระบุเพศ",
+      "tagMaxLength": "แท็กต้องมีอักขระไม่เกิน {max} ตัว",
+      "targetTypeRequired": "ต้องระบุประเภทเป้าหมาย",
+      "tagsMax": "สูงสุด 5 แท็ก",
+      "tagsLengthMax": "แท็กต้องมีอักขระ {max} หรือน้อยกว่า",
+      "paymentMethodRequired": "ต้องระบุวิธีการชำระเงิน",
+      "isActiveRequired": "จำเป็นต้องมีการตั้งค่าสถานะใช้งาน/ไม่ใช้งาน",
+      "categoryNotFound": "ไม่พบหมวดหมู่"
+    },
+    "messages": {
+      "salonNotFound": "ไม่พบข้อมูลร้านหรือเมนูที่มีอยู่",
+      "uploadingImages": "กำลังอัพโหลดภาพ...",
+      "deletingImages": "ลบรูปภาพเก่า {count} จากพื้นที่เก็บข้อมูลแล้ว",
+      "deleteImageError": "เกิดข้อผิดพลาดในการลบภาพเก่า: {error}",
+      "updateSuccess": "อัปเดตเมนูแล้ว",
+      "updateError": "ไม่สามารถอัปเดตเมนูได้",
+      "categoryNotFound": "ไม่พบหมวดหมู่"
+    }
+  },
+  "landing": {
+    "nav": {
+      "features": "คุณสมบัติ",
+      "pricing": "ราคา",
+      "testimonials": "ข้อความรับรอง",
+      "faq": "คำถามที่พบบ่อย",
+      "contact": "ติดต่อ",
+      "about": "เกี่ยวกับ",
+      "demo": "สาธิต",
+      "signUp": "สร้างบัญชี",
+      "startFreeTrial": "เริ่มทดลองใช้ฟรี 30 วัน",
+      "login": "เข้าสู่ระบบ"
+    },
+    "hero": {
+      "badge": "เริ่มต้น 8,000 เยน/เดือน",
+      "title": "การจอง ลูกค้า การขาย การตลาด",
+      "titleBreak": "ทุกสิ่งที่คุณต้องการสำหรับการจัดการร้านเสริมสวยในที่เดียว",
+      "subtitle": "ปรับปรุงการดำเนินงานประจำวันของคุณและเพิ่มความพึงพอใจของลูกค้าด้วยระบบจัดการการจองเมนูของเรา",
+      "cta": {
+        "demo": "ดูการสาธิต",
+        "trial": "ทดลองใช้ฟรี 30 วัน",
+        "requestMaterial": "ขอเอกสารข้อมูล",
+        "disclaimer": "ไม่มีค่าธรรมเนียมการยกเลิก ยกเลิกได้ตลอดเวลา"
+      },
+      "tagline": "การจองร้านเสริมสวยที่ง่ายและสะดวก"
+    },
+    "features": {
+      "title": "คุณสมบัติการจัดการการจองทั้งหมดในที่เดียว",
+      "subtitle": "เราจัดเตรียมคุณสมบัติทั้งหมดที่จำเป็นสำหรับการจัดการร้านเสริมสวย ตั้งแต่การจอง ลูกค้า การขาย การจัดการเมนู การวิเคราะห์ลูกค้า ไปจนถึงการตลาด",
+      "items": {
+        "smartReservation": {
+          "title": "การจัดการการจองอัจฉริยะ",
+          "description": "เพิ่มความสะดวกสบายให้กับลูกค้าสูงสุดด้วยการจองออนไลน์ตลอด 24 ชั่วโมงทุกวันและเลือกเมนูล่วงหน้า พนักงานสามารถเตรียมตัวล่วงหน้าได้โดยทราบจำนวนลูกค้าและตัวเลือกเมนู ซึ่งช่วยลดต้นทุนการเตรียมการและเวลารอคอยได้อย่างมาก"
+        },
+        "optimizationAlgorithm": {
+          "title": "อัลกอริธึมการเพิ่มประสิทธิภาพช่องการจอง",
+          "description": "อัลกอริธึมที่เป็นเอกลักษณ์ของเราจะสร้างช่องการจองที่เหมาะสมที่สุดและการเปลี่ยนแปลงที่ปรับให้เหมาะกับร้านเสริมสวยของคุณโดยอัตโนมัติ ลดเวลาว่างให้เหลือน้อยที่สุดพร้อมทั้งเพิ่มรายได้และอัตราการใช้งานให้สูงสุดไปพร้อมๆ กัน"
+        },
+        "digitalCarte": {
+          "title": "บันทึกลูกค้าดิจิทัล",
+          "description": "รวมประวัติการรักษา สภาพผิว/เส้นผม และภาพถ่ายก่อน/หลัง ลดภาระด้านเอกสารด้วยการป้อนข้อมูลด้วยเสียงและการวิเคราะห์รูปภาพ AI เพื่อการแบ่งปันข้อมูลที่ราบรื่น"
+        },
+        "allInOne": {
+          "title": "ประสิทธิภาพทางธุรกิจที่สมบูรณ์",
+          "description": "โซลูชันแบบครบวงจรตั้งแต่การจองและการจัดการลูกค้า ไปจนถึงการจัดตารางเวลาพนักงาน คะแนน และการชำระเงิน ลดชั่วโมงการจัดการลงครึ่งหนึ่งโดยไม่ต้องใช้เครื่องมือหลายตัว และลดต้นทุนการดำเนินงานได้อย่างมาก"
+        },
+        "userFriendly": {
+          "title": "ออกแบบมาสำหรับผู้เชี่ยวชาญด้านความงาม",
+          "description": "UI ที่เรียบง่ายใช้งานง่ายช่วยให้ใช้งานได้ทันทีแม้สำหรับผู้เริ่มต้นด้านไอที การออกแบบตามขั้นตอนการทำงานช่วยลดต้นทุนการฝึกอบรมและข้อผิดพลาดสำหรับพนักงานใหม่"
+        },
+        "support": {
+          "title": "ระบบสนับสนุนที่เชื่อถือได้",
+          "description": "การสนับสนุนที่ครอบคลุมตั้งแต่การย้ายข้อมูลบนกระดาษ/Excel ไปจนถึงการตั้งค่าเริ่มต้น คู่มือ และวิดีโอบทช่วยสอน การสนับสนุนสหายของเราผ่านการแชทช่วยลดข้อกังวลในการใช้งาน"
+        },
+        "marketing": {
+          "title": "โปรโมชั่นและทำซ้ำธุรกิจ",
+          "description": "ลดการไม่แสดงตัวด้วย DM ส่วนตัวโดยใช้ข้อมูลลูกค้าและการเตือนอัตโนมัติ เพิ่มความภักดีของลูกค้าและใช้งานต่อด้วยคะแนนและคูปอง"
+        },
+        "menuManagement": {
+          "title": "การจัดการเมนู",
+          "description": "เพิ่มและแก้ไขรายการพิเศษตามฤดูกาลและหลักสูตรพิเศษโดยสังหรณ์ใจด้วยการอัปเดตเว็บไซต์ทันที สนับสนุนการได้มาซึ่งลูกค้าและธุรกิจซ้ำโดยการแบ่งปันข้อมูลล่าสุดอย่างต่อเนื่อง"
+        },
+        "dataAnalytics": {
+          "title": "การวิเคราะห์ข้อมูลลูกค้า",
+          "description": "AI วิเคราะห์ประวัติการจองและการตั้งค่าเพื่อแนะนำบริการที่เหมาะสมที่สุดสำหรับลูกค้าแต่ละรายโดยอัตโนมัติ บรรลุการปรับปรุงอัตราการทำซ้ำและมูลค่าธุรกรรมโดยเฉลี่ยไปพร้อมๆ กันผ่านการปรับเปลี่ยนในแบบของคุณ"
+        }
+      }
+    },
+    "howItWorks": {
+      "title": "เริ่มต้นใน 3 ขั้นตอนง่ายๆ",
+      "subtitle": "ติดตั้งให้เสร็จสิ้นภายในไม่กี่นาทีและเริ่มรับการจองทันที",
+      "steps": {
+        "register": {
+          "title": "การลงทะเบียนบัญชี",
+          "description": "สร้างบัญชีด้วยการป้อนข้อมูลง่ายๆ และตั้งค่าข้อมูลร้านค้าของคุณ"
+        },
+        "setup": {
+          "title": "การตั้งค่าเมนู",
+          "description": "ป้อนพนักงานและเมนูของร้านเสริมสวยของคุณ และกำหนดเวลาการจองที่ว่าง"
+        },
+        "start": {
+          "title": "เริ่มรับจอง",
+          "description": "แชร์ลิงก์หน้าการจองของคุณกับลูกค้าและเริ่มรับการจองทันที"
+        }
+      }
+    },
+    "pricing": {
+      "title": "แผนการกำหนดราคาที่เรียบง่าย",
+      "subtitle": "ไม่มีค่าธรรมเนียมแอบแฝง คุณสมบัติทั้งหมดไม่จำกัด",
+      "disclaimer": "ยกเลิกได้ตลอดเวลา · ทดลองใช้ฟรี 30 วัน",
+      "type": {
+        "monthly": "รายเดือน",
+        "annually": "เป็นประจำทุกปี"
+      },
+      "subscription": {
+        "title": "สมัครสมาชิก",
+        "micro": {
+          "title": "ไมโคร",
+          "description": "แผนสำหรับเจ้าของคนเดียว",
+          "price": {
+            "monthly": "¥4,000",
+            "annually": "¥40,000"
+          },
+          "features": {
+            "1": "การจัดการการจอง (ไทม์ไลน์, การจัดตารางพนักงาน, การยืนยัน/การยกเลิก, การจองออนไลน์ทุกวันตลอด 24 ชั่วโมง)",
+            "2": "การจัดการลูกค้า (ข้อมูลพื้นฐาน ประวัติการจอง/การซื้อ คะแนน พอร์ทัลลูกค้า)",
+            "3": "บันทึกลูกค้า (รายละเอียดการรักษาอัตโนมัติ อาการแพ้ การจัดการคุณภาพเส้นผม)",
+            "4": "การจัดการพนักงาน (การสร้างบัญชี การกำหนดเวลาพื้นฐาน) ※พนักงานสูงสุด 1 คน",
+            "5": "การตั้งค่าเมนู (หนึ่งภาพ การลงทะเบียนเมนู ราคา/ระยะเวลา) ※สูงสุด 50 รายการ",
+            "6": "ตัวเลือกและการขายปลีก (เพิ่มตัวเลือก ตัวเลือกตัวเลือก) ※มากถึง 25 รายการ",
+            "7": "คะแนนและคูปอง (ระบบคะแนนที่ปรับแต่งได้ การจัดการคูปอง) ※มากถึง 10 รายการ",
+            "8": "การแจ้งเตือนและการแจ้งเตือนอัตโนมัติ (LINE)",
+            "9": "พนักงาน (1), เมนู (50), ตัวเลือก (25), คูปอง (10), การจอง (150/เดือน)"
+          }
+        },
+        "lite": {
+          "title": "ไลท์",
+          "description": "ทุกสิ่งที่คุณต้องการเพื่อเริ่มต้น",
+          "price": {
+            "monthly": "¥8,000",
+            "annually": "¥80,000"
+          },
+          "features": {
+            "1": "การจัดการการจอง (ไทม์ไลน์, การจัดตารางพนักงาน, การยืนยัน/การยกเลิก, การจองออนไลน์ทุกวันตลอด 24 ชั่วโมง)",
+            "2": "การจัดการลูกค้า (ข้อมูลพื้นฐาน ประวัติการจอง/การซื้อ คะแนน พอร์ทัลลูกค้า)",
+            "3": "บันทึกลูกค้า (รายละเอียดการรักษาอัตโนมัติ อาการแพ้ การจัดการคุณภาพเส้นผม)",
+            "4": "การจัดการพนักงาน (การสร้างบัญชี การเข้าสู่ระบบ การอนุญาต การกำหนดเวลาพื้นฐาน) ※พนักงานสูงสุด 3 คน",
+            "5": "การตั้งค่าเมนู (หนึ่งภาพ การลงทะเบียนเมนู ราคา/ระยะเวลา) ※สูงสุด 20 รายการ",
+            "6": "ตัวเลือกและการขายปลีก (เพิ่มตัวเลือก ตัวเลือกตัวเลือก) ※สูงสุด 15 รายการ",
+            "7": "คะแนนและคูปอง (ระบบคะแนนที่ปรับแต่งได้ การจัดการคูปอง)",
+            "8": "การแจ้งเตือนและการแจ้งเตือนอัตโนมัติ (LINE)",
+            "9": "พนักงาน (3), เมนู (30), ตัวเลือก (15), คูปอง (10), การจอง (300/เดือน)"
+          }
+        },
+        "pro": {
+          "title": "โปร",
+          "description": "เพิ่มความยืดหยุ่นตามขนาด",
+          "price": {
+            "monthly": "¥12,000",
+            "annually": "¥120,000"
+          },
+          "features": {
+            "1": "คุณสมบัติแผน LITE ทั้งหมด",
+            "2": "บันทึกลูกค้า (แนบรูปภาพ 4 รูป สามารถป้อนข้อมูลด้วยเสียงได้)",
+            "3": "การตั้งค่าเมนู (2 ภาพ) ※สูงสุด 60 รายการ",
+            "4": "พนักงาน (10), เมนู (60), ตัวเลือก (30), คูปอง (30), การจอง (1,000/เดือน)"
+          }
+        }
+      },
+      "section": {
+        "feature": {
+          "title": "คุณสมบัติ",
+          "description": "เปรียบเทียบคุณสมบัติระหว่างแผนต่างๆ"
+        },
+        "basic": {
+          "title": "คุณสมบัติพื้นฐาน",
+          "features": [
+            {
+              "name": "จำนวนการจองสูงสุด/เดือน",
+              "tiers": {
+                "MICRO": "150",
+                "LITE": "500",
+                "PRO": "ไม่จำกัด"
+              }
+            },
+            {
+              "name": "การลงทะเบียนลูกค้าสูงสุด",
+              "tiers": {
+                "MICRO": "1000",
+                "LITE": "1000",
+                "PRO": "ไม่จำกัด"
+              }
+            },
+            {
+              "name": "การจัดการพนักงาน",
+              "tiers": {
+                "MICRO": "1 คน",
+                "LITE": "5 คน",
+                "PRO": "15 คน"
+              }
+            },
+            {
+              "name": "การตั้งค่าเมนู",
+              "tiers": {
+                "MICRO": "50 รายการ",
+                "LITE": "50 รายการ",
+                "PRO": "100 รายการ"
+              }
+            },
+            {
+              "name": "ตัวเลือกและการค้าปลีก",
+              "tiers": {
+                "MICRO": "25 รายการ",
+                "LITE": "25 รายการ",
+                "PRO": "50 รายการ"
+              }
+            },
+            {
+              "name": "คะแนนและคูปอง",
+              "tiers": {
+                "MICRO": "10 รายการ",
+                "LITE": "25 รายการ",
+                "PRO": "100 รายการ"
+              }
+            },
+            {
+              "name": "การแจ้งเตือนและการแจ้งเตือนอัตโนมัติ",
+              "tiers": {
+                "MICRO": "จริง",
+                "LITE": "จริง",
+                "PRO": "จริง"
+              }
+            }
+          ]
+        },
+        "customer": {
+          "title": "การจัดการลูกค้าและบันทึก",
+          "features": [
+            {
+              "name": "คุณสมบัติบันทึกลูกค้า",
+              "tiers": {
+                "MICRO": "จริง",
+                "LITE": "จริง",
+                "PRO": "จริง"
+              }
+            },
+            {
+              "name": "บันทึกขั้นสูง (ภาพและเสียง)",
+              "tiers": {
+                "MICRO": "เท็จ",
+                "LITE": "เท็จ",
+                "PRO": "4 ภาพ (เฉพาะ PC อินพุตเสียงเท่านั้น)"
+              }
+            }
+          ]
+        },
+        "support": {
+          "title": "การสนับสนุนและอื่นๆ",
+          "features": [
+            {
+              "name": "การสนับสนุนการแชท (ปุ่มแชทด้านล่างขวา)",
+              "tiers": {
+                "MICRO": "จริง",
+                "LITE": "จริง",
+                "PRO": "จริง"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "content": {
+      "tagline": "เพิ่มรายได้และลดต้นทุน",
+      "title": "ประหยัดค่าแรงต่อปีได้ 1.2 ล้านเยน",
+      "mainDescription": "ด้วยการลงทุนเริ่มต้นที่ 8,000 เยน/เดือน ประหยัดค่าแรงได้ 100,000 เยนต่อเดือน การจัดการการจองอัตโนมัติช่วยให้พนักงานของคุณมุ่งเน้นไปที่การรักษา ส่งผลให้ยอดขายเพิ่มขึ้นและลดต้นทุนไปพร้อมๆ กัน",
+      "industryProblem": "ร้านเสริมสวย 79.9% ต่อสู้กับจำนวนลูกค้าที่ลดลง Bocker แก้ปัญหานี้ด้วยการจองออนไลน์ทุกวันตลอด 24 ชั่วโมงและระบบอัตโนมัติเพื่อปรับปรุงอัตราการทำซ้ำ",
+      "benefits": {
+        "sales": {
+          "title": "เพิ่มรายได้ 15%",
+          "description": "รับอัตราการจองที่สูงขึ้นผ่านการจองออนไลน์และปรับปรุงอัตราการทำซ้ำของลูกค้า 20% ด้วยระบบคะแนนและคูปอง"
+        },
+        "mistakes": {
+          "title": "ข้อผิดพลาดในการจองเป็นศูนย์",
+          "description": "ขจัดโอกาสที่สูญเสียไปจากการจองซ้ำซ้อนและการจองที่พลาดไป รักษาความไว้วางใจของลูกค้าและบรรลุการจัดการที่มั่นคง"
+        },
+        "efficiency": {
+          "title": "ประหยัด 30 ชั่วโมงต่อเดือน",
+          "description": "ลดเวลาในการจองโทรศัพท์ลงเหลือ 5 ชั่วโมงต่อเดือน พนักงานสามารถมุ่งเน้นไปที่การรักษา ซึ่งช่วยเพิ่มความพึงพอใจของลูกค้าได้อย่างมาก"
+        }
+      },
+      "averageResults": "ผลลัพธ์โดยเฉลี่ยจากธุรกิจที่นำไปใช้: การใช้จ่ายของลูกค้าเพิ่มขึ้น 8%, การไม่แสดงตัวลดลง 40%, การรักษาพนักงานที่ดีขึ้น สร้างความแตกต่างจากคู่แข่งและเติบโตอย่างยั่งยืน",
+      "roi": {
+        "title": "ผลตอบแทนจากการลงทุนทันที",
+        "description": "การลงทุน 8,000 เยนต่อเดือนให้ผลตอบแทน 100,000 เยนต่อเดือน ROI สำเร็จภายในเดือนแรก สัมผัสประสบการณ์สิทธิประโยชน์ด้วยการทดลองใช้ฟรี 30 วันก่อนตัดสินใจ ไม่มีค่าธรรมเนียมการยกเลิก ยกเลิกได้ตลอดเวลา"
+      }
+    },
+    "cta": {
+      "title": "เริ่มทดลองใช้ฟรีของคุณ",
+      "title2": "มาเริ่มทดลองใช้ฟรีเลยตอนนี้",
+      "button": "เริ่มทดลองใช้ฟรี",
+      "button2": "รายละเอียดเพิ่มเติม"
+    },
+    "headerSection": {
+      "title": "Bocker ศูนย์สนับสนุน",
+      "description": "Bocker เป็นแพลตฟอร์ม SaaS ที่ออกแบบมาเพื่อรองรับการดำเนินงานของร้านเสริมสวย หากคุณมีคำถามหรือข้อกังวลใด ๆ โปรดติดต่อเราได้ตลอดเวลา",
+      "cards": {
+        "contact": {
+          "title": "ติดต่อ",
+          "description": "หากมีคำถามหรือข้อสงสัยเกี่ยวกับบริการ โปรดติดต่อเราได้ตลอดเวลา พนักงานที่ทุ่มเทของเราจะตอบกลับคุณด้วยความเอาใจใส่"
+        },
+        "support": {
+          "title": "สนับสนุน",
+          "description": "เราให้การสนับสนุนโดยละเอียดสำหรับปัญหาหรือคำถามที่คุณอาจมีระหว่างการใช้งาน คุณยังสามารถดูคำถามที่พบบ่อยของเราเพื่อรับคำตอบอย่างรวดเร็ว"
+        }
+      }
+    },
+    "cta2": {
+      "title": "พร้อมแปลงร่างแล้ว",
+      "titleBreak": "การดำเนินงานร้านเสริมสวยของคุณ?",
+      "subtitle": "คลายความกังวลเรื่องการจัดการการจองด้วยราคาเพียง 8,000 เยน/เดือน!",
+      "button": "เริ่มทดลองใช้ฟรี 30 วัน",
+      "disclaimer": "ลงทะเบียนง่าย ๆ ด้วยบัตรเครดิตเท่านั้น · ยกเลิกได้ตลอดเวลา"
+    },
+    "popupBar": {
+      "title": "แคมเปญ",
+      "description": "รับส่วนลดสูงสุดถึง 2,400 เยนพร้อมโบนัสการแนะนำ!",
+      "discount": "สูงถึง 2,400 เยน"
+    },
+    "footer": {
+      "tagline": "ระบบการจัดการร้านเสริมสวยสำหรับบริการด้านความงาม",
+      "sections": {
+        "product": "สินค้า",
+        "support": "สนับสนุน",
+        "company": "บริษัท"
+      },
+      "links": {
+        "features": "คุณสมบัติ",
+        "pricing": "ราคา",
+        "demo": "สาธิต",
+        "faq": "คำถามที่พบบ่อย",
+        "contact": "ติดต่อ",
+        "helpCenter": "ศูนย์ช่วยเหลือ",
+        "about": "เกี่ยวกับ",
+        "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+        "termsOfUse": "เงื่อนไขการใช้งาน"
+      },
+      "copyright": "© 2025 Bocker สงวนลิขสิทธิ์."
+    },
+    "faq": {
+      "cta": "ติดต่อเรา",
+      "title": "คำถามที่พบบ่อย",
+      "subtitle": "ได้รับความไว้วางใจจากเจ้าของร้านเสริมสวยและสปามากมาย",
+      "items": {
+        "0": {
+          "question": "Bocker ได้รับการออกแบบมาเพื่อร้านเสริมสวยประเภทใด",
+          "answer": "Bocker เป็นแพลตฟอร์ม SaaS ที่ออกแบบมาสำหรับธุรกิจบริการตามการนัดหมาย เช่น ร้านเสริมสวย ร้านทำเล็บ และร้านเสริมสวย เรารองรับร้านเสริมสวยทุกขนาด ตั้งแต่ขนาดเล็ก (พนักงาน 3 คนหรือน้อยกว่า) ไปจนถึงขนาดใหญ่ (พนักงาน 8+ คน)"
+        },
+        "1": {
+          "question": "รวมคุณสมบัติอะไรบ้าง?",
+          "answer": "คุณสมบัติที่สำคัญ ได้แก่ การจัดการการจอง (การจองออนไลน์ทุกวันตลอด 24 ชั่วโมง) การจัดการลูกค้า (ฐานข้อมูลลูกค้า) การจัดการพนักงาน บันทึกลูกค้า (แผน Pro ขึ้นไป) คุณสมบัติคะแนนและคูปอง (แผน Pro ขึ้นไป) และการจัดการการชำระเงิน - การดำเนินงานร้านเสริมสวยที่จำเป็นทั้งหมดสามารถดำเนินการให้เสร็จสิ้นได้ภายในแพลตฟอร์ม Bocker"
+        },
+        "2": {
+          "question": "อะไรทำให้ Bocker แตกต่างจากระบบการจองอื่นๆ",
+          "answer": "ความแตกต่างหลักของเรา ได้แก่ การออกแบบ UI/UX สมัยใหม่ที่ใช้งานง่าย ราคาที่ยืดหยุ่นตามจำนวนพนักงาน ฟังก์ชันแบบครบวงจรตั้งแต่การจองไปจนถึงการชำระเงิน การซิงโครไนซ์แบบเรียลไทม์ SaaS ภายในประเทศที่ได้รับการปรับปรุงประสิทธิภาพโดยญี่ปุ่นเต็มรูปแบบ และอัลกอริธึมการเพิ่มประสิทธิภาพการจองที่ขับเคลื่อนด้วย AI โดยเฉพาะสำหรับอุตสาหกรรมความงาม"
+        },
+        "3": {
+          "question": "Bocker จะเป็นประโยชน์ต่อธุรกิจร้านเสริมสวยของฉันอย่างไร",
+          "answer": "ลดเวลาการจองทางโทรศัพท์จาก 30 ชั่วโมงเป็น 5 ชั่วโมงต่อเดือน เพิ่มอัตราการเปลี่ยนการจองโดยเฉลี่ย 15% ด้วยการจองทางออนไลน์ ปรับปรุงอัตราการทำซ้ำของลูกค้าโดยเฉลี่ย 20% ด้วยกลยุทธ์คะแนนและคูปอง ทำการตัดสินใจทางการตลาดและธุรกิจที่ขับเคลื่อนด้วยข้อมูล"
+        },
+        "4": {
+          "question": "มีการทดลองใช้ฟรีหรือไม่?",
+          "answer": "ใช่ แผนทั้งหมดมีช่วงทดลองใช้งานฟรี 30 วัน ระหว่างช่วงทดลองใช้ คุณสามารถทดสอบฟีเจอร์ทั้งหมดของ Bocker และยกเลิกหรือเปลี่ยนแปลงแผนได้ตลอดเวลา"
+        },
+        "5": {
+          "question": "ฉันไม่เก่งเทคโนโลยี ใช้งานยากมั้ย?",
+          "answer": "Bocker ได้รับการออกแบบด้วย UI/UX ที่ทันสมัยและเรียบง่าย ซึ่งใช้งานง่ายแม้สำหรับผู้เชี่ยวชาญด้านความงามที่ไม่คุ้นเคยกับไอที เราให้การสนับสนุนการเริ่มต้นใช้งานที่ครอบคลุม คู่มือผู้ใช้ วิดีโอบทช่วยสอน และ 'การสนับสนุนร่วม' เพื่อแนะนำคุณในทุกขั้นตอน"
+        }
+      }
+    }
+  },
+  "features": {
+    "title": "คุณสมบัติหลักของ Bocker",
+    "subtitle": "คุณสมบัติที่ครอบคลุมเพื่อปรับปรุงการปฏิบัติงานของร้านเสริมสวยและปรับปรุงประสบการณ์ของลูกค้า",
+    "benefitsTitle": "ประโยชน์ที่สำคัญ",
+    "howItWorksTitle": "มันทำงานอย่างไร",
+    "backToHome": "กลับไปที่บ้าน",
+    "startTrial": "เริ่มทดลองใช้ฟรี",
+    "details": {
+      "smartReservation": {
+        "benefits": [
+          "ลดเวลาตอบกลับทางโทรศัพท์จาก 30 ชั่วโมงเป็น 5 ชั่วโมงต่อเดือน",
+          "รับจองทุกวันตลอด 24 ชั่วโมง 365 วันต่อปี",
+          "ลดระยะเวลาการเตรียมการด้วยการเลือกเมนูล่วงหน้า",
+          "ป้องกันการจองซ้ำซ้อนโดยสิ้นเชิง"
+        ],
+        "howItWorks": [
+          "ลูกค้าเข้าถึงหน้าการจองเฉพาะของคุณ",
+          "ตรวจสอบเวลาว่างและเลือกบริการ",
+          "ป้อนข้อมูลที่จำเป็นเพื่อยืนยันการจอง",
+          "อีเมลยืนยันจะถูกส่งโดยอัตโนมัติ",
+          "อีเมลแจ้งเตือนถูกส่งโดยอัตโนมัติเมื่อวันก่อน"
+        ]
+      },
+      "optimizationAlgorithm": {
+        "benefits": [
+          "ลดเวลาว่างให้เหลือน้อยที่สุดและปรับปรุงอัตราการใช้ประโยชน์",
+          "การจัดสรรพนักงานที่เหมาะสมที่สุดตามการคาดการณ์ความต้องการ",
+          "การสร้างช่องการจองอัตโนมัติที่เพิ่มรายได้สูงสุด",
+          "ตรวจจับช่วงเวลาที่วุ่นวายและเงียบสงบโดยอัตโนมัติ"
+        ],
+        "howItWorks": [
+          "AI วิเคราะห์ข้อมูลการจองที่ผ่านมา",
+          "เรียนรู้รูปแบบอุปสงค์ตามวันและเวลา",
+          "แนะนำช่องการจองที่เหมาะสมที่สุดและการเปลี่ยนแปลงของพนักงาน",
+          "ผู้จัดการตรวจสอบและปรับข้อเสนอแนะ",
+          "เรียนรู้และปรับปรุงความแม่นยำอย่างต่อเนื่อง"
+        ]
+      },
+      "digitalCarte": {
+        "benefits": [
+          "ดูประวัติการรักษาได้อย่างรวดเร็ว",
+          "เห็นภาพผลลัพธ์ด้วยภาพถ่ายก่อน/หลัง",
+          "การแบ่งปันข้อมูลที่ราบรื่นระหว่างพนักงาน",
+          "ลดต้นทุนการจัดการด้วยระบบไร้กระดาษ"
+        ],
+        "howItWorks": [
+          "สร้างและอัพเดตบันทึกลูกค้าหลังการรักษา",
+          "เพิ่มรูปภาพและข้อมูลรายละเอียดได้อย่างง่ายดาย",
+          "ประหยัดเวลาด้วยการบันทึกเสียงพูด",
+          "เข้าถึงบันทึกที่ผ่านมาด้วยการแตะเพียงครั้งเดียว",
+          "แสดงผลการรักษาครั้งต่อไปโดยอัตโนมัติ"
+        ]
+      },
+      "allInOne": {
+        "benefits": [
+          "ไม่จำเป็นต้องทำสัญญาและการจัดการเครื่องมือหลายรายการ",
+          "การจัดการข้อมูลแบบรวมศูนย์เพื่อประสิทธิภาพ",
+          "ลดต้นทุนรายเดือนลงอย่างมาก",
+          "ลดเส้นโค้งการเรียนรู้ของพนักงานให้เหลือน้อยที่สุด"
+        ],
+        "howItWorks": [
+          "การจัดการการจอง ลูกค้า และข้อมูลการขายแบบครบวงจร",
+          "การบูรณาการอย่างราบรื่นระหว่างคุณสมบัติต่างๆ",
+          "การซิงโครไนซ์ข้อมูลแบบเรียลไทม์",
+          "สามารถเข้าถึงได้จากทุกที่",
+          "อุ่นใจด้วยการสำรองข้อมูลอัตโนมัติ"
+        ]
+      },
+      "userFriendly": {
+        "benefits": [
+          "พนักงานใหม่สามารถใช้งานได้ทันที",
+          "ใช้งานง่ายโดยไม่ต้องใช้คู่มือ",
+          "ลดข้อผิดพลาดและข้อผิดพลาดได้อย่างมาก",
+          "ปรับปรุงความพึงพอใจของพนักงาน"
+        ],
+        "howItWorks": [
+          "การออกแบบหน้าจอเป็นไปตามขั้นตอนการทำงานจริง",
+          "ใช้งานฟังก์ชั่นที่ใช้บ่อยด้วยการแตะเพียงครั้งเดียว",
+          "ไอคอนที่ชัดเจนมองเห็นได้ปรากฏขึ้น",
+          "แสดงเฉพาะข้อมูลที่จำเป็นเท่านั้น",
+          "แดชบอร์ดที่ปรับแต่งได้"
+        ]
+      }
+    }
+  },
+  "pricingPage": {
+    "title": "ราคาที่เรียบง่ายและโปร่งใส",
+    "subtitle": "เลือกแผนการที่ดีที่สุดสำหรับขนาดร้านเสริมสวยของคุณ",
+    "monthlyBilling": "รายเดือน",
+    "yearlyBilling": "เป็นประจำทุกปี",
+    "savePercent": "ประหยัด {percent}%",
+    "choosePlan": "เลือกแผนนี้",
+    "currentPlan": "แผนปัจจุบัน",
+    "mostPopular": "ยอดนิยมที่สุด",
+    "faq": {
+      "title": "คำถามที่พบบ่อยเกี่ยวกับราคา",
+      "items": {
+        "0": {
+          "question": "มีช่วงทดลองใช้งานฟรีหรือไม่?",
+          "answer": "ใช่ แผนทั้งหมดมีช่วงทดลองใช้งานฟรี 30 วัน ในระหว่างการทดลองใช้ คุณสามารถใช้ฟีเจอร์ทั้งหมดของ Bocker ได้ฟรี"
+        },
+        "1": {
+          "question": "ฉันสามารถเปลี่ยนแผนได้ตลอดเวลาหรือไม่?",
+          "answer": "ใช่ คุณสามารถเปลี่ยนแผนได้ตลอดเวลา การอัปเกรดจะมีผลทันทีเมื่อเข้าถึงฟีเจอร์ใหม่ๆ ในขณะที่การดาวน์เกรดจะมีผลตั้งแต่รอบบิลถัดไป"
+        },
+        "2": {
+          "question": "วิธีการชำระเงินใดบ้างที่ได้รับการยอมรับ?",
+          "answer": "เรารับบัตรเครดิต (Visa, Mastercard, JCB, American Express) และบัตรเดบิต การประมวลผลการชำระเงินได้รับการจัดการอย่างปลอดภัยผ่าน Stripe"
+        },
+        "3": {
+          "question": "แผนรายปีมีประโยชน์หรือไม่?",
+          "answer": "ใช่ แผนรายปีช่วยให้คุณประหยัดได้ประมาณ 20% เมื่อเทียบกับการเรียกเก็บเงินรายเดือน หากคุณวางแผนที่จะใช้ Bocker ระยะยาว เราขอแนะนำแผนรายปี"
+        },
+        "4": {
+          "question": "ฉันสามารถยกเลิกได้ตลอดเวลาหรือไม่?",
+          "answer": "ใช่ คุณสามารถยกเลิกได้ตลอดเวลา ไม่มีค่าธรรมเนียมการยกเลิกหรือค่าปรับ หลังจากยกเลิก คุณสามารถใช้บริการต่อได้จนกว่าจะสิ้นสุดรอบการเรียกเก็บเงินปัจจุบัน"
+        }
+      }
+    },
+    "cta": {
+      "title": "เริ่มใช้ Bocker วันนี้",
+      "subtitle": "ลองใช้คุณสมบัติทั้งหมดด้วยการทดลองใช้ฟรี 30 วันของเรา",
+      "button": "เริ่มทดลองใช้ฟรี"
+    }
+  },
+  "aboutPage": {
+    "title": "เกี่ยวกับ Bocker",
+    "subtitle": "ขับเคลื่อนการเปลี่ยนแปลงทางดิจิทัลในอุตสาหกรรมความงามและสร้างอนาคต",
+    "mission": {
+      "title": "พันธกิจและค่านิยม",
+      "description": "เราปฏิวัติการดำเนินงานร้านเสริมสวยผ่านเทคโนโลยี โดยมอบคุณค่าให้กับเจ้าของร้านเสริมสวย พนักงาน และลูกค้า",
+      "values": [
+        {
+          "title": "ลูกค้าเป็นศูนย์กลาง",
+          "description": "เรารับฟังลูกค้าของเราและแสวงหาประสบการณ์การใช้งานที่ดีที่สุดอยู่เสมอ เราเข้าใจความต้องการภาคสนามอย่างลึกซึ้งและมอบคุณสมบัติที่จำเป็นอย่างแท้จริง"
+        },
+        {
+          "title": "นวัตกรรม",
+          "description": "เราใช้ประโยชน์จากเทคโนโลยีที่ทันสมัยเพื่อสร้างมูลค่าใหม่ในอุตสาหกรรม ด้วยคุณสมบัติที่เป็นนวัตกรรมใหม่ที่ใช้ AI และการเรียนรู้ของเครื่อง เราเป็นผู้บุกเบิกอนาคตของการดำเนินงานร้านเสริมสวย"
+        },
+        {
+          "title": "ความน่าเชื่อถือและความปลอดภัย",
+          "description": "การรักษาความปลอดภัยเป็นสิ่งสำคัญที่สุดของเราในการปกป้องข้อมูลลูกค้า เราสร้างความสัมพันธ์ที่ไว้วางใจได้ในระยะยาวผ่านการให้บริการที่โปร่งใส"
+        }
+      ]
+    },
+    "team": {
+      "title": "เกี่ยวกับ Bocker",
+      "description": "Bocker เป็นแพลตฟอร์ม SaaS ที่ออกแบบมาสำหรับธุรกิจบริการตามการนัดหมาย เช่น ร้านเสริมสวย ร้านทำเล็บ และร้านเสริมสวย เรารองรับร้านเสริมสวยทุกขนาด ตั้งแต่ขนาดเล็ก (พนักงาน 3 คนหรือน้อยกว่า) ไปจนถึงขนาดใหญ่ (พนักงาน 8+ คน)",
+      "bio": "สวัสดี ฉันเป็นตัวแทนของ Bocker เราคือทีมงานในอุตสาหกรรมความงามและผู้เชี่ยวชาญด้านไอทีที่มีความกระตือรือร้นในการแก้ปัญหาในภาคสนาม เรามีสมาชิกที่มีภูมิหลังหลากหลาย รวมถึงผู้จัดการร้านเสริมสวย ช่างเสริมสวย วิศวกร และนักออกแบบ เราทำงานร่วมกันเพื่อสร้างบริการที่มีประโยชน์อย่างแท้จริง เราหวังว่าจะเติบโตไปด้วยกันในฐานะพันธมิตรในอุตสาหกรรมความงาม โปรดอย่าลังเลที่จะติดต่อเรา",
+      "role": "กรรมการตัวแทน / ผู้ร่วมก่อตั้ง"
+    },
+    "story": {
+      "subtitle": "เพื่อแก้ปัญหาในอุตสาหกรรมความงาม เราได้พัฒนา Bocker",
+      "title": "เรื่องราวของเรา",
+      "content": [
+        {
+          "title": "ทุกอย่างเริ่มต้นจากเสียงบนพื้นร้านเสริมสวย",
+          "description": "Bocker เกิดจากความท้าทายที่แท้จริงที่ร้านเสริมสวยต้องเผชิญ เราพบเห็นกรณีนับไม่ถ้วนที่พนักงานมีการจองทางโทรศัพท์มากเกินไปจนไม่สามารถมุ่งความสนใจไปที่ลูกค้าของตนได้ ปัญหาต่างๆ เช่น การจองซ้ำซ้อนในปฏิทินกระดาษ ข้อมูลลูกค้าที่กระจัดกระจาย และความพยายามทางการตลาดที่ไม่มีประสิทธิภาพ เป็นเรื่องปกติทั่วทั้งอุตสาหกรรม"
+        },
+        {
+          "title": "แก้ไขปัญหาจริงด้วยเทคโนโลยีที่ใช้งานได้จริง",
+          "description": "เราเชื่อว่าเทคโนโลยีสามารถแก้ปัญหาความท้าทายเหล่านี้ได้ตั้งแต่ต้นตอ และความเชื่อดังกล่าวได้นำไปสู่การเริ่มต้นของ Bocker เรารับฟังเจ้าของร้านเสริมสวยและสไตลิสต์อย่างใกล้ชิด โดยปรับใช้เฉพาะคุณสมบัติที่พวกเขาต้องการอย่างแท้จริงเท่านั้น ด้วย UI ที่เรียบง่ายและใช้งานง่ายและฟังก์ชันการทำงานที่ปรับให้เข้ากับขั้นตอนการทำงานของร้านเสริมสวยจริง เราจึงสร้างผลิตภัณฑ์ขึ้นมาแม้แต่ผู้ใช้ที่ไม่เชี่ยวชาญด้านเทคโนโลยีก็สามารถนำไปใช้ได้อย่างง่ายดาย"
+        },
+        {
+          "title": "เทคโนโลยีที่เป็นนวัตกรรมสำหรับการดำเนินงานร้านเสริมสวย",
+          "description": "Bocker มอบโซลูชันที่เป็นนวัตกรรมเพื่อปรับปรุงการปฏิบัติงานของร้านเสริมสวย คุณสมบัติต่างๆ เช่น การจัดการการจองที่ง่ายขึ้น ข้อมูลลูกค้าแบบรวมศูนย์ และภาระงานของพนักงานที่ลดลง ตอบสนองความต้องการของร้านเสริมสวยอย่างแท้จริง"
+        },
+        {
+          "title": "เติบโตไปพร้อมกับอุตสาหกรรมความงาม",
+          "description": "ที่ Bocker เรามุ่งมั่นที่จะเป็นมากกว่าเครื่องมือ — เรามุ่งมั่นที่จะเป็นพันธมิตรที่แท้จริงของอุตสาหกรรมความงาม ด้วยการใกล้ชิดกับความเป็นจริงของพื้นร้านเสริมสวยและพัฒนาอย่างต่อเนื่องตามกาลเวลา เราจึงมุ่งมั่นที่จะกำหนดอนาคตของการดำเนินงานร้านเสริมสวยร่วมกัน"
+        }
+      ]
+    }
+  },
+  "contactPage": {
+    "title": "ติดต่อเรา",
+    "subtitle": "หากคุณมีคำถามหรือข้อสงสัยใด ๆ โปรดติดต่อเรา",
+    "form": {
+      "title": "แบบฟอร์มการติดต่อ",
+      "fields": {
+        "name": "ชื่อ",
+        "email": "ที่อยู่อีเมล",
+        "company": "ชื่อบริษัท/ร้านเสริมสวย",
+        "phone": "หมายเลขโทรศัพท์",
+        "subject": "เรื่อง",
+        "message": "ข้อความ"
+      },
+      "placeholders": {
+        "name": "จอห์น โด",
+        "email": "example@email.com",
+        "company": "ตัวอย่างซาลอนอิงค์",
+        "phone": "+1-234-567-8900",
+        "subject": "คำถามเกี่ยวกับการบริการ",
+        "message": "กรุณากรอกคำถามของคุณที่นี่"
+      },
+      "submit": "ส่งข้อความ",
+      "submitting": "กำลังส่ง...",
+      "success": "คำถามของคุณถูกส่งไปแล้ว เราจะติดต่อคุณเร็ว ๆ นี้",
+      "error": "ไม่สามารถส่งได้ โปรดลองอีกครั้ง"
+    },
+    "info": {
+      "title": "ข้อมูลการติดต่อ",
+      "items": {
+        "email": {
+          "label": "อีเมล",
+          "value": "bocker.help@gmail.com"
+        },
+        "hours": {
+          "label": "เวลาทำการ",
+          "value": "วันจันทร์ - วันศุกร์ เวลา 10.00 - 18.00 น"
+        },
+        "response": {
+          "label": "เวลาตอบสนอง",
+          "value": "ภายใน 1-2 วันทำการ"
+        }
+      }
+    },
+    "faq": {
+      "title": "คำถามที่พบบ่อย",
+      "cta": "ก่อนที่จะติดต่อเรา โปรดตรวจสอบคำถามที่พบบ่อยของเรา คำถามทั่วไปมากมายได้รับคำตอบที่นั่น"
+    }
+  },
+  "termsPage": {
+    "title": "ข้อกำหนดในการให้บริการ",
+    "lastUpdated": "อัปเดตล่าสุด: 1 มกราคม 2025",
+    "sections": {
+      "0": {
+        "title": "ข้อ 1 (การสมัคร)",
+        "content": "ข้อกำหนดเหล่านี้ควบคุมสิทธิ์และภาระผูกพันระหว่างคุณกับเราเกี่ยวกับการใช้ Bocker (ต่อไปนี้จะเรียกว่า 'บริการ')"
+      },
+      "1": {
+        "title": "มาตรา 2 (คำจำกัดความ)",
+        "content": "คำจำกัดความของคำศัพท์ที่ใช้ในข้อกำหนดเหล่านี้มีดังนี้:\n(1) 'ผู้ใช้' หมายถึงบุคคลหรือองค์กรที่ใช้บริการ\n(2) 'เนื้อหา' หมายถึงข้อมูลที่โพสต์ อัพโหลด หรือบันทึกโดยผู้ใช้ในบริการ"
+      },
+      "2": {
+        "title": "ข้อ 3 (การให้บริการ)",
+        "content": "เราให้บริการระบบการจองและการจัดการลูกค้าสำหรับร้านเสริมสวยแก่ผู้ใช้ เนื้อหาของบริการอาจมีการเปลี่ยนแปลงตามดุลยพินิจของเรา"
+      },
+      "3": {
+        "title": "ข้อ 4 (ค่าธรรมเนียมการใช้งาน)",
+        "content": "ผู้ใช้จะต้องชำระค่าธรรมเนียมการใช้งานตามแผนการกำหนดราคาที่เรากำหนดแยกต่างหากเมื่อใช้บริการ"
+      },
+      "4": {
+        "title": "มาตรา 5 (กิจกรรมต้องห้าม)",
+        "content": "ผู้ใช้จะต้องไม่มีส่วนร่วมในกิจกรรมต่อไปนี้เมื่อใช้บริการ:\n(1) กิจกรรมที่ฝ่าฝืนกฎหมายหรือความสงบเรียบร้อยและศีลธรรมอันดีของประชาชน\n(2) กิจกรรมที่เกี่ยวข้องกับการกระทำผิดทางอาญา\n(3) กิจกรรมที่ละเมิดสิทธิ์ของเราหรือสิทธิ์ของผู้ใช้รายอื่น"
+      },
+      "5": {
+        "title": "ข้อ 6 (ข้อจำกัดความรับผิดชอบ)",
+        "content": "เราไม่รับประกันทั้งโดยชัดแจ้งหรือโดยปริยายว่าบริการปราศจากข้อบกพร่องด้านข้อเท็จจริงหรือทางกฎหมาย"
+      },
+      "6": {
+        "title": "ข้อ 7 (การเปลี่ยนแปลงบริการ)",
+        "content": "เราอาจเปลี่ยนแปลง เพิ่ม หรือยุติบริการโดยไม่ต้องแจ้งให้ผู้ใช้ทราบล่วงหน้า"
+      },
+      "7": {
+        "title": "มาตรา 8 (การจัดการข้อมูลส่วนบุคคล)",
+        "content": "ข้อมูลส่วนบุคคลที่ได้รับจากการใช้บริการจะได้รับการจัดการอย่างเหมาะสมตาม 'นโยบายความเป็นส่วนตัว' ที่เรากำหนดไว้แยกต่างหาก"
+      },
+      "8": {
+        "title": "มาตรา 9 (กฎหมายที่ใช้บังคับและเขตอำนาจศาล)",
+        "content": "ข้อกำหนดเหล่านี้จะถูกควบคุมโดยกฎหมายญี่ปุ่น ข้อพิพาทใด ๆ เกี่ยวกับบริการจะอยู่ภายใต้เขตอำนาจศาลพิเศษของศาลที่มีเขตอำนาจเหนือสำนักงานใหญ่ของเรา"
+      },
+      "9": {
+        "title": "บทความ 10 (การเปลี่ยนแปลงข้อกำหนด)",
+        "content": "เราอาจเปลี่ยนแปลงข้อกำหนดเหล่านี้ได้ตลอดเวลาโดยไม่ต้องแจ้งให้ผู้ใช้ทราบหากเห็นว่าจำเป็น"
+      }
+    }
+  },
+  "privacyPage": {
+    "title": "นโยบายความเป็นส่วนตัว",
+    "lastUpdated": "อัปเดตล่าสุด: 1 มกราคม 2025",
+    "sections": {
+      "0": {
+        "title": "1. ขอบเขตของนโยบายความเป็นส่วนตัว",
+        "content": "นโยบายความเป็นส่วนตัวนี้ใช้กับลูกค้าทุกคนที่ใช้บริการของ Bocker โดยการใช้บริการของเราถือว่าคุณยอมรับนโยบายนี้"
+      },
+      "1": {
+        "title": "2. ข้อมูลที่เรารวบรวม",
+        "content": "เรารวบรวมข้อมูลต่อไปนี้:\n• ข้อมูลบัญชี (ชื่อ ที่อยู่อีเมล หมายเลขโทรศัพท์ ฯลฯ)\n• ข้อมูลร้านเสริมสวย (ชื่อร้านค้า ที่อยู่ เวลาทำการ ฯลฯ)\n• ข้อมูลการจอง (วันที่/เวลาที่จอง เมนู พนักงาน ฯลฯ)\n• ข้อมูลลูกค้า (ชื่อ ข้อมูลการติดต่อ ประวัติการรักษา ฯลฯ)"
+      },
+      "2": {
+        "title": "3. วัตถุประสงค์การใช้งาน",
+        "content": "เราใช้ข้อมูลที่รวบรวมเพื่อวัตถุประสงค์ดังต่อไปนี้:\n• การให้บริการและการดำเนินงาน\n• การสนับสนุนผู้ใช้\n• การปรับปรุงบริการและการพัฒนาคุณสมบัติใหม่\n• การเรียกเก็บเงิน\n• การปฏิบัติตามกฎหมาย"
+      },
+      "3": {
+        "title": "4. การแบ่งปันข้อมูล",
+        "content": "เราไม่ให้ข้อมูลส่วนบุคคลของคุณแก่บุคคลที่สาม ยกเว้นในกรณีต่อไปนี้:\n• เมื่อคุณให้ความยินยอมแล้ว\n• เมื่อกฎหมายกำหนด\n• เมื่อทำงานร่วมกับบริการภายนอกที่จำเป็นสำหรับการให้บริการ (การประมวลผลการชำระเงิน ฯลฯ )"
+      },
+      "4": {
+        "title": "5. ความปลอดภัย",
+        "content": "เราใช้มาตรการรักษาความปลอดภัยที่เหมาะสมเพื่อปกป้องข้อมูลของคุณ:\n• การเข้ารหัสข้อมูล\n• ข้อ จำกัด การเข้าถึง\n• การตรวจสอบความปลอดภัยเป็นประจำ\n• การฝึกอบรมพนักงาน"
+      },
+      "5": {
+        "title": "6. สิทธิ์ของคุณ",
+        "content": "คุณมีสิทธิ์ดังต่อไปนี้เกี่ยวกับข้อมูลส่วนบุคคลของคุณ:\n• การขอเปิดเผยข้อมูล\n• ขอแก้ไขหรือลบ\n• ขอหยุดใช้\nหากมีข้อสงสัย โปรดติดต่อ bocker.help@gmail.com"
+      },
+      "6": {
+        "title": "7. การใช้คุกกี้",
+        "content": "บริการของเราใช้คุกกี้เพื่อปรับปรุงประสบการณ์ผู้ใช้และบริการ หากคุณต้องการปฏิเสธการใช้คุกกี้ โปรดเปลี่ยนการตั้งค่าเบราว์เซอร์ของคุณ"
+      },
+      "7": {
+        "title": "8. การเปลี่ยนแปลงนโยบาย",
+        "content": "เราอาจเปลี่ยนแปลงนโยบายความเป็นส่วนตัวนี้ได้ตลอดเวลาตามความจำเป็น นโยบายที่แก้ไขจะมีผลตั้งแต่เวลาที่โพสต์บนบริการ"
+      }
+    }
+  },
+  "emails": {
+    "customerRegistration": {
+      "subject": "[{orgName}] การลงทะเบียนเสร็จสมบูรณ์",
+      "title": "การลงทะเบียนเสร็จสมบูรณ์",
+      "greeting": "เรียนคุณ {email}",
+      "welcomeMessage": "ขอขอบคุณที่ลงทะเบียนกับ [{orgName}]",
+      "completionMessage": "การลงทะเบียนของคุณเสร็จสมบูรณ์เรียบร้อยแล้ว",
+      "loginMessage": "คุณสามารถเข้าสู่ระบบได้ตลอดเวลาโดยใช้ที่อยู่อีเมลและรหัสผ่านที่ลงทะเบียนไว้",
+      "loginButton": "เข้าสู่ระบบที่นี่",
+      "disclaimer": "※หากคุณไม่ได้คาดหวังอีเมลนี้ โปรดลบออก"
+    },
+    "passwordChanged": {
+      "subject": "[{orgName}] การยืนยันการเปลี่ยนรหัสผ่าน",
+      "title": "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว",
+      "greeting": "เรียนคุณ {email}",
+      "message": "เปลี่ยนรหัสผ่านของคุณสำหรับ [{orgName}] สำเร็จแล้ว",
+      "changeInfo": "ข้อมูลการเปลี่ยนแปลง:",
+      "changeDate": "เปลี่ยนเมื่อ: {date}",
+      "instruction": "กรุณาใช้รหัสผ่านใหม่ของคุณสำหรับการเข้าสู่ระบบในอนาคต",
+      "securityNotice": "ประกาศด้านความปลอดภัย:",
+      "unauthorizedWarning": "หากคุณไม่ได้ทำการเปลี่ยนแปลงนี้ อาจมีการเข้าถึงบัญชีของคุณโดยไม่ได้รับอนุญาต",
+      "contactSupport": "โปรดติดต่อฝ่ายสนับสนุนทันที",
+      "contactSupportWithLink": "โปรด {link} ทันที",
+      "supportLinkText": "ติดต่อฝ่ายสนับสนุน",
+      "securityTip": "เราขอแนะนำให้เปลี่ยนรหัสผ่านของคุณเป็นประจำเพื่อรักษาบัญชีของคุณให้ปลอดภัย"
+    },
+    "passwordReset": {
+      "subject": "[{orgName}] คำขอรีเซ็ตรหัสผ่าน",
+      "title": "รีเซ็ตรหัสผ่าน",
+      "greeting": "เรียนคุณ {email}",
+      "requestMessage": "เราได้รับคำขอรีเซ็ตรหัสผ่านสำหรับบัญชี [{orgName}] ของคุณ",
+      "instructionMessage": "คลิกปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่",
+      "resetButton": "รีเซ็ตรหัสผ่าน",
+      "importantNotice": "ประกาศสำคัญ:",
+      "expirationNotice": "• ลิงก์นี้จะหมดอายุในวันที่ {expiresAt}",
+      "singleUseNotice": "• ลิงค์นี้สามารถใช้ได้เพียงครั้งเดียวเท่านั้น",
+      "disclaimer": "※หากคุณไม่ได้ขออีเมลนี้ อาจมีคนป้อนที่อยู่อีเมลของคุณโดยไม่ได้ตั้งใจ ในกรณีนั้นกรุณาลบอีเมลนี้"
+    },
+    "reservationConfirmation": {
+      "subject": "[{orgName}] การยืนยันการจอง",
+      "title": "การยืนยันการจอง",
+      "greeting": "เรียนคุณ {customerName}",
+      "thankYouMessage": "ขอขอบคุณสำหรับการจองห้องพักที่ [{orgName}]",
+      "confirmationMessage": "เราได้ยืนยันการจองของคุณโดยมีรายละเอียดดังต่อไปนี้",
+      "reservationDetails": "รายละเอียดการจอง",
+      "shopName": "ชื่อร้าน:",
+      "reservationDateTime": "วันที่และเวลา:",
+      "assignedStaff": "พนักงาน:",
+      "selectedMenus": "เมนูที่เลือก",
+      "selectedOptions": "ตัวเลือกที่เลือก",
+      "subtotal": "ผลรวมย่อย",
+      "pointsUsed": "คะแนนที่ใช้",
+      "couponDiscount": "คูปองส่วนลด",
+      "totalAmount": "จำนวนเงินทั้งหมด",
+      "thankYouVisit": "เราหวังว่าจะได้พบคุณ",
+      "phone": "โทรศัพท์:",
+      "address": "ที่อยู่:",
+      "reservationRules": "กฎการจอง:",
+      "reservationDetailsButton": "ดูรายละเอียด / ยกเลิก"
+    }
+  },
+  "seo": {
+    "meta": {
+      "title": "Bocker - ระบบจัดการการจองแห่งอนาคตสำหรับร้านเสริมสวย",
+      "description": "ยกระดับการบริหารร้านเสริมสวยด้วยการจองแบบเรียลไทม์ การจัดการลูกค้า การเชื่อมต่อ LINE และระบบชำระเงิน แพลตฟอร์ม SaaS สำหรับร้านเสริมสวย ทดลองใช้ฟรี 30 วัน เริ่มต้น 8,000 เยนต่อเดือน",
+      "keywords": "ร้านเสริมสวย, ร้านทำผม, ระบบจัดการการจอง, SaaS, การเปลี่ยนผ่านสู่ดิจิทัล, การจองผ่าน LINE, การจองออนไลน์, Bocker, การจัดการร้านเสริมสวย, การจัดการลูกค้า, ระบบ POS, การชำระเงินด้วยบัตรเครดิต, การจัดการคะแนนสะสม, การจัดการพนักงาน, การวิเคราะห์ยอดขาย, ระบบการจอง, การดำเนินงานของร้านเสริมสวย, อุตสาหกรรมความงาม, บริการคลาวด์, การจองแบบเรียลไทม์",
+      "siteName": "Bocker"
+    },
+    "structuredData": {
+      "organization": {
+        "name": "Bocker",
+        "alternateName": "Bocker",
+        "description": "แพลตฟอร์ม SaaS ยุคใหม่สำหรับการจัดการการจองร้านเสริมสวยและร้านทำผมแบบดิจิทัล",
+        "industry": "ซอฟต์แวร์เป็นบริการ (SaaS)",
+        "contactType": "การบริการลูกค้า",
+        "address": {
+          "locality": "โตเกียว",
+          "region": "ภูมิภาคคันโต"
+        }
+      },
+      "application": {
+        "name": "Bocker",
+        "description": "แพลตฟอร์ม SaaS ยุคถัดไปที่ผสานรวมการจัดการการจอง การจัดการลูกค้า การบูรณาการ LINE และระบบการชำระเงินสำหรับร้านเสริมสวยและร้านทำผม",
+        "applicationCategory": "แอพพลิเคชั่นธุรกิจ",
+        "operatingSystem": "บนเว็บ",
+        "offers": {
+          "lite": {
+            "name": "แผน Lite",
+            "description": "คุณสมบัติพื้นฐานสำหรับพนักงานสูงสุด 3 คน",
+            "category": "การสมัครสมาชิกรายเดือน"
+          },
+          "pro": {
+            "name": "แผน Pro",
+            "description": "คุณสมบัติขั้นสูงสำหรับพนักงานสูงสุด 8 คน",
+            "category": "การสมัครสมาชิกรายเดือน"
+          }
+        }
+      },
+      "website": {
+        "name": "Bocker",
+        "description": "ระบบจัดการการจองยุคใหม่สำหรับร้านเสริมสวย"
+      },
+      "service": {
+        "name": "ระบบจัดการการจองร้านเสริมสวย",
+        "description": "บริการคลาวด์ที่แปลงการจัดการการจองร้านเสริมสวยและร้านทำผมให้เป็นดิจิทัล เพื่อปรับปรุงประสิทธิภาพการดำเนินงาน",
+        "serviceType": "SaaS",
+        "category": "ระบบการจัดการการจอง",
+        "audience": "เจ้าของร้านเสริมสวยและร้านทำผม"
+      },
+      "faq": {
+        "questions": {
+          "whatIsBocker": {
+            "question": "Bocker คืออะไร?",
+            "answer": "Bocker คือระบบจัดการการจองสำหรับร้านเสริมสวยและร้านทำผม เป็นแพลตฟอร์ม SaaS ยุคใหม่ที่ผสานรวมการจองแบบเรียลไทม์ การจัดการลูกค้า การผสานรวม LINE และระบบการชำระเงิน"
+          },
+          "pricing": {
+            "question": "แผนการกำหนดราคามีอะไรบ้าง?",
+            "answer": "แผน Lite มีราคา $60/เดือน ($500/ปี) และแผน Pro มีราคา $100/เดือน ($1000/ปี) เรายังเสนอการทดลองใช้ฟรี 30 วันอีกด้วย"
+          },
+          "features": {
+            "question": "มีคุณสมบัติอะไรบ้าง?",
+            "answer": "เราให้บริการการจัดการการจองแบบเรียลไทม์ การจัดการลูกค้า การจัดการพนักงาน การจัดการเมนู ระบบคูปองและคะแนน การบูรณาการ LINE ระบบการชำระเงิน และคุณลักษณะการรายงานการวิเคราะห์"
+          },
+          "support": {
+            "question": "มีการสนับสนุนหรือไม่?",
+            "answer": "ใช่ เราให้การสนับสนุนทางอีเมล นอกจากนี้เรายังมีเอกสารโดยละเอียดและคำถามที่พบบ่อยอีกด้วย"
+          }
+        }
+      }
+    },
+    "ogp": {
+      "title": "Bocker - ระบบจัดการการจองแห่งอนาคตสำหรับร้านเสริมสวย",
+      "description": "เปลี่ยนการจัดการร้านเสริมสวยให้เป็นดิจิทัลด้วยการจองแบบเรียลไทม์ การจัดการลูกค้า และการบูรณาการ LINE แพลตฟอร์ม SaaS ยุคถัดไป ทดลองใช้ฟรี 30 วัน",
+      "siteName": "Bocker",
+      "imageAlt": "Bocker - ระบบจัดการการจองแห่งอนาคตสำหรับร้านเสริมสวย"
+    },
+    "twitter": {
+      "title": "Bocker - ระบบจัดการการจองแห่งอนาคตสำหรับร้านเสริมสวย",
+      "description": "เปลี่ยนการจัดการร้านเสริมสวยให้เป็นดิจิทัลด้วยการจองแบบเรียลไทม์ การจัดการลูกค้า และการบูรณาการ LINE แพลตฟอร์ม SaaS ยุคถัดไป ทดลองใช้ฟรี 30 วัน"
+    }
+  }
+}

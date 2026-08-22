@@ -80,7 +80,7 @@ const getStrengthText = (t: ReturnType<typeof useTranslations>, strength: Passwo
 const CheckIcon = ({ fulfilled }: { fulfilled: boolean }) => (
   <div
     className={`flex items-center justify-center w-4 h-4 rounded-full transition-colors duration-300 
-      ${fulfilled ? 'bg-accent-2-foreground text-accent-2-background border border-accent-2' : 'bg-muted border border-border'}`}
+      ${fulfilled ? 'bg-accent-2 text-accent-2-foreground border border-accent-2' : 'bg-muted border border-border'}`}
   >
     {fulfilled && <CheckCircle className="w-3 h-3" />}
   </div>

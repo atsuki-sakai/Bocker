@@ -19,10 +19,22 @@ import type { DayOfWeek, DayOfWeekJA } from '../../convex/types'
 
 // Mock dependencies
 vi.mock('../dateLocale', () => ({
+  getIntlLocaleCode: vi.fn((locale: string) => {
+    const localeCodes: Record<string, string> = {
+      ja: 'ja-JP',
+      en: 'en-US',
+      th: 'th-TH',
+      fr: 'fr-FR',
+      zh: 'zh-CN',
+      ko: 'ko-KR',
+    }
+    return localeCodes[locale] ?? localeCodes.en
+  }),
   getDateFnsLocale: vi.fn().mockImplementation((locale: string) => {
     const mockLocales = {
       ja: { code: 'ja' },
       en: { code: 'en-US' },
+      th: { code: 'th' },
       fr: { code: 'fr' },
       zh: { code: 'zh-CN' },
       ko: { code: 'ko' },

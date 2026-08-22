@@ -622,7 +622,25 @@
   "language": {
     "japanese": "日本語",
     "english": "English",
+    "thai": "ไทย",
     "switchLanguage": "Switch Language"
+  },
+  "voiceInput": {
+    "label": "Voice input",
+    "stop": "Stop",
+    "startTitle": "Start voice input",
+    "stopTitle": "Stop voice input",
+    "unsupported": "Your browser does not support voice input",
+    "started": "Voice input started. Please speak",
+    "stopped": "Voice input stopped",
+    "errors": {
+      "network": "A network error occurred. Check your internet connection",
+      "notAllowed": "Microphone access is not allowed",
+      "noSpeech": "No speech was detected",
+      "audioCapture": "The microphone is unavailable",
+      "serviceNotAllowed": "Voice recognition is unavailable on this device. Please try on a PC",
+      "unknown": "Voice recognition error: {error}"
+    }
   },
   "navigation": {
     "dashboard": "Dashboard",

@@ -21,7 +21,7 @@ import { Id } from '@/convex/_generated/dataModel'
 import { CalendarMultiSelect } from '@/components/common'
 import { fetchQuery } from 'convex/nextjs'
 import { format, compareAsc } from 'date-fns'
-import { ja } from 'date-fns/locale'
+import { enUS, ja, th } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trash2 } from 'lucide-react'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -257,7 +257,9 @@ export default function MyExceptionScheduleForm() {
                         <span className="text-base font-bold">
                           {locale === 'ja'
                             ? format(setting.date, 'M月d日(EEE)', { locale: ja })
-                            : format(setting.date, 'MMM d (EEE)')}
+                            : format(setting.date, 'd MMM (EEE)', {
+                                locale: locale === 'th' ? th : enUS,
+                              })}
                         </span>
                       </div>
                       <div className="flex flex-col gap-2 items-start">

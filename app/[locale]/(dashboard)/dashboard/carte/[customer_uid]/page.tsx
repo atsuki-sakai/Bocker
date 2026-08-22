@@ -47,7 +47,7 @@ import {
   Info,
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { ja, enUS } from 'date-fns/locale'
+import { ja, enUS, th } from 'date-fns/locale'
 import { toast } from 'sonner'
 import type { SupportedLocale } from '@/lib/dateLocale'
 
@@ -991,18 +991,22 @@ export default function CartePage({ params: paramsPromise }: CartePageProps) {
                                 <div className="flex items-center gap-2">
                                   <CalendarDays className="w-4 h-4 text-muted-foreground" />
                                   <span className="font-medium">
-                                    {format(new Date(item.startTimeUnix), 'yyyy年MM月dd日', {
-                                      locale: locale === 'ja' ? ja : enUS,
-                                    })}
+                                    {format(
+                                      new Date(item.startTimeUnix),
+                                      locale === 'ja' ? 'yyyy年MM月dd日' : 'PPP',
+                                      {
+                                        locale: locale === 'ja' ? ja : locale === 'th' ? th : enUS,
+                                      }
+                                    )}
                                   </span>
                                 </div>
                                 <div className="text-sm text-link-foreground font-semibold">
                                   {format(new Date(item.startTimeUnix), 'HH:mm', {
-                                    locale: locale === 'ja' ? ja : enUS,
+                                    locale: locale === 'ja' ? ja : locale === 'th' ? th : enUS,
                                   })}{' '}
                                   ~{' '}
                                   {format(new Date(item.endTimeUnix), 'HH:mm', {
-                                    locale: locale === 'ja' ? ja : enUS,
+                                    locale: locale === 'ja' ? ja : locale === 'th' ? th : enUS,
                                   })}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">

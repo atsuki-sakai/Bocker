@@ -1,12 +1,8 @@
-import { defineRouting } from 'next-intl/routing';
+import { defineRouting } from 'next-intl/routing'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
 
 export const routing = defineRouting({
-  // A list of all locales that are supported
-  locales: ['ja', 'en'],
-
-  // Used when no locale matches
-  defaultLocale: 'ja',
-  
-  // Always include locale prefix in URL (e.g., /ja, /en)
-  localePrefix: 'always'
-});
+  locales: SUPPORTED_LOCALES,
+  defaultLocale: DEFAULT_LOCALE,
+  localePrefix: 'always',
+})
