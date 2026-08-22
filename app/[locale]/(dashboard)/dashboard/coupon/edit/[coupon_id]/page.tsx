@@ -546,9 +546,9 @@ function CouponForm({ couponId }: { couponId: Id<'coupon'> }) {
         </Alert>
       )}
       {isExpiringSoon && !isExpired && (
-        <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
-          <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-700 dark:text-orange-400 font-medium">
+        <Alert className="border-warning-foreground/40 bg-warning">
+          <AlertTriangle className="h-4 w-4 text-warning-foreground" />
+          <AlertDescription className="text-warning-foreground font-medium">
             {t('alerts.expiringSoon')}
           </AlertDescription>
         </Alert>

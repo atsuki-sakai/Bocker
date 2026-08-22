@@ -100,7 +100,7 @@ export default function StaffManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <Info className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               <strong>プラン別上限:</strong> MICRO: 1名 / LITE: 5名 / PRO: 10名
@@ -186,7 +186,7 @@ export default function StaffManualPage() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+            <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
               <Info className="h-4 w-4 text-link-foreground" />
               <p className="text-link-foreground text-xs md:text-sm">
                 導線: ダッシュボード → 「スタッフ管理」 / 一覧画面 → 「スタッフを追加」 /

@@ -218,7 +218,7 @@ export default function ExclusionMenu({
                       <div className="flex items-center gap-1">
                         {/* セール価格が数値として 0 より大きいときだけ元の価格を打ち消し線 */}
                         {typeof menu.sale_price === 'number' && menu.sale_price > 0 && (
-                          <span className="line-through text-gray-400">
+                          <span className="line-through text-muted-foreground">
                             ¥{menu.unit_price?.toLocaleString()}
                           </span>
                         )}

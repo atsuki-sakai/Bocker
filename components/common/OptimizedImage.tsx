@@ -63,7 +63,7 @@ export function OptimizedImage({
   }
 
   // スケルトンローディング用のクラス
-  const skeletonClass = isLoading ? 'animate-pulse bg-gray-200' : ''
+  const skeletonClass = isLoading ? 'animate-pulse bg-muted' : ''
 
   return (
     <div className={`relative ${className || ''}`}>

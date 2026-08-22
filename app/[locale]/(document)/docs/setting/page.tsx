@@ -91,7 +91,7 @@ export default function SettingManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <Settings className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               主要機能:
@@ -159,7 +159,7 @@ export default function SettingManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <Info className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               アクセス方法: ダッシュボードのサイドメニュー → 「設定」をクリック →
@@ -439,7 +439,7 @@ export default function SettingManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <Info className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               予約設定の変更は新規予約から適用されます。既存の予約には影響しません。
@@ -553,7 +553,7 @@ export default function SettingManualPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-white">
+          <div className="flex items-center space-x-2 bg-link rounded-lg p-4 text-link-foreground">
             <CreditCard className="h-4 w-4 text-link-foreground" />
             <p className="text-link-foreground text-xs md:text-sm">
               決済手数料: 売上の4% + 40円/件（振込手数料と月額固定費は無料）

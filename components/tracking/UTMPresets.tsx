@@ -299,7 +299,7 @@ export function UTMPresets({ onSelectPreset, selectedPreset }: UTMPresetsProps) 
                         <div className="flex items-center gap-2 mb-1">
                           <h5 className="font-medium text-sm">{preset.name}</h5>
                           {preset.is_default && (
-                            <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                            <Star className="h-3 w-3 text-accent-2 fill-current" />
                           )}
                         </div>
                         {preset.description && (

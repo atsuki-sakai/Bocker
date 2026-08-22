@@ -223,26 +223,14 @@ export function priceIdToPlanInfo(priceId: string): {
   price: number
   billing_period: BillingPeriod
 } {
-  console.log('[priceIdToPlanInfo] Input priceId:', priceId)
-  console.log('[priceIdToPlanInfo] Environment variables:', {
-    MICRO_MONTHLY: getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'),
-    MICRO_YEARLY: getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'),
-    LITE_MONTHLY: getEnv('NEXT_PUBLIC_LITE_MONTHLY_PRC_ID'),
-    LITE_YEARLY: getEnv('NEXT_PUBLIC_LITE_YEARLY_PRC_ID'),
-    PRO_MONTHLY: getEnv('NEXT_PUBLIC_PRO_MONTHLY_PRC_ID'),
-    PRO_YEARLY: getEnv('NEXT_PUBLIC_PRO_YEARLY_PRC_ID'),
-  })
-
   switch (priceId) {
     case getEnv('NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID'):
-      console.log('[priceIdToPlanInfo] Matched MICRO monthly')
       return {
         name: 'MICRO',
         price: PLAN_MONTHLY_PRICES.MICRO,
         billing_period: 'month' as BillingPeriod,
       }
     case getEnv('NEXT_PUBLIC_MICRO_YEARLY_PRC_ID'):
-      console.log('[priceIdToPlanInfo] Matched MICRO yearly')
       return {
         name: 'MICRO',
         price: PLAN_YEARLY_PRICES.MICRO.price,
@@ -274,16 +262,7 @@ export function priceIdToPlanInfo(priceId: string): {
       }
     default:
       // 無効なpriceIdの場合はデフォルト値を返す
-      console.error(`[priceIdToPlanInfo] Unknown priceId: ${priceId}`)
-      console.error('[priceIdToPlanInfo] Available price IDs:', {
-        MICRO_MONTHLY: process.env.NEXT_PUBLIC_MICRO_MONTHLY_PRC_ID,
-        MICRO_YEARLY: process.env.NEXT_PUBLIC_MICRO_YEARLY_PRC_ID,
-        LITE_MONTHLY: process.env.NEXT_PUBLIC_LITE_MONTHLY_PRC_ID,
-        LITE_YEARLY: process.env.NEXT_PUBLIC_LITE_YEARLY_PRC_ID,
-        PRO_MONTHLY: process.env.NEXT_PUBLIC_PRO_MONTHLY_PRC_ID,
-        PRO_YEARLY: process.env.NEXT_PUBLIC_PRO_YEARLY_PRC_ID,
-      })
-      console.warn(`[priceIdToPlanInfo] Returning UNKNOWN plan for priceId: ${priceId}`)
+      console.warn(`[priceIdToPlanInfo] Unknown priceId: ${priceId}`)
       return {
         name: 'UNKNOWN',
         price: 0,
@@ -925,4 +904,3 @@ export const calcAgeFromBirthday = (birthday: string | null): number | null => {
   }
   return age
 }
-

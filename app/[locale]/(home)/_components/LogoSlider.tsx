@@ -24,7 +24,7 @@ const logos = [
 ]
 export function LogoSlider() {
   return (
-    <div data-testid="logo-slider" className="bg-white py-24 sm:py-32">
+    <div data-testid="logo-slider" className="bg-background py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* <h2 className="text-center text-lg/8 font-semibold text-gray-900">
             ご利用いただいているお客様方

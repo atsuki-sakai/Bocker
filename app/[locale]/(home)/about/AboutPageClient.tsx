@@ -93,7 +93,7 @@ export function AboutPageClient() {
                   <Image
                     width={1000}
                     height={1000}
-                    alt=""
+                    alt={t('dashboardImageAlt')}
                     src="/assets/mockup/pc/dashboard.png"
                     className="mb-[-12%] rounded-xl shadow-2xl ring-1 ring-border"
                   />

@@ -48,15 +48,15 @@ type PasswordStrength = 'empty' | 'weak' | 'medium' | 'strong' | 'veryStrong'
 const getStrengthColor = (strength: PasswordStrength) => {
   switch (strength) {
     case 'weak':
-      return 'bg-pallet-1'
+      return 'bg-destructive'
     case 'medium':
-      return 'bg-pallet-2'
+      return 'bg-warning-foreground'
     case 'strong':
-      return 'bg-pallet-3'
+      return 'bg-info-foreground'
     case 'veryStrong':
-      return 'bg-pallet-4'
+      return 'bg-success-foreground'
     default:
-      return 'bg-gray-200'
+      return 'bg-muted'
   }
 }
 
@@ -285,13 +285,13 @@ export default function SignUpPage() {
           <span
             className={`text-xs font-medium ${
               passwordStrength === 'weak'
-                ? 'text-pallet-1'
+                ? 'text-destructive'
                 : passwordStrength === 'medium'
-                  ? 'text-pallet-2'
+                  ? 'text-warning-foreground'
                   : passwordStrength === 'strong'
-                    ? 'text-pallet-3'
+                    ? 'text-info-foreground'
                     : passwordStrength === 'veryStrong'
-                      ? 'text-pallet-4'
+                      ? 'text-success-foreground'
                       : ''
             }`}
           >

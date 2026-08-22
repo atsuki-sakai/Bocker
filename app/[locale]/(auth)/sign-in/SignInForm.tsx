@@ -199,7 +199,7 @@ export default function SignInForm() {
           <CardFooter className="flex flex-col space-y-4">
             <Separator className="bg-muted w-1/2 mx-auto my-2" />
             <motion.div className="flex items-center justify-end w-full text-right text-xs">
-              <Link href={`/sign-up`} className="inline-flex items-center text-xs text-blue-500">
+              <Link href={`/sign-up`} className="inline-flex items-center text-xs text-link-foreground">
                 {t('signUp')}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Link>

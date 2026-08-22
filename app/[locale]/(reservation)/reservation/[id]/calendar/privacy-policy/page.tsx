@@ -76,9 +76,9 @@ export default function PrivacyPolicyPage() {
         電話番号：070-9030-8805（平日 10:00～18:00）
       </p>
 
-      <p className="mt-8 text-xs text-gray-500">作成日：2025年5月27日</p>
+      <p className="mt-8 text-xs text-muted-foreground">作成日：2025年5月27日</p>
 
-      <p className="mt-8 text-gray-500 text-xs">
+      <p className="mt-8 text-muted-foreground text-xs">
         ※このプライバシーポリシーは、サービス仕様に基づく仮案です。正式な内容は法的助言のもとで確定されます。
       </p>
     </div>

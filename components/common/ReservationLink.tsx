@@ -42,7 +42,7 @@ export default function ReservationLink() {
 
   return (
     <div
-      className={`${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-gray-200 blur-sm pointer-events-none select-none'}`}
+      className={`${subscription && (subscription.status === 'active' || subscription.status === 'trialing') ? '' : 'bg-muted blur-sm pointer-events-none select-none'}`}
     >
       {apiConfig &&
       apiConfig?.liff_id &&

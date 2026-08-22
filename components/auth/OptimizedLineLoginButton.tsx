@@ -492,17 +492,19 @@ export const OptimizedLineLoginButton = memo(function OptimizedLineLoginButton({
           </>
         ) : authState === 'error' ? (
           <>
-            <span className="font-bold text-base text-red-600">
+            <span className="font-bold text-base text-destructive">
               {process.env.NODE_ENV === 'development' && authError
                 ? `認証エラー: ${authError.message.substring(0, 30)}...`
                 : '認証エラー'}
             </span>
-            {retryCount > 0 && <span className="text-xs text-red-500">({retryCount}回目)</span>}
+            {retryCount > 0 && <span className="text-xs text-destructive">({retryCount}回目)</span>}
           </>
         ) : isAuthenticated ? (
           <>
-            <span className="font-bold text-base text-green-600">ログイン済み</span>
-            {needsRefresh && <RefreshCw className="h-4 w-4 text-orange-500" aria-hidden="true" />}
+            <span className="font-bold text-base text-success-foreground">ログイン済み</span>
+            {needsRefresh && (
+              <RefreshCw className="h-4 w-4 text-warning-foreground" aria-hidden="true" />
+            )}
           </>
         ) : (
           <>

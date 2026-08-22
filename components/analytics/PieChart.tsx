@@ -11,6 +11,12 @@ import {
   PieLabelRenderProps
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  CHART_AXIS_COLOR,
+  CHART_COLORS,
+  CHART_LABEL_COLOR,
+  CHART_SURFACE_COLOR,
+} from '@/lib/chart-colors'
 import { PieChartDataPoint } from '@/services/supabase/repositories/analytics/types';
 
 interface PieChartProps {
@@ -112,7 +118,7 @@ const CustomLabel = ({
     <text 
       x={x} 
       y={y} 
-      fill="#ffffff"
+      fill={CHART_LABEL_COLOR}
       textAnchor={x > cx ? 'start' : 'end'} 
       dominantBaseline="central"
       fontSize={12}
@@ -141,21 +147,7 @@ export function PieChart({
   outerRadius,
   showPercentage = true
 }: PieChartProps) {
-  // デフォルトの色パレット（HEXカラー）
-  const defaultColors = [
-    '#3b82f6',
-    '#10b981',
-    '#f59e0b',
-    '#ef4444',
-    '#8b5cf6',
-    '#06b6d4',
-    '#84cc16',
-    '#f97316',
-    '#ec4899',
-    '#6366f1'
-  ];
-
-  const pieColors = colors || defaultColors;
+  const pieColors = colors || CHART_COLORS;
 
   // データが空の場合の表示
   if (!data || data.length === 0) {
@@ -215,9 +207,9 @@ export function PieChart({
                 ) : false}
                 outerRadius={autoOuterRadius}
                 innerRadius={innerRadius}
-                fill="#8884d8"
+                fill={CHART_COLORS[0]}
                 dataKey="value"
-                stroke="#ffffff"
+                stroke={CHART_SURFACE_COLOR}
                 strokeWidth={2}
               >
                 {data.map((entry, index) => (
@@ -238,7 +230,7 @@ export function PieChart({
                   height={36}
                   wrapperStyle={{
                     fontSize: '12px',
-                    color: '#374151',
+                    color: CHART_AXIS_COLOR,
                     paddingTop: '10px'
                   }}
                   formatter={(value, entry) => {

@@ -91,7 +91,7 @@ const PlanCard = memo(function PlanCard({
   const cardStyle = useMemo(() => {
     return cn(
       'h-full shadow-xl border overflow-hidden bg-card relative',
-      isPopular ? 'border-2 border-purple-400' : ''
+      isPopular ? 'border-2 border-accent-2' : ''
     )
   }, [isPopular])
 
@@ -214,6 +214,13 @@ function PlanActionButton({
   highlightColor,
 }: PlanActionButtonProps) {
   const t = useTranslations('subscription')
+  const highlightForeground =
+    planName === 'MICRO'
+      ? 'text-palette-1-foreground'
+      : planName === 'LITE'
+        ? 'text-palette-2-foreground'
+        : 'text-palette-4-foreground'
+
   // サブスクリプションアクションハンドラをメモ化
   const handleSubscribe = useCallback(() => {
     onSubscribeAction()
@@ -259,7 +266,7 @@ function PlanActionButton({
       return (
         <Button
           onClick={handlePortal}
-          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 ${highlightForeground}`}
         >
           {t('planAction.managePlan')}
         </Button>
@@ -268,7 +275,7 @@ function PlanActionButton({
       return (
         <Button
           onClick={handleSubscribe}
-          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 ${highlightForeground}`}
         >
           {buttonText}
         </Button>
@@ -277,7 +284,7 @@ function PlanActionButton({
       return (
         <Button
           onClick={handleSubscribe}
-          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+          className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 ${highlightForeground}`}
           disabled={isButtonDisabled}
         >
           {buttonText}
@@ -289,7 +296,7 @@ function PlanActionButton({
   return (
     <Button
       onClick={handleSubscribe}
-      className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 text-white`}
+      className={`w-full bg-gradient-to-r ${highlightColor} hover:brightness-110 ${highlightForeground}`}
     >
       {t('planAction.startNow')}
       <ArrowRight className="ml-1.5 h-4 w-4" />

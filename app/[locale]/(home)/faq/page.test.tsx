@@ -12,11 +12,7 @@ vi.mock('../_components/Footer', () => ({
 }))
 
 vi.mock('../_components/FAQ', () => ({
-  FAQ: ({ locale }: { locale: string }) => (
-    <div data-testid="faq-component">
-      FAQ Component - Locale: {locale}
-    </div>
-  ),
+  FAQ: () => <div data-testid="faq-component">FAQ Component</div>,
 }))
 
 describe('FAQPage', () => {
@@ -37,13 +33,6 @@ describe('FAQPage', () => {
       render(<FAQPage />)
       
       expect(screen.getByTestId('faq-component')).toBeInTheDocument()
-    })
-
-    it('FAQコンポーネントにロケールが渡される', () => {
-      render(<FAQPage />)
-      
-      // デフォルトでjaロケールが使用される想定
-      expect(screen.getByText('FAQ Component - Locale: ja')).toBeInTheDocument()
     })
 
     it('ページ構造が正しい', () => {

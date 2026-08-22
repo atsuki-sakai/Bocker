@@ -359,14 +359,14 @@ export function Pricing() {
                                         <p className="text-xs md:text-sm text-center md:text-nowrap pr-4 md:hidden">
                                           {feature.name}
                                         </p>
-                                        <CheckIcon className="h-5 w-5 text-green-500" />
+                                        <CheckIcon className="h-5 w-5 text-success-foreground" />
                                       </div>
                                     ) : (
                                       <div className="flex items-center gap-2">
                                         <p className="text-xs md:text-sm text-center md:text-nowrap pr-4 md:hidden">
                                           {feature.name}
                                         </p>
-                                        <XMarkIcon className="h-5 w-5 text-red-500" />
+                                        <XMarkIcon className="h-5 w-5 text-destructive" />
                                       </div>
                                     )
                                   ) : (

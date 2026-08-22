@@ -12,6 +12,12 @@ import {
   Legend
 } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  CHART_AXIS_COLOR,
+  CHART_COLORS,
+  CHART_GRID_COLOR,
+  CHART_SURFACE_COLOR,
+} from '@/lib/chart-colors'
 import { ChartDataPoint } from '@/services/supabase/repositories/analytics/types';
 
 interface LineChartProps {
@@ -82,8 +88,7 @@ export function LineChart({
   valueFormatter,
   labelFormatter
 }: LineChartProps) {
-  // CSS custom propertyから色を取得
-  const defaultLineColor = lineColor || '#3b82f6'
+  const defaultLineColor = lineColor || CHART_COLORS[0]
 
   // データが空の場合の表示
   if (!data || data.length === 0) {
@@ -135,17 +140,19 @@ export function LineChart({
                 bottom: 10,
               }}
             >
-              {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />}
+              {showGrid && (
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} opacity={0.7} />
+              )}
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: '#374151' }}
-                axisLine={{ stroke: '#d1d5db' }}
-                tickLine={{ stroke: '#d1d5db' }}
+                tick={{ fontSize: 10, fill: CHART_AXIS_COLOR }}
+                axisLine={{ stroke: CHART_GRID_COLOR }}
+                tickLine={{ stroke: CHART_GRID_COLOR }}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: '#374151' }}
-                axisLine={{ stroke: '#d1d5db' }}
-                tickLine={{ stroke: '#d1d5db' }}
+                tick={{ fontSize: 10, fill: CHART_AXIS_COLOR }}
+                axisLine={{ stroke: CHART_GRID_COLOR }}
+                tickLine={{ stroke: CHART_GRID_COLOR }}
                 tickFormatter={(value) => `¥${value.toFixed(0)}`}
               />
               <Tooltip
@@ -163,7 +170,7 @@ export function LineChart({
                 <Legend
                   wrapperStyle={{
                     fontSize: '10px',
-                    color: 'hsl(var(--foreground))',
+                    color: 'var(--foreground)',
                   }}
                 />
               )}
@@ -173,16 +180,16 @@ export function LineChart({
                 stroke={defaultLineColor}
                 strokeWidth={1}
                 dot={{
-                  fill: '#5294FDFF',
-                  stroke: '#3b82f6',
+                  fill: defaultLineColor,
+                  stroke: defaultLineColor,
                   strokeWidth: 1,
                   r: 2,
                 }}
                 activeDot={{
                   r: 4,
-                  stroke: '#3b82f6',
+                  stroke: defaultLineColor,
                   strokeWidth: 1,
-                  fill: '#ffffff',
+                  fill: CHART_SURFACE_COLOR,
                 }}
                 connectNulls={false}
               />

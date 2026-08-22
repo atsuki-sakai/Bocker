@@ -16,6 +16,13 @@ import { DateRange } from 'react-day-picker'
 import { CalendarIcon, BarChart3, TrendingUp, Users, MousePointer } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { BarChart } from '@/components/analytics'
+import {
+  CHART_AXIS_COLOR,
+  CHART_COLORS,
+  CHART_GRID_COLOR,
+  CHART_SURFACE_COLOR,
+  CHART_SURFACE_FOREGROUND_COLOR,
+} from '@/lib/chart-colors'
 import { cn } from '@/lib/utils'
 import { format, subDays } from 'date-fns'
 import { ja } from 'date-fns/locale'
@@ -58,18 +65,6 @@ interface TrackingData {
     conversions: number
   }>
 }
-
-const COLORS = [
-  '#4E79A7',
-  '#F28E2B',
-  '#E15759',
-  '#76B7B2',
-  '#59A14F',
-  '#EDC948',
-  '#B07AA1',
-  '#FF9DA7',
-  '#9C755F',
-]
 
 const dimensionTypes = [
   { value: 'utm_source', label: '流入元 (UTM Source)' },
@@ -308,38 +303,45 @@ export default function TrackingDashboard({
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={data.dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
                   <XAxis
                     dataKey="date"
                     tickFormatter={(value) => format(new Date(value), 'MM/dd')}
+                    tick={{ fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
                   />
-                  <YAxis />
+                  <YAxis
+                    tick={{ fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
+                  />
                   <Tooltip
                     labelFormatter={(value) => format(new Date(value), 'yyyy/MM/dd')}
                     contentStyle={{
                       borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      color: '#000000',
+                      backgroundColor: CHART_SURFACE_COLOR,
+                      color: CHART_SURFACE_FOREGROUND_COLOR,
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="events"
-                    stroke="#06007CFF"
+                    stroke={CHART_COLORS[0]}
                     name="イベント数"
                     strokeWidth={2}
                   />
                   <Line
                     type="monotone"
                     dataKey="sessions"
-                    stroke="#007D30FF"
+                    stroke={CHART_COLORS[1]}
                     name="セッション数"
                     strokeWidth={2}
                   />
                   <Line
                     type="monotone"
                     dataKey="conversions"
-                    stroke="#D48E00FF"
+                    stroke={CHART_COLORS[2]}
                     name="コンバージョン数"
                     strokeWidth={2}
                   />
@@ -352,7 +354,7 @@ export default function TrackingDashboard({
         <TabsContent value="breakdown" className="space-y-4">
           <div className="space-y-4">
             {/* 分析方法の説明 */}
-            <Card className="border-l-4 border-l-blue-500">
+            <Card className="border-l-4 border-l-info-foreground">
               <CardContent className="pt-4">
                 <h3 className="font-medium mb-2">🔍 この分析で分かること</h3>
                 <p className="text-sm text-muted-foreground mb-2">
@@ -367,7 +369,7 @@ export default function TrackingDashboard({
                   {dimensionType === 'page_url' &&
                     'サロンサイト内のどのページが一番見られているかが分かります'}
                 </p>
-                <p className="text-xs text-blue-600 font-medium">
+                <p className="text-xs text-info-foreground font-medium">
                   💡 効果の高い集客方法に注力することで、予約数アップが期待できます
                 </p>
               </CardContent>
@@ -389,21 +391,24 @@ export default function TrackingDashboard({
                         cx="50%"
                         cy="50%"
                         outerRadius={80}
-                        fill="#8884d8"
+                        fill={CHART_COLORS[0]}
                         dataKey="events"
                         label={({ events }) => {
                           return `${events}回`
                         }}
                       >
                         {data.dimensionData.slice(0, 6).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip
                         contentStyle={{
                           borderRadius: '10px',
-                          backgroundColor: '#ffffff',
-                          color: '#000000',
+                          backgroundColor: CHART_SURFACE_COLOR,
+                          color: CHART_SURFACE_FOREGROUND_COLOR,
                         }}
                         formatter={(value) => [`${value}回`, 'イベント数']}
                         labelFormatter={(value) => {
@@ -434,7 +439,10 @@ export default function TrackingDashboard({
                     '%' +
                     ' - ' +
                     item.conversions,
-                  fill: item.conversions > 0 ? COLORS[index % COLORS.length] : '#94a3b8',
+                  fill:
+                    item.conversions > 0
+                      ? CHART_COLORS[index % CHART_COLORS.length]
+                      : CHART_AXIS_COLOR,
                 }))}
                 height={400}
                 horizontal={true}
@@ -462,9 +470,12 @@ export default function TrackingDashboard({
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
                 <RechartsBarChart data={data.dimensionData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
                   <XAxis
                     dataKey="value"
+                    tick={{ fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
                     tickFormatter={(value) => {
                       const stringValue = String(value)
                       if (stringValue.startsWith('https://')) {
@@ -479,17 +490,25 @@ export default function TrackingDashboard({
                         : stringValue
                     }}
                   />
-                  <YAxis />
+                  <YAxis
+                    tick={{ fill: CHART_AXIS_COLOR }}
+                    axisLine={{ stroke: CHART_GRID_COLOR }}
+                    tickLine={{ stroke: CHART_GRID_COLOR }}
+                  />
                   <Tooltip
                     contentStyle={{
                       borderRadius: '10px',
-                      backgroundColor: '#ffffff',
-                      color: '#000000',
+                      backgroundColor: CHART_SURFACE_COLOR,
+                      color: CHART_SURFACE_FOREGROUND_COLOR,
                     }}
                   />
-                  <Bar dataKey="events" fill="#453BFFFF" name="🔍 サロンを見つけた数" />
-                  <Bar dataKey="sessions" fill="#40A567FF" name="👥 興味を持った人数" />
-                  <Bar dataKey="conversions" fill="#FFB624FF" name="📅 実際に予約した人数" />
+                  <Bar dataKey="events" fill={CHART_COLORS[0]} name="🔍 サロンを見つけた数" />
+                  <Bar dataKey="sessions" fill={CHART_COLORS[1]} name="👥 興味を持った人数" />
+                  <Bar
+                    dataKey="conversions"
+                    fill={CHART_COLORS[2]}
+                    name="📅 実際に予約した人数"
+                  />
                 </RechartsBarChart>
               </ResponsiveContainer>
             </CardContent>

@@ -98,7 +98,7 @@ function getTrendColor(trend: 'up' | 'down' | 'neutral', changeValue?: number) {
   }
 
   if (trend === 'up' || (changeValue && changeValue > 0)) {
-    return 'text-success'
+    return 'text-success-foreground'
   }
 
   return 'text-destructive'
@@ -190,9 +190,9 @@ export function SummaryCard({
         'group w-full relative overflow-hidden border-0 bg-gradient-to-br from-background via-background to-muted',
         'backdrop-blur-sm',
         isSingleStaff &&
-          'border-l-primary bg-gradient-to-br from-primary via-background to-primary',
+          'border-l-primary bg-gradient-to-br from-primary/10 via-background to-primary/10',
         isMultiStaff &&
-          'border-l-emerald-500 bg-gradient-to-br from-emerald-50 via-background to-emerald-50 ',
+          'border-l-success-foreground bg-gradient-to-br from-success/50 via-background to-success/50',
         expandable && '',
         className
       )}
@@ -213,7 +213,7 @@ export function SummaryCard({
               'flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200',
               isSingleStaff && 'bg-primary/10 text-primary group-hover:bg-primary/20',
               isMultiStaff &&
-                'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-950/70',
+                'bg-success text-success-foreground group-hover:bg-success/70',
               !isSingleStaff &&
                 !isMultiStaff &&
                 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
@@ -237,7 +237,7 @@ export function SummaryCard({
                 isSingleStaff
                   ? 'text-primary'
                   : isMultiStaff
-                    ? 'text-emerald-700 dark:text-emerald-300'
+                    ? 'text-success-foreground'
                     : 'text-foreground group-hover:text-primary'
               )}
             >
@@ -248,7 +248,7 @@ export function SummaryCard({
                 className={cn(
                   'text-xs mt-1 text-muted-foreground/80 truncate',
                   isSingleStaff && 'text-primary/60',
-                  isMultiStaff && 'text-emerald-600/60 dark:text-emerald-400/60'
+                  isMultiStaff && 'text-success-foreground/70'
                 )}
               >
                 {subtitle}
@@ -266,7 +266,7 @@ export function SummaryCard({
                 'h-8 w-8 p-0 rounded-full transition-all duration-200 hover:bg-primary/10',
                 isSingleStaff && 'hover:bg-primary/20 text-primary',
                 isMultiStaff &&
-                  'hover:bg-emerald-100 text-emerald-600 dark:hover:bg-emerald-950/50 dark:text-emerald-400'
+                  'hover:bg-success text-success-foreground'
               )}
             >
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -286,7 +286,7 @@ export function SummaryCard({
                   'font-bold tracking-tight transition-colors duration-200',
                   isCompact ? 'text-2xl sm:text-3xl' : 'text-3xl sm:text-4xl lg:text-5xl',
                   isSingleStaff && 'text-primary',
-                  isMultiStaff && 'text-emerald-700 dark:text-emerald-300',
+                  isMultiStaff && 'text-success-foreground',
                   !isSingleStaff && !isMultiStaff && 'text-foreground'
                 )}
               >
@@ -299,10 +299,10 @@ export function SummaryCard({
                   className={cn(
                     'flex items-center justify-center w-6 h-6 rounded-full transition-all duration-200',
                     change.value > 0
-                      ? 'bg-green-100 text-green-600 dark:bg-green-950/50 dark:text-green-400'
+                      ? 'bg-success text-success-foreground'
                       : change.value < 0
-                        ? 'bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-950/50 dark:text-gray-400'
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-muted text-muted-foreground'
                   )}
                 >
                   {change.value > 0 ? (
@@ -323,7 +323,7 @@ export function SummaryCard({
                   isSingleStaff
                     ? 'text-primary'
                     : isMultiStaff
-                      ? 'text-emerald-700 dark:text-emerald-300'
+                      ? 'text-success-foreground'
                       : 'text-foreground'
                 )}
               >
@@ -340,7 +340,7 @@ export function SummaryCard({
                   className={cn(
                     'text-xs font-semibold px-2 py-1 transition-all duration-200',
                     staffInfo.isTopPerformer &&
-                      'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+                      'border-0 bg-accent-2 text-accent-2-foreground shadow-sm'
                   )}
                 >
                   <div className="flex items-center gap-1">
@@ -350,7 +350,7 @@ export function SummaryCard({
                 </Badge>
               )}
               {staffInfo.isTopPerformer && (
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                <span className="text-xs text-accent-foreground font-medium">
                   🏆 トップパフォーマー
                 </span>
               )}
@@ -365,10 +365,10 @@ export function SummaryCard({
               className={cn(
                 'text-xs font-semibold px-3 py-1.5 border-0 shadow-sm transition-all duration-200',
                 change.value > 0
-                  ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300'
+                  ? 'bg-success text-success-foreground'
                   : change.value < 0
-                    ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300'
-                    : 'bg-gray-50 text-gray-700 dark:bg-gray-950/30 dark:text-gray-300'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-muted text-muted-foreground'
               )}
             >
               <span className="flex items-center gap-1.5">
@@ -405,10 +405,10 @@ export function SummaryCard({
                         className={cn(
                           'flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200',
                           detail.trend === 'up'
-                            ? `bg-green-100 text-green-600 dark:bg-green-950/50 dark:text-green-400 ${getTrendColor(detail.trend)}`
+                            ? `bg-success text-success-foreground ${getTrendColor(detail.trend)}`
                             : detail.trend === 'down'
-                              ? `bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400 ${getTrendColor(detail.trend)}`
-                              : `bg-gray-100 text-gray-600 dark:bg-gray-950/50 dark:text-gray-400 ${getTrendColor(detail.trend)}`
+                              ? `bg-destructive/10 text-destructive ${getTrendColor(detail.trend)}`
+                              : `bg-muted text-muted-foreground ${getTrendColor(detail.trend)}`
                         )}
                       >
                         {getTrendIcon(detail.trend)}
@@ -431,20 +431,20 @@ export function SummaryCard({
                 className={cn(
                   'flex items-start gap-2 p-2 rounded-md text-xs',
                   insight.type === 'positive' &&
-                    'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300',
+                    'bg-success text-success-foreground',
                   insight.type === 'negative' &&
-                    'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300',
+                    'bg-destructive/10 text-destructive',
                   insight.type === 'neutral' &&
-                    'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+                    'bg-info text-info-foreground'
                 )}
               >
                 {insight.icon || (
                   <Target
                     className={cn(
                       'w-3 h-3 mt-0.5 flex-shrink-0',
-                      insight.type === 'positive' && 'text-green-500',
-                      insight.type === 'negative' && 'text-red-500',
-                      insight.type === 'neutral' && 'text-blue-500'
+                      insight.type === 'positive' && 'text-success-foreground',
+                      insight.type === 'negative' && 'text-destructive',
+                      insight.type === 'neutral' && 'text-info-foreground'
                     )}
                   />
                 )}
@@ -460,19 +460,19 @@ export function SummaryCard({
             <div
               className={cn(
                 'p-3 rounded-lg border-l-4',
-                actionable.priority === 'high' && 'bg-red-50 border-l-red-500 dark:bg-red-900/20',
+                actionable.priority === 'high' && 'bg-destructive/10 border-l-destructive',
                 actionable.priority === 'medium' &&
-                  'bg-yellow-50 border-l-yellow-500 dark:bg-yellow-900/20',
-                actionable.priority === 'low' && 'bg-blue-50 border-l-blue-500 dark:bg-blue-900/20'
+                  'bg-warning border-l-warning-foreground',
+                actionable.priority === 'low' && 'bg-info border-l-info-foreground'
               )}
             >
               <div className="flex items-start gap-2">
                 <Target
                   className={cn(
                     'w-4 h-4 mt-0.5 flex-shrink-0',
-                    actionable.priority === 'high' && 'text-red-500',
-                    actionable.priority === 'medium' && 'text-yellow-500',
-                    actionable.priority === 'low' && 'text-blue-500'
+                    actionable.priority === 'high' && 'text-destructive',
+                    actionable.priority === 'medium' && 'text-warning-foreground',
+                    actionable.priority === 'low' && 'text-info-foreground'
                   )}
                 />
                 <div>
@@ -551,7 +551,7 @@ export function SummaryCard({
                   variant="outline"
                   className={cn(
                     'text-xs border-0 px-2 py-0.5 font-medium',
-                    chart.trend === 'up' ? 'text-success' : 'text-destructive'
+                    chart.trend === 'up' ? 'text-success-foreground' : 'text-destructive'
                   )}
                 >
                   {chart.trend === 'up' ? '+' : '-'}

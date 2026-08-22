@@ -35,14 +35,14 @@ export default function ControlledProgressBar() {
   }
 
   const getProgressColor = (): string => {
-    if (progress === 80) return 'from-green-400 to-emerald-500'
-    if (progress > 60) return 'from-blue-400 to-purple-500'
-    if (progress > 30) return 'from-cyan-400 to-blue-500'
-    return 'from-indigo-400 to-cyan-500'
+    if (progress === 80) return 'from-success-foreground to-success'
+    if (progress > 60) return 'from-chart-2 to-chart-6'
+    if (progress > 30) return 'from-active to-chart-2'
+    return 'from-primary to-active'
   }
 
   return (
-    <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black/30 backdrop-blur-sm z-50">
+    <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-overlay backdrop-blur-sm z-50">
       <div className="w-full mx-auto mt-8 p-6 max-w-md">
         {/* メインカード */}
         <div className="bg-background backdrop-blur-sm rounded-2xl shadow-2xl border border-border p-6 space-y-6">
@@ -82,11 +82,11 @@ export default function ControlledProgressBar() {
 
           {/* 警告メッセージ */}
           {progress !== 100 && (
-            <div className="flex items-start gap-3 p-3 bg-destructive border border-destructive-foreground rounded-xl">
+            <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-xl">
               <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-destructive-foreground">
-                <p className="text-destructive-foreground font-bold">{t('importantNote')}</p>
-                <p className="text-destructive-foreground mt-1">
+              <div className="text-xs text-destructive">
+                <p className="text-destructive font-bold">{t('importantNote')}</p>
+                <p className="text-destructive mt-1">
                   {t('navigationWarning')}
                 </p>
               </div>
@@ -95,8 +95,8 @@ export default function ControlledProgressBar() {
 
           {/* 完了メッセージ */}
           {progress === 100 && (
-            <div className="text-center p-4 bg-accent-2-foreground border border-accent-2 rounded-xl">
-              <div className="flex items-center justify-center gap-2 text-accent-2">
+            <div className="text-center p-4 bg-success border border-success-foreground/20 rounded-xl">
+              <div className="flex items-center justify-center gap-2 text-success-foreground">
                 <CheckCircle className="w-5 h-5" />
                 <span className="font-medium text-sm">{t('uploadSuccess')}</span>
               </div>

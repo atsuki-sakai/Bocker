@@ -175,7 +175,7 @@ function CalendarMultiSelect({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs text-destructive hover:bg-destructive hover:text-white"
+                    className="h-7 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     onClick={clearAllDates}
                   >
                     {t('clearAll')}
@@ -219,8 +219,8 @@ function CalendarMultiSelect({
                               px-3 py-1.5 transition-all flex items-center border
                               ${
                                 isToday(date)
-                                  ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700/70'
-                                  : 'bg-indigo-50 dark:bg-indigo-700/30 border-indigo-200 dark:border-indigo-700/70'
+                                  ? 'bg-accent border-accent-2/30'
+                                  : 'bg-info border-info-foreground/20'
                               }
                               group-hover:shadow-sm
                             `}
@@ -228,12 +228,12 @@ function CalendarMultiSelect({
                             <CalendarIcon
                               className={`
                               h-3 w-3 mr-2
-                              ${isToday(date) ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-500 dark:text-indigo-400'}
+                              ${isToday(date) ? 'text-accent-foreground' : 'text-info-foreground'}
                             `}
                             />
                             <span
                               className={`
-                              ${isToday(date) ? 'text-amber-800 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}
+                              ${isToday(date) ? 'text-accent-foreground' : 'text-foreground'}
                             `}
                             >
                               {(() => {
@@ -243,7 +243,7 @@ function CalendarMultiSelect({
                                 return format(date, dateFormat, { locale: dateFnsLocale })
                               })()}
                               {isToday(date) && (
-                                <span className="ml-1 text-[10px] bg-amber-200 dark:bg-amber-700 px-1 py-0.5 rounded text-amber-800 dark:text-amber-200">
+                                <span className="ml-1 text-[10px] bg-accent-2 px-1 py-0.5 rounded text-accent-2-foreground">
                                   {t('today')}
                                 </span>
                               )}
@@ -251,7 +251,7 @@ function CalendarMultiSelect({
                             <button
                               type="button"
                               onClick={() => removeDate(date)}
-                              className="ml-2 text-muted-foreground hover:text-destructive w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                              className="ml-2 text-muted-foreground hover:text-destructive w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:bg-destructive/10"
                             >
                               <X className="w-3 h-3" />
                             </button>
