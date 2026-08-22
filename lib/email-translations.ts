@@ -3,6 +3,7 @@ import en from '@/languages/en.json'
 import fr from '@/languages/fr.json'
 import ko from '@/languages/ko.json'
 import zh from '@/languages/zh.json'
+import th from '@/languages/th.json'
 import type { SupportedLocale } from './dateLocale'
 
 interface Translations {
@@ -11,6 +12,7 @@ interface Translations {
   fr: typeof fr
   ko: typeof ko
   zh: typeof zh
+  th: typeof th
 }
 
 const translations: Translations = {
@@ -19,6 +21,7 @@ const translations: Translations = {
   fr,
   ko,
   zh,
+  th,
 }
 
 /**
@@ -32,8 +35,9 @@ export function getEmailTranslations(locale: SupportedLocale = 'ja') {
 /**
  * Get a specific email template translations
  */
-export function getEmailTemplateTranslations<
-  T extends keyof typeof ja.emails
->(template: T, locale: SupportedLocale = 'ja') {
+export function getEmailTemplateTranslations<T extends keyof typeof ja.emails>(
+  template: T,
+  locale: SupportedLocale = 'ja'
+) {
   return translations[locale].emails[template]
 }

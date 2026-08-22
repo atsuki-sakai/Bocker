@@ -29,6 +29,7 @@ import { api } from '@/convex/_generated/api'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { useTenantAndOrganization } from '@/hooks/useTenantAndOrganization'
 import { useTranslations, useLocale } from 'next-intl'
+import { getIntlLocaleCode } from '@/lib/dateLocale'
 
 const createPointConfigSchema = (
   t: (key: string, values?: Record<string, string | number | Date>) => string
@@ -375,12 +376,12 @@ export default function PointForm() {
                         {watchedExpirationDays
                           ? new Date(
                               Date.now() + watchedExpirationDays * 24 * 60 * 60 * 1000
-                            ).toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US', {
+                            ).toLocaleDateString(getIntlLocaleCode(locale), {
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit',
                             })
-                          : new Date().toLocaleDateString(locale === 'ja' ? 'ja-JP' : 'en-US', {
+                          : new Date().toLocaleDateString(getIntlLocaleCode(locale), {
                               year: 'numeric',
                               month: '2-digit',
                               day: '2-digit',

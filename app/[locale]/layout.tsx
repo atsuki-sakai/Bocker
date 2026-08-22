@@ -8,28 +8,29 @@ import ClientLayout from './ClientLayout'
 // FIXME: 測定を有効化する
 // import { Analytics } from '@vercel/analytics/next'
 import type { Languages } from '@/lib/constants'
+import { getTranslations } from 'next-intl/server'
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: Languages }>
 }): Promise<Metadata> {
-  await params // localeは現在使用していないが、将来的に多言語対応で使用予定
-  
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'seo.meta' })
+
   return {
     title: {
       template: '%s | Bocker',
-      default: 'Bocker - 予約管理システム',
+      default: t('title'),
     },
-    description:
-      'Bockerはサロンの予約管理、顧客管理、サロン運営を一元管理し運用業務の効率化を目的としたシステムです。',
+    description: t('description'),
     manifest: '/manifest.json',
     icons: {
       icon: '/favicon.ico',
       apple: '/apple-icon.png',
     },
     other: {
-      'theme-color': '#ffffff',
+      'theme-color': '#f8faf8',
       'color-scheme': 'light dark',
     },
   }
@@ -37,9 +38,9 @@ export async function generateMetadata({
 
 type Props = {
   children: React.ReactNode
-  params: {
+  params: Promise<{
     locale: Languages
-  }
+  }>
 }
 
 export default async function LocaleLayout({ children, params }: Props) {
@@ -52,10 +53,9 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   // Providing all messages to the client side
   const messages = await getMessages({ locale })
-
   return (
     <NextIntlClientProvider messages={messages} locale={locale} timeZone="Asia/Tokyo">
-      <ClientLayout>{children}</ClientLayout>
+      <ClientLayout locale={locale}>{children}</ClientLayout>
       {/* <Analytics /> */}
     </NextIntlClientProvider>
   )

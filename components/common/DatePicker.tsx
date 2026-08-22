@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import type { Locale } from 'date-fns';
+import React, { useState, useEffect } from 'react'
+import { format } from 'date-fns'
+import type { Locale } from 'date-fns'
 import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useTranslations, useLocale } from 'next-intl';
-import { getDateFnsLocale, type SupportedLocale } from '@/lib/dateLocale';
+import { useTranslations, useLocale } from 'next-intl'
+import { getDateFnsLocale, type SupportedLocale } from '@/lib/dateLocale'
 
 interface DatePickerProps {
   /**
@@ -120,11 +120,12 @@ export function DatePicker({
     ? Array.from({ length: 121 }, (_, i) => baseYear - i) // 誕生日用：現在の年から120年前まで
     : Array.from({ length: 101 }, (_, i) => baseYear + i) // 予約日等用：現在の年から100年先まで
 
-  // 月のリスト（0-11）
-  const months =
-    currentLocale === 'ja'
-      ? ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  // 月のリスト（0-11）。date-fns のロケールから日本語・英語・タイ語名を生成する。
+  const months = dateFnsLocale
+    ? Array.from({ length: 12 }, (_, month) =>
+        format(new Date(2024, month, 1), 'LLL', { locale: dateFnsLocale })
+      )
+    : []
 
   const handleYearChange = (year: string) => {
     const newDate = new Date(displayMonth)

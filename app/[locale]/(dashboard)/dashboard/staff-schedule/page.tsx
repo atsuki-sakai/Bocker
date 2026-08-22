@@ -738,7 +738,7 @@ function StaffSchedulePage() {
                         {weekDaysFull[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]}
                       </span>
                       {hasReservationsOnDate(selectedDate) && (
-                        <span className="ml-2 bg-success text-success-foreground-foreground px-2 py-0.5 rounded-full text-xs font-medium">
+                        <span className="ml-2 bg-success text-success-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                           {t('hasReservations')}
                         </span>
                       )}

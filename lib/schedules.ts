@@ -2,7 +2,7 @@
 
 import { DAY_OF_WEEK_VALUES_JA, DayOfWeek, DayOfWeekJA } from './../convex/types'
 import { format, formatDistance, formatDistanceToNow, formatRelative } from 'date-fns'
-import { getDateFnsLocale, SupportedLocale } from './dateLocale'
+import { getDateFnsLocale, getIntlLocaleCode, SupportedLocale } from './dateLocale'
 /**
  * 現在の Unix タイムスタンプ（ミリ秒単位）を取得する
  *
@@ -16,46 +16,22 @@ export function getCurrentUnixTime(addHours?: number): number {
   return addHours !== undefined ? currentTimeMs + addHours * 3600 * 1000 : currentTimeMs
 }
 export function convertDayOfWeek(week: DayOfWeek, locale?: SupportedLocale): string {
-  const _locale = locale ? locale : 'ja'
-  if (_locale === 'ja') {
-    switch (week) {
-      case 'monday':
-        return '月曜日'
-      case 'tuesday':
-        return '火曜日'
-      case 'wednesday':
-        return '水曜日'
-      case 'thursday':
-        return '木曜日'
-      case 'friday':
-        return '金曜日'
-      case 'saturday':
-        return '土曜日'
-      case 'sunday':
-        return '日曜日'
-      default:
-        throw new Error(`Invalid day of week: ${week}`)
-    }
-  } else {
-    switch (week) {
-      case 'monday':
-        return 'Monday'
-      case 'tuesday':
-        return 'Tuesday'
-      case 'wednesday':
-        return 'Wednesday'
-      case 'thursday':
-        return 'Thursday'
-      case 'friday':
-        return 'Friday'
-      case 'saturday':
-        return 'Saturday'
-      case 'sunday':
-        return 'Sunday'
-      default:
-        throw new Error(`Invalid day of week: ${week}`)
-    }
+  const dayOffsets: Record<DayOfWeek, number> = {
+    monday: 0,
+    tuesday: 1,
+    wednesday: 2,
+    thursday: 3,
+    friday: 4,
+    saturday: 5,
+    sunday: 6,
   }
+  if (!(week in dayOffsets)) throw new Error(`Invalid day of week: ${week}`)
+  const date = new Date(Date.UTC(2024, 0, 1 + dayOffsets[week]))
+
+  return new Intl.DateTimeFormat(getIntlLocaleCode(locale ?? 'ja'), {
+    weekday: 'long',
+    timeZone: 'UTC',
+  }).format(date)
 }
 
 /**

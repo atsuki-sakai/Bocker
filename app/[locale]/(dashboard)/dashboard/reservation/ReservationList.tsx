@@ -34,7 +34,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { format } from 'date-fns'
-import { ja, enUS } from 'date-fns/locale'
+import { ja, enUS, th } from 'date-fns/locale'
 import { Calendar as CalendarIcon, User, DownloadIcon } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { useRouter } from '@/i18n/navigation'
@@ -63,6 +63,7 @@ const paymentStatusConfig = {
 
 export default function ReservationList() {
   const locale = useLocale()
+  const dateFnsLocale = locale === 'ja' ? ja : locale === 'th' ? th : enUS
   const router = useRouter()
   const { tenantId, orgId, role } = useTenantAndOrganization()
   const { showErrorToast } = useErrorHandler()
@@ -229,7 +230,7 @@ export default function ReservationList() {
   // 予約行データをフォーマット
   const formatReservationDate = (timestamp: number): string => {
     const date = new Date(timestamp)
-    return format(date, 'yyyy/MM/dd', { locale: locale === 'ja' ? ja : enUS })
+    return format(date, 'yyyy/MM/dd', { locale: dateFnsLocale })
   }
 
   const formatReservationTime = (startTimestamp: number, endTimestamp: number): string => {
@@ -394,7 +395,7 @@ export default function ReservationList() {
                       selected={tempDateRange}
                       onSelect={setTempDateRange}
                       numberOfMonths={2}
-                      locale={locale === 'ja' ? ja : enUS}
+                      locale={dateFnsLocale}
                     />
                     <div className="flex justify-between pt-3 border-t gap-2">
                       <Button variant="outline" onClick={handleResetDateRange} size="sm">

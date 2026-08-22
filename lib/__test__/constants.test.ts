@@ -21,7 +21,7 @@ import {
   NAV_GROUPS,
   type Languages,
   type NavItem,
-  type NavGroup
+  type NavGroup,
 } from '../constants'
 
 // Mock dependencies
@@ -47,16 +47,18 @@ describe('constants ライブラリ', () => {
 
   describe('言語設定', () => {
     it('サポートされている言語が正しく定義されている', () => {
-      expect(LANGUAGES).toEqual(['ja', 'en'])
-      expect(LANGUAGES).toHaveLength(2)
+      expect(LANGUAGES).toEqual(['ja', 'en', 'th'])
+      expect(LANGUAGES).toHaveLength(3)
     })
 
     it('Languages型が正しく推論される', () => {
       const jaLang: Languages = 'ja'
       const enLang: Languages = 'en'
-      
+      const thLang: Languages = 'th'
+
       expect(jaLang).toBe('ja')
       expect(enLang).toBe('en')
+      expect(thLang).toBe('th')
     })
   })
 
@@ -82,7 +84,7 @@ describe('constants ライブラリ', () => {
     })
 
     it('営業時間がHH:mm形式で統一されている', () => {
-      SCHEDULE_HOURS.forEach(hour => {
+      SCHEDULE_HOURS.forEach((hour) => {
         expect(hour).toMatch(/^([01]\d|2[0-3]):00$/)
       })
     })
@@ -113,7 +115,7 @@ describe('constants ライブラリ', () => {
     })
 
     it('月額料金が適切に設定されている', () => {
-      expect(PLAN_MONTHLY_PRICES.MICRO).toBe(3980)
+      expect(PLAN_MONTHLY_PRICES.MICRO).toBe(4000)
       expect(PLAN_MONTHLY_PRICES.LITE).toBe(8000)
       expect(PLAN_MONTHLY_PRICES.PRO).toBe(12000)
     })
@@ -122,7 +124,10 @@ describe('constants ライブラリ', () => {
       // LITEプランの例
       const liteYearlyPrice = PLAN_MONTHLY_PRICES.LITE * PLAN_CHARGE_MONTHS_YEARLY
       const liteOriginalYearlyPrice = PLAN_MONTHLY_PRICES.LITE * 12
-      const liteSavingPercent = (((liteOriginalYearlyPrice - liteYearlyPrice) / liteOriginalYearlyPrice) * 100).toFixed(0)
+      const liteSavingPercent = (
+        ((liteOriginalYearlyPrice - liteYearlyPrice) / liteOriginalYearlyPrice) *
+        100
+      ).toFixed(0)
 
       expect(PLAN_YEARLY_PRICES.LITE.price).toBe(liteYearlyPrice)
       expect(PLAN_YEARLY_PRICES.LITE.savingPercent).toBe(liteSavingPercent)
@@ -165,7 +170,7 @@ describe('constants ライブラリ', () => {
       expect(DASHBOARD_ITEM.name).toBe('dashboard')
       expect(DASHBOARD_ITEM.href).toBe('/dashboard')
       expect(DASHBOARD_ITEM.minRole).toBe('staff')
-      expect(DASHBOARD_ITEM.minPlan).toBe('LITE')
+      expect(DASHBOARD_ITEM.minPlan).toBe('MICRO')
     })
 
     it('ナビゲーション項目が適切に設定されている', () => {
@@ -174,7 +179,7 @@ describe('constants ライブラリ', () => {
       expect(NAV_ITEMS.length).toBeGreaterThan(0)
 
       // 必須項目の存在確認
-      const dashboardItem = NAV_ITEMS.find(item => item.name === 'dashboard')
+      const dashboardItem = NAV_ITEMS.find((item) => item.name === 'dashboard')
       expect(dashboardItem).toBeDefined()
       expect(dashboardItem?.href).toBe('/dashboard')
     })
@@ -185,13 +190,13 @@ describe('constants ライブラリ', () => {
       expect(NAV_GROUPS.length).toBeGreaterThan(0)
 
       // 各グループの構造確認
-      NAV_GROUPS.forEach(group => {
+      NAV_GROUPS.forEach((group) => {
         expect(group.id).toBeDefined()
         expect(group.name).toBeDefined()
         expect(Array.isArray(group.items)).toBe(true)
-        
+
         // 各アイテムの構造確認
-        group.items.forEach(item => {
+        group.items.forEach((item) => {
           expect(item.name).toBeDefined()
           expect(item.href).toBeDefined()
           expect(item.icon).toBeDefined()
@@ -202,23 +207,23 @@ describe('constants ライブラリ', () => {
     })
 
     it('予約管理グループが正しく設定されている', () => {
-      const reservationsGroup = NAV_GROUPS.find(group => group.id === 'reservations')
+      const reservationsGroup = NAV_GROUPS.find((group) => group.id === 'reservations')
       expect(reservationsGroup).toBeDefined()
       expect(reservationsGroup?.name).toBe('reservations')
       expect(reservationsGroup?.items.length).toBeGreaterThan(0)
     })
 
     it('スタッフ・組織グループが正しく設定されている', () => {
-      const staffGroup = NAV_GROUPS.find(group => group.id === 'staffOrganization')
+      const staffGroup = NAV_GROUPS.find((group) => group.id === 'staffOrganization')
       expect(staffGroup).toBeDefined()
       expect(staffGroup?.name).toBe('staffOrganization')
       expect(staffGroup?.items.length).toBeGreaterThan(0)
     })
 
     it('アクセス権限設定が適切である', () => {
-      NAV_ITEMS.forEach(item => {
+      NAV_ITEMS.forEach((item) => {
         expect(['staff', 'manager', 'owner', 'admin']).toContain(item.minRole)
-        expect(['LITE', 'PRO']).toContain(item.minPlan)
+        expect(['MICRO', 'LITE', 'PRO']).toContain(item.minPlan)
       })
     })
   })
@@ -232,7 +237,7 @@ describe('constants ライブラリ', () => {
         minRole: 'staff',
         minPlan: 'LITE',
       }
-      
+
       expect(testNavItem.name).toBe('test')
       expect(testNavItem.href).toBe('/test')
       expect(testNavItem.minRole).toBe('staff')
@@ -245,7 +250,7 @@ describe('constants ライブラリ', () => {
         name: 'test',
         items: [],
       }
-      
+
       expect(testNavGroup.id).toBe('test')
       expect(testNavGroup.name).toBe('test')
       expect(Array.isArray(testNavGroup.items)).toBe(true)
